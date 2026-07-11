@@ -7,6 +7,7 @@ export default function Feed() {
           <Text style={styles.text}>Feed</Text>
           <Link href="/accountPage" style={styles.button}>Go to Account</Link>
           <Link href="/Pages/LoginPage/LoginPage" style={styles.button}>Go to Login</Link>
+          <Link href="/Pages/RegisterPage/RegisterPage" style={styles.button}>Go to Register</Link>
     </View>
   );
 }

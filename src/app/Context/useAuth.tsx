@@ -37,7 +37,11 @@ export const UserProvider = ({children}: Props) => {
         setIsReady(true);
     }, []);
 
-    const registerUser = async(email: string, username: string, password: string) => {
+    const registerUser = async(
+        email: string, 
+        username: string, 
+        password: string
+    ) => {
         await registerAPI(email, username, password).then((res => {
             if(res) {
                 localStorage.setItem("token", res?.data.token);
