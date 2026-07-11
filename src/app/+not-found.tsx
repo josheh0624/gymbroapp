@@ -6,7 +6,7 @@ export default function NotFoundScreen() {
         <>
             <View style={styles.container}>
                 <Text style={styles.button}>404 - Page Not Found</Text>
-                <Link href="/" style={styles.button}>Go to Home</Link>
+                <Link href="/(tabs)/feedPage" style={styles.button}>Go to Home</Link>
             </View>
         </>
     );
