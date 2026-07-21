@@ -2,9 +2,9 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import WeekStrip from "../components/week-strip";
+import Workout from "../models/workout-model";
 import AddWorkoutButton from "../workoutPage/add-button/add-workout-button";
 import WorkoutList from "../workoutPage/workout-list/workout-list";
-import Workout from "../workoutPage/workout-model";
 
 export default function WorkoutScreen() {
 

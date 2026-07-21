@@ -2,14 +2,13 @@ import liquidGlassStyles from "@/app/styles/liquidglass";
 import { GlassView } from "expo-glass-effect";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
-import Workout from "../../workout-model";
+import Workout from "../../../models/workout-model";
 
 interface Props{
     workout: Workout;
     workouts: Workout[];
     setWorkouts: React.Dispatch<React.SetStateAction<Workout[]>>;
 }
-
 
 export default function WorkoutThumbnail({workout, workouts,setWorkouts}: Props) {
 

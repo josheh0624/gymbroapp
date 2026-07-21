@@ -1,4 +1,4 @@
-import Workout from "@/app/workoutPage/workout-model";
+import Workout from "@/app/models/workout-model";
 
 export const PushDay: Workout = {
     id: Date.now(),

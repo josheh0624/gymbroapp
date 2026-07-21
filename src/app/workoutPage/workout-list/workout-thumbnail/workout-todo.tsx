@@ -1,7 +1,7 @@
 import NotFoundScreen from "@/app/+not-found";
 import { useLocalSearchParams } from "expo-router";
 import { Text, View } from "react-native";
-import Workout from "../../workout-model";
+import Workout from "../../../models/workout-model";
 
 interface Props {
     workouts: Workout[];

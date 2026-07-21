@@ -1,4 +1,4 @@
-import Workout from "@/app/workoutPage/workout-model";
+import Workout from "@/app/models/workout-model";
 
 export const PullDay: Workout = {
     id: Date.now(),

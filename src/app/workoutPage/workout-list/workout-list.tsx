@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import Workout from "../workout-model";
+import Workout from "../../models/workout-model";
 import WorkoutThumbnail from "./workout-thumbnail/workout-thumbnail";
 
 interface Props {
