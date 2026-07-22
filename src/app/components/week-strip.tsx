@@ -1,66 +1,105 @@
-import { useEffect } from 'react';
-import { LogBox } from 'react-native';
-import CalendarStrip from "react-native-calendar-strip";
+import moment from 'moment';
+import { Dispatch, SetStateAction, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+type Props = {
+    setSelectedWeekdayID: Dispatch<SetStateAction<number>>;
+    getWeekdayID(date: moment.Moment): number;
+};
 
-
-
-export default function WeekStrip() {
-
-    useEffect(() => {
-        LogBox.ignoreLogs(['A props object containing a "key" prop']);
-    }, []);
-
+export default function WeekStrip({ setSelectedWeekdayID, getWeekdayID }: Props) {
     const today = new Date();
-    const sunday = new Date(today);
-    sunday.setDate(today.getDate() - today.getDay());
-    sunday.setHours(0,0,0,0);
+    const startOfWeek = useMemo(() => {
+    //get the start of the week (sunday)
+        const date = new Date(today);
+        date.setDate(today.getDate() - today.getDay());
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }, [today]);
 
+    const [selectedIndex, setSelectedIndex] = useState(today.getDay());
+
+    const weekDays = useMemo(() => {
+
+        return Array.from({ length: 7 }, (_, index) => {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + index);
+            return date;
+        });
+    }, [startOfWeek]);
+
+    const handleSelectDay = (date: Date, index: number) => {
+        setSelectedIndex(index);
+        setSelectedWeekdayID(getWeekdayID(moment(date)));
+    };
 
     return (
-        <CalendarStrip
-            scrollable={false}
-            useIsoWeekday={false}
-            startingDate={sunday}
-            selectedDate={today}
-            
-            style={{ height: 70 }}
-            calendarColor={'#25292e'}
-            showMonth={false}
-            dateNumberStyle={{ 
-                color: '#fff',
-                fontSize: 24,
-             }}
-            dateNameStyle={{ color: '#fff' }}
-            highlightDateNumberStyle={{ 
-                color: '#ff0000',
-                fontSize: 20,
-            }}
-            highlightDateNameStyle={{ 
-                color: '#ff0000',
-            }}
-            iconContainer={{ flex: 0.1 }}
-            markedDates={[
-                { date: today, dots: [{ color: '#ff0000', selected: true }] },
-            ]}
-            daySelectionAnimation={{
-                type: "border",
-                duration: 0,
-                borderWidth: 0,
-                borderHighlightColor: "transparent",
-            }}
+        <View style={styles.container}>
+            {weekDays.map((day, index) => {
+                const isSelected = selectedIndex === index;
+                const isToday = day.toDateString() === today.toDateString();
 
-            customDatesStyles={() => ({
-                dateContainerStyle: {
-                    width: 42,
-                    height: 42,
-                    borderRadius: 10,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    color: 'red',
-                },
+                return (
+                    <Pressable
+                        key={`${day.toISOString()}-${index}`}
+                        onPress={() => handleSelectDay(day, index)}
+                        style={[styles.dayButton, isSelected && styles.selectedDayButton]}
+                    >
+                        <Text style={[styles.dayLabel, isSelected && styles.selectedDayLabel]}>
+                            {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                        </Text>
+                        <Text style={[styles.dayNumber, isSelected && styles.selectedDayNumber]}>
+                            {day.getDate()}
+                        </Text>
+                        {isToday  ? <View style={styles.todayDot} /> : null}
+                    </Pressable>
+                );
             })}
-        />
-    )
+        </View>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    dayButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 42,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+    },
+    selectedDayButton: {
+        backgroundColor: '#ff3b30',
+    },
+    dayLabel: {
+        color: '#fff',
+        fontSize: 12,
+        marginBottom: 4,
+    },
+    selectedDayLabel: {
+        color: '#fff',
+        fontWeight: '700',
+    },
+    dayNumber: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    selectedDayNumber: {
+        color: '#fff',
+    },
+    todayDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#ff3b30',
+        marginTop: 4,
+    },
+});
 

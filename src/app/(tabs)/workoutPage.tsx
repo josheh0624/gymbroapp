@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { useLocalSearchParams } from "expo-router";
+import moment from "moment";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import WeekStrip from "../components/week-strip";
@@ -10,13 +11,14 @@ import WorkoutList from "../workoutPage/workout-list/workout-list";
 
 export default function WorkoutScreen() {
 
+    
+    //routine stuff
+
     const [routine, setRoutine] = useState<WorkoutRoutine>();
     const [routines, setRoutines] = useState<WorkoutRoutine[]>([]);
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     // recieves params from add button as a single routine or a array
     const params = useLocalSearchParams<{ addedRoutine?: string | string[] }>();
-
-    const currentDate = dayjs().format("MMMM D, YYYY");
 
     //use effect runs after component renders
     ///run effect whenever addedRoutine value changes
@@ -56,16 +58,33 @@ export default function WorkoutScreen() {
         }
     }, [params.addedRoutine]); //run effect whenever addedRoutine value changes
 
+
+
+    //date stuff
+
+    const currentDate = dayjs().format("MMMM D, YYYY");
+
+    function getWeekdayID(date: moment.Moment): number {
+        //get the number corresponding to each day of the week
+        const day = date.day();
+        return day;
+    }
+    const [selectedWeekdayID, setSelectedWeekdayID] = useState<number>(
+        getWeekdayID(moment())
+    );
+
+    
+
     return (
         <View style={styles.container}>
             <View style={styles.dateContainer}>
                 <Text style={styles.dateText}>{currentDate}</Text>
             </View>
             <View style={styles.weekCalendarContainer}>
-                <WeekStrip />
+                <WeekStrip setSelectedWeekdayID={setSelectedWeekdayID} getWeekdayID={getWeekdayID}/>
             </View>
             <View style={{flex: 1, width: '100%', height: '100%', paddingTop: 10,}}>
-                <WorkoutList routine={routine} />
+                <WorkoutList routine={routine} selectedWeekdayID={selectedWeekdayID}/>
             </View>
             
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center", width: "90%", position: "absolute", bottom: 120}}>
