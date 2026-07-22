@@ -18,15 +18,13 @@ export default function WorkoutList({routine, selectedWeekdayID}: Props){
     // ?? means if value is missing then use an empty array []
     const workouts = routine?.workoutRoutine ?? []; //stores workouts[]
 
-    //filter to only have workouts that match dayID
-    const workoutsForSelectedDay = workouts.filter(
-        (w) => w.days === selectedWeekdayID
-    )
-
     return (
         <View style={styles.container}>
             {workouts.map((workout, index) => {
-                const isVisible = normalizeWeekday(workout.days) === normalizeWeekday(selectedWeekdayID);
+                const normalizedSelectedDay = normalizeWeekday(selectedWeekdayID);
+                const isVisible = workout.days.some(
+                    (d) => normalizeWeekday(d) === normalizedSelectedDay
+                );
 
                 return (
                     <WorkoutThumbnail 

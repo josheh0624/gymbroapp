@@ -4,7 +4,7 @@ import Exercise from "./excerciseModel";
 export default interface Workout {
     name: string;
     id: number;
-    days: number;
+    days: number[];
     exercises: Exercise[];
 }
 
