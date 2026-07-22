@@ -20,9 +20,10 @@ const liquidGlassStyles = StyleSheet.create({
         padding: 20,
     },
     tintedGlassThumbnail: {
+        mar
         width: '100%',
         ...StyleSheet.absoluteFill,
-        borderRadius: 15,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,

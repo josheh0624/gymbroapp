@@ -35,8 +35,8 @@ export default function WorkoutThumbnail({workout, selectedWeekdayID, visible}: 
 
 const styles = StyleSheet.create({
     workoutCard: {
-        width: "90%",
-        height: 160,
+        width: "92%",
+        height: 240,
         alignSelf: "center",
         marginBottom: 10,
     },
