@@ -6,11 +6,9 @@ import Workout from "../../../models/workout-model";
 
 interface Props{
     workout: Workout;
-    workouts: Workout[];
-    setWorkouts: React.Dispatch<React.SetStateAction<Workout[]>>;
 }
 
-export default function WorkoutThumbnail({workout, workouts,setWorkouts}: Props) {
+export default function WorkoutThumbnail({workout}: Props) {
 
     return(
             <Pressable  style={styles.workoutCard} onPress={() =>

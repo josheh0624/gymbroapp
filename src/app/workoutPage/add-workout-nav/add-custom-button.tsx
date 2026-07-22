@@ -1,29 +1,18 @@
 import liquidGlassStyles from "@/app/styles/liquidglass"
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6"
 import { GlassView } from "expo-glass-effect"
-import { useRouter } from "expo-router"
 import { Pressable, StyleSheet } from "react-native"
 
-export default function AddButton() {
+export default function AddCustomButton() {
     //
-    //route to add workout nav
-    //
-
-    const router = useRouter();
+    // add workouts to workout page calendar
 
     return (
-
-    
         <Pressable style={styles.container}
-            onPress={() => 
-                router.push("/workoutPage/add-button/add-workout-nav/add-workout-nav")
-            }
+
         >
             <GlassView style={liquidGlassStyles.tintedGlassAddButton} glassEffectStyle="clear" />
-            
-            <FontAwesome6 name="plus" size={24} color="#fff"/>
-            
-            
+            <FontAwesome6 name="plus" size={24} color="#fff"/>  
         </Pressable>
     )
         

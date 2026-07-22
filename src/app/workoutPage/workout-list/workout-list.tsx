@@ -1,22 +1,23 @@
+import WorkoutRoutine from "@/app/models/workout-routine-model";
 import { StyleSheet, View } from "react-native";
-import Workout from "../../models/workout-model";
 import WorkoutThumbnail from "./workout-thumbnail/workout-thumbnail";
 
 interface Props {
-    workouts: Workout[];
-    setWorkouts: React.Dispatch<React.SetStateAction<Workout[]>>;
+    routine?: WorkoutRoutine;
 }
 
-export default function WorkoutList({workouts, setWorkouts}: Props){
+export default function WorkoutList({routine}: Props){
+    // functions to map out thumbnails based on workouts in the routine
+
+    // ?? means if value is missing then use an empty array []
+    const workouts = routine?.workoutRoutine ?? []; //stores workouts[]
 
     return (
         <View style={styles.container}>
-            {workouts.map((workout) => (
+            {workouts.map((workout, index) => (
                 <WorkoutThumbnail 
                     workout={workout} 
-                    key={workout.id}
-                    workouts={workouts}
-                    setWorkouts={setWorkouts}
+                    key={`${workout.id ?? "workout"}-${index}`}
                 />
             ))}
         </View>
