@@ -32,6 +32,7 @@ export default function WorkoutList({routine, selectedWeekdayID}: Props){
                         selectedWeekdayID={selectedWeekdayID}
                         visible={isVisible}
                         key={`${workout.id ?? "workout"}-${index}`}
+                        routineID={routine?.id ?? ""}
                     />
                 );
             })}

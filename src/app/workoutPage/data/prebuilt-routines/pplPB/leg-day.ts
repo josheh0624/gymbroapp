@@ -1,7 +1,7 @@
 import Workout from "@/app/models/workout-model";
 
 export const LegDay: Workout = {
-    id: Date.now(),
+    id: 'leg-day',
     name: "Leg Day",
     days: [3,6],
     exercises: [

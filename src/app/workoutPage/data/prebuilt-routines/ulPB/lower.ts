@@ -1,9 +1,9 @@
 import Workout from "@/app/models/workout-model";
 
 export const LowerDay: Workout = {
-  id: Date.now() + 1,
+  id: 'lower-day',
   name: "Lower Day",
-  days: 2,
+  days: [2,5],
   exercises: [
     {
       id: "back-squat",
