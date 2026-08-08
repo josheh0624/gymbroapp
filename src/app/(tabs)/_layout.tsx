@@ -1,12 +1,12 @@
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { GlassView } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
-const ACTIVE_COLOR = '#ff0000';
+const ACTIVE_COLOR = "#ff0000";
 const INACTIVE_COLOR = "#fff";
 
 function GlassTabBar(props: BottomTabBarProps) {
@@ -44,77 +44,85 @@ function GlassTabBar(props: BottomTabBarProps) {
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <GlassTabBar {...(props as unknown as BottomTabBarProps)} />}
+      tabBar={(props) => (
+        <GlassTabBar {...(props as unknown as BottomTabBarProps)} />
+      )}
       screenOptions={{
         tabBarActiveTintColor: "#ffd33d",
         tabBarInactiveTintColor: "#fff",
         headerStyle: {
-            backgroundColor: "#25292e",
+          backgroundColor: "#25292e",
         },
         headerShadowVisible: false,
         headerTintColor: "#fff",
         tabBarStyle: {
-            backgroundColor: "#25292e",
+          backgroundColor: "#25292e",
         },
-    }}
+      }}
     >
-      <Tabs.Screen 
-        name="index" 
-        options={{ 
-            title: 'Feed', 
-            tabBarIcon: ({ color, focused }) => (
-                <MaterialCommunityIcons name={focused ? "home" : "home-outline"} size={24} color={color} />
-            ),
-        }} 
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Feed",
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? "home" : "home-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
       />
 
-      <Tabs.Screen 
-        name="workoutPage" 
+      <Tabs.Screen
+        name="workoutPage"
         options={{
-            title: 'Workout',
-            headerTitleAlign: "left",
+          title: "Workout",
+          headerTitleAlign: "left",
 
-            headerTitleStyle: {
-                fontSize: 30,
-                fontWeight: "bold",
-            },
-            tabBarIcon: ({ color, focused }) => (
-                <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={24} color={color}/>
-            ),
-        }} 
+          headerTitleStyle: {
+            fontSize: 30,
+            fontWeight: "bold",
+          },
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "play-circle" : "play-circle-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
       />
 
-      <Tabs.Screen 
-        name="muscle-mapPage" 
+      <Tabs.Screen
+        name="muscle-mapPage"
         options={{
-            title: 'Muscle Map',
-            tabBarIcon: ({ color, focused }) => (
-                <Ionicons name={focused ? "body" : "body-outline"} size={24} color={color} />
-            ),
-        }} 
+          title: "Muscle Map",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "body" : "body-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
       />
 
-      <Tabs.Screen 
-        name="dietaryPage" 
+      <Tabs.Screen
+        name="accountPage"
         options={{
-            title: 'Diet',
-            tabBarIcon: ({ color, focused }) => (
-                <MaterialCommunityIcons name={focused ? "silverware-fork" : "silverware-fork"} size={24} color={color} />
-            ),
-        }} 
-      />
-
-      <Tabs.Screen 
-        name="accountPage" 
-        options={{
-            title: 'Account',
-            tabBarIcon: ({ color, focused }) => (
-                <FontAwesome6 name={focused ? "user-large" : "user"} size={24} color={color} />
-            ),
-        }} 
+          title: "Account",
+          tabBarIcon: ({ color, focused }) => (
+            <FontAwesome6
+              name={focused ? "user-large" : "user"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
       />
     </Tabs>
-  )
+  );
 }
 
 const styles = StyleSheet.create({

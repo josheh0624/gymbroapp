@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>front end</title>
+  </head>
+  <body>
+    <h1>hello worls</h1>
+    <button>get message</button>
+
+    <script>
+      const heading = document.querySelector("h1");
+      const button = document.querySelector("button");
+
+      button.addEventListener("click", () => {
+        fetch("http://localhost:3000/message")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                `server error: ${response.status} ${response.statusText}`,
+              );
+            }
+            return response.json();
+          })
+          .then((data) => {
+            heading.textContent = data.message;
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      });
+    </script>
+    <form id="contact-form">
+      <input id="name" placeholder="name" />
+      <textarea id="message" placeholder="message"></textarea>
+      <button>Submit</button>
+    </form>
+
+    <script>
+      //get form elements
+      const form = document.getElementById("contact-form");
+      const nameInput = document.getElementById("name");
+      const messageTextArea = document.getElementById("message");
+
+      //form submit button listener
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        //get name and message
+        const name = nameInput.value;
+        const message = messageTextArea.value;
+
+        fetch("http://localhost:3000/message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name, message }), //make into json string and send to backend
+        })
+          .then((response) => response.json()) //get response
+          .then((data) => {
+            console.log("respons from server,", data); //gets confirmation message from backend
+          })
+          .catch((err) => console.error("request failed:", err));
+      });
+    </script>
+  </body>
+</html>
