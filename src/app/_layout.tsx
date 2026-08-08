@@ -2,6 +2,7 @@ import axios from "axios";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 axios.defaults.withCredentials = true; // Include credentials in requests
 
@@ -29,7 +30,11 @@ export default function RootLayout() {
     return (
       <React.Fragment>
         <StatusBar style="auto" />
-        <Stack.Screen name="loading" options={{ headerShown: false }} />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" />
+        </View>
       </React.Fragment>
     );
   }
