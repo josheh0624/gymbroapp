@@ -1,4 +1,4 @@
-import WorkoutRoutine from "@/app/models/workout-routine-model";
+import WorkoutRoutine from "@/models/workout-routine-model";
 import { StyleSheet, View } from "react-native";
 import WorkoutThumbnail from "./workout-thumbnail/workout-thumbnail";
 

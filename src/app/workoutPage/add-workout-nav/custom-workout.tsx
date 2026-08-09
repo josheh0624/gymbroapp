@@ -1,4 +1,1 @@
-
-export default function CustomWorkout() {
-    
-}
+export default function CustomWorkout() {}

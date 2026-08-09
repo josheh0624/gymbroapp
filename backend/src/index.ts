@@ -11,7 +11,10 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:8081",
+    origin:
+      process.env.CLIENT_URL ||
+      "http://localhost:8081" ||
+      "http://localhost:8082",
     credentials: true,
   }),
 ); //security access to allow cross-origin requests

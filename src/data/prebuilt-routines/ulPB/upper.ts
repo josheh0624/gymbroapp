@@ -1,9 +1,9 @@
-import Workout from "@/app/models/workout-model";
+import Workout from "@/models/workout-model";
 
 export const UpperDay: Workout = {
-  id: 'upper-day',
+  id: "upper-day",
   name: "Upper Day",
-  days: [1,4],
+  days: [1, 4],
   exercises: [
     {
       id: "bench-press",

@@ -1,32 +1,30 @@
+import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 axios.defaults.withCredentials = true; // Include credentials in requests
 
 export default function RootLayout() {
-  const [user, setUser] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { user, loading, setUser } = useAuthStore(); //pull user and loading state from the auth store
 
   useEffect(() => {
+    // Fetch the current user from the backend when the app loads
     const fetchUser = async () => {
       try {
         const res = await axios.get("http://localhost:3000/auth/me");
         setUser(res.data);
       } catch (err) {
-        setError("Failed to fetch user data");
         setUser(null);
-      } finally {
-        setLoading(false);
       }
     };
     fetchUser();
   }, []);
 
   if (loading) {
+    // Show a loading indicator while checking authentication status
     return (
       <React.Fragment>
         <StatusBar style="auto" />
