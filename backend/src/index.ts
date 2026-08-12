@@ -25,6 +25,8 @@ pool.connect().then(() => console.log("connected"));
 app.use("/auth", authRoutes);
 app.use("/exercises", exerciseRouter);
 
+app.get("/api/health", (req, res) => res.json({ ok: true, time: Date.now() }));
+
 ///////////////////
 //workout routes //
 

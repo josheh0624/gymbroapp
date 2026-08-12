@@ -9,11 +9,13 @@ interface TokenPayload {
   userId: number;
 }
 
+//make sure JWT is connected
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in environment variables");
 }
 
+//middleware to
 export const protect = async (
   req: Request,
   res: Response,
@@ -37,7 +39,8 @@ export const protect = async (
         .json({ message: "Not authorized, user not found" });
     }
     // Attach the user to the request object
-    req.user = { ...user.rows[0] } as SafeUser;
+    const { password_hash, ...safeUser } = user.rows[0];
+    req.user = safeUser as SafeUser;
     next(); // Proceed to the next middleware or route handler
   } catch (error) {
     return res.status(401).json({ message: "Not authorized", error });

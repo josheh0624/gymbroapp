@@ -1,21 +1,422 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useAuthStore } from "@/store/authStore";
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import type { ReactNode } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// ---------------------------------------------------------------------------
+// Design tokens
+// ---------------------------------------------------------------------------
+const COLORS = {
+  bg: "#0A0B0D",
+  surface: "rgba(255,255,255,0.045)",
+  surfaceBorder: "rgba(255,255,255,0.09)",
+  hairline: "rgba(255,255,255,0.08)",
+  text: "#F5F6F7",
+  textMuted: "#84898F",
+  textFaint: "#565A60",
+  red: "#FF2A3C",
+  coral: "#FF4D5E",
+};
 
 export default function AccountScreen() {
+  const insets = useSafeAreaInsets();
+
+  const username = useAuthStore((s) => s.user?.username);
+  const id = useAuthStore((s) => s.user?.id);
+  const email = useAuthStore((s) => s.user?.email); // add to SafeUser if not already there
+  const raw_memberSince = useAuthStore((s) => s.user?.created_at);
+  const logout = useAuthStore((s) => s.logout);
+
+  const memberSince = raw_memberSince
+    ? new Date(raw_memberSince)
+        .toLocaleDateString("en-US", { month: "short", year: "numeric" })
+        .toUpperCase()
+    : "—";
+
+  const memberNo = id ? `${String(id).padStart(6, "0")}` : "——————";
+  const initials = username ? username.slice(0, 2).toUpperCase() : "GB";
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>About Screen</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.eyebrow}>ACCOUNT</Text>
+
+        {/* Membership card — signature element for the screen */}
+        <View style={styles.card}>
+          <BlurView
+            intensity={40}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            colors={["rgba(1, 1, 0, 0.1)", "rgba(214,255,63,0)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+
+          <View style={styles.cardTopRow}>
+            <Text style={styles.cardLabel}>GYMBRO MEMBER</Text>
+            <Text style={[styles.cardLabel, styles.mono]}>{memberNo}</Text>
+          </View>
+
+          <View style={styles.avatarRow}>
+            <View style={styles.avatarRing}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initials}</Text>
+              </View>
+            </View>
+            <View style={styles.identity}>
+              <Text style={styles.username} numberOfLines={1}>
+                {username ?? "GYM BRO"}
+              </Text>
+              <Text style={styles.memberSince}>MEMBER SINCE {memberSince}</Text>
+            </View>
+          </View>
+
+          {/* perforated "tear strip" — ties the card to a real membership card */}
+          <View style={styles.perforation}>
+            {Array.from({ length: 26 }).map((_, i) => (
+              <View key={i} style={styles.perfDot} />
+            ))}
+          </View>
+        </View>
+
+        {/* Stat strip — placeholders until these are tracked */}
+        <View style={styles.statsRow}>
+          <StatCard label="Workouts" value="—" />
+          <StatCard label="Streak" value="—" />
+          <StatCard label="PRs" value="—" />
+        </View>
+
+        {/* Details */}
+        <Text style={styles.sectionLabel}>DETAILS</Text>
+        <GlassCard>
+          <InfoRow
+            icon="person-outline"
+            label="Username"
+            value={username ?? "—"}
+          />
+          <Divider />
+          <InfoRow
+            icon="mail-outline"
+            label="Email"
+            value={email ?? "Add email"}
+            muted={!email}
+          />
+          <Divider />
+          <InfoRow
+            icon="finger-print-outline"
+            label="Member ID"
+            value={memberNo}
+            mono
+          />
+          <Divider />
+          <InfoRow
+            icon="calendar-outline"
+            label="Member Since"
+            value={memberSince}
+          />
+        </GlassCard>
+
+        {/* Settings */}
+        <Text style={styles.sectionLabel}>SETTINGS</Text>
+        <GlassCard padded={false}>
+          <ActionRow icon="create-outline" label="Edit Profile" />
+          <Divider />
+          <ActionRow icon="lock-closed-outline" label="Change Password" />
+          <Divider />
+          <ActionRow icon="notifications-outline" label="Notifications" />
+        </GlassCard>
+
+        <Pressable style={styles.logoutButton} onPress={logout}>
+          <Ionicons name="log-out-outline" size={18} color={COLORS.coral} />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </Pressable>
+        <View style={styles.spacer} />
+      </ScrollView>
     </View>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Subcomponents
+// ---------------------------------------------------------------------------
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label.toUpperCase()}</Text>
+    </View>
+  );
+}
+
+// Renders unconditionally — the BlurView is always mounted, never swapped
+// in/out via conditional rendering — to avoid the remount/blank-frame flash
+// on iOS. Toggle what's inside, not whether the glass surface exists.
+function GlassCard({
+  children,
+  padded = true,
+}: {
+  children: ReactNode;
+  padded?: boolean;
+}) {
+  return (
+    <View style={styles.glassCard}>
+      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+      <View style={padded ? styles.glassCardInner : undefined}>{children}</View>
+    </View>
+  );
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+  mono = false,
+  muted = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  mono?: boolean;
+  muted?: boolean;
+}) {
+  return (
+    <View style={styles.row}>
+      <Ionicons
+        name={icon}
+        size={18}
+        color={COLORS.textMuted}
+        style={styles.rowIcon}
+      />
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.rowValue,
+          mono && styles.mono,
+          muted && styles.rowValueMuted,
+        ]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function ActionRow({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={COLORS.red}
+        style={styles.rowIcon}
+      />
+      <Text style={styles.rowLabelAction}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
+    </Pressable>
+  );
+}
+
+function Divider() {
+  return <View style={styles.divider} />;
+}
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#25292e",
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  scroll: { paddingHorizontal: 20, paddingBottom: 48 },
+
+  eyebrow: {
+    color: COLORS.textFaint,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 4,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+
+  card: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    overflow: "hidden",
+    paddingTop: 18,
+    paddingHorizontal: 18,
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 22,
+  },
+  cardLabel: {
+    color: COLORS.red,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 2,
+  },
+  avatarRow: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  avatarRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: COLORS.red,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(164, 164, 164, 0)",
     alignItems: "center",
     justifyContent: "center",
   },
-  text: {
-    color: "#fff",
+  avatarText: { color: COLORS.red, fontSize: 18, fontWeight: "900" },
+  identity: { flex: 1 },
+  username: {
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
+  memberSince: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginTop: 4,
+  },
+  perforation: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.hairline,
+    borderStyle: "dashed",
+  },
+  perfDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.hairline,
+  },
+
+  statsRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  statValue: { color: COLORS.text, fontSize: 20, fontWeight: "900" },
+  statLabel: {
+    color: COLORS.textFaint,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginTop: 4,
+  },
+
+  sectionLabel: {
+    color: COLORS.textFaint,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 3,
+    marginTop: 28,
+    marginBottom: 10,
+  },
+
+  glassCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    overflow: "hidden",
+  },
+  glassCardInner: { paddingHorizontal: 16 },
+
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  rowPressed: { opacity: 0.6 },
+  rowIcon: { marginRight: 12 },
+  rowLabel: {
+    flex: 1,
+    color: COLORS.textMuted,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  rowLabelAction: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  rowValue: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
+  rowValueMuted: { color: COLORS.textFaint },
+  mono: {
+    fontFamily: Platform.select({ ios: "Courier", android: "monospace" }),
+    letterSpacing: 1,
+  },
+
+  divider: { height: 1, backgroundColor: COLORS.hairline, marginLeft: 46 },
+
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,77,94,0.35)",
+    backgroundColor: "rgba(255,77,94,0.08)",
+  },
+  logoutText: {
+    color: COLORS.coral,
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+  },
+  spacer: { height: 56 },
 });

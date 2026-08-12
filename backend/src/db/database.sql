@@ -5,7 +5,18 @@ CREATE TABLE users (
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+
+  age INTEGER,
+  height_ft NUMERIC(5,2),
+  weight_lbs INTEGER,
+  sex TEXT,
 );
+
+ALTER TABLE users
+  ADD COLUMN age INTEGER,
+  ADD COLUMN height_ft NUMERIC(5,2),
+  ADD COLUMN weight_lbs INTEGER,
+  ADD COLUMN sex TEXT;
 
 -- ============================================
 -- EXERCISES (list of individual exercises)

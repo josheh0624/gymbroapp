@@ -1,30 +1,36 @@
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import axios from "axios";
 import { Stack } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
-axios.defaults.withCredentials = true; // Include credentials in requests
-
 export default function RootLayout() {
-  const { user, loading, setUser } = useAuthStore(); //pull user and loading state from the auth store
+  const { user, loading, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
-    // Fetch the current user from the backend when the app loads
     const fetchUser = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/me");
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) {
+          setUser(null);
+          return;
+        }
+        const res = await api.get("/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setUser(res.data);
       } catch (err) {
         setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
     fetchUser();
   }, []);
 
   if (loading) {
-    // Show a loading indicator while checking authentication status
     return (
       <React.Fragment>
         <StatusBar style="auto" />
@@ -40,12 +46,9 @@ export default function RootLayout() {
   return (
     <React.Fragment>
       <StatusBar style="auto" />
-      {/* stack navigator is used to navigate between screens in the app */}
-      <Stack>
+      <Stack key={user ? "authed" : "guest"}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ headerShown: false }} />
-        {/* stack protected is used to protect the screens from being accessed by unauthenticated users 
-          guard = true means tabs can be accessed by authenticated users */}
         <Stack.Protected guard={user !== null}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack.Protected>

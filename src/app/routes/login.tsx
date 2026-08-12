@@ -1,7 +1,8 @@
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import axios from "axios";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { Redirect, Stack } from "expo-router";
 import { useState } from "react";
 import {
   Dimensions,
@@ -17,114 +18,165 @@ import {
 const { width } = Dimensions.get("window");
 
 export default function LoginScreen() {
-  const setUser = useAuthStore((state) => state.setUser);
+  const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
   const handleLogin = async () => {
+    setError("");
+
+    const trimmedEmail = email.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+
+    if (!emailValid) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (!password) {
+      setError("Enter your password.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      // Send a POST request to the backend login endpoint with email and password
-      const res = await axios.post("http://localhost:3000/auth/login", {
-        email,
+      const res = await api.post("/auth/login", {
+        email: trimmedEmail,
         password,
       });
 
-      if (res.status === 200) {
-        setUser(res.data);
+      const { user, token } = res.data;
+      await login(user, token);
+      // Stack.Protected in RootLayout swaps to (tabs) automatically
+    } catch (err: any) {
+      if (err.response?.status === 400) {
+        setError(err.response.data?.message ?? "Invalid credentials.");
       } else {
-        setError("Login failed. Please check your credentials.");
+        setError("Something went wrong. Please try again.");
       }
-    } catch (err) {
-      setError("Login failed. Please check your credentials.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+  //redirect after logging in
+  if (user) {
+    return <Redirect href="/(tabs)" />;
+  }
 
-      {/* base gradient — flat charcoal, no color mixing */}
-      <LinearGradient
-        colors={["#141518", "#1B1C20", "#141518"]}
-        style={StyleSheet.absoluteFill}
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          title: "",
+          headerTitleAlign: "left",
+          headerBackButtonDisplayMode: "minimal",
+          headerStyle: {
+            backgroundColor: "#141518",
+          },
+          headerShadowVisible: false,
+          headerTintColor: "#fff",
+
+          headerTitleStyle: {
+            fontSize: 30,
+            fontWeight: "bold",
+          },
+        }}
       />
 
-      {/* single red glow, top center — like a spotlight over a rack */}
-      <View style={styles.glow} pointerEvents="none" />
+      <View style={styles.root}>
+        <StatusBar barStyle="light-content" />
 
-      <View style={styles.safe}>
-        <View style={styles.content}>
-          {/* wordmark */}
-          <View style={styles.brandRow}>
-            <View style={styles.brandDash} />
-            <Text style={styles.brandText}>GYMBRO</Text>
-          </View>
+        {/* base gradient — flat charcoal, no color mixing */}
+        <LinearGradient
+          colors={["#141518", "#1B1C20", "#141518"]}
+          style={StyleSheet.absoluteFill}
+        />
 
-          {/* glass card */}
-          <BlurView intensity={35} tint="dark" style={styles.card}>
-            <View style={styles.cardInner}>
-              <Text style={styles.eyebrow}>WELCOME BACK</Text>
-              <Text style={styles.headline}>Log in and{"\n"}get to work.</Text>
-              <View style={styles.headlineBar} />
-
-              <View style={styles.field}>
-                <Text style={styles.label}>EMAIL</Text>
-                <View style={styles.inputShell}>
-                  <TextInput
-                    placeholder="you@example.com"
-                    placeholderTextColor="#5A5D63"
-                    style={styles.input}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.field}>
-                <Text style={styles.label}>PASSWORD</Text>
-                <View style={styles.inputShell}>
-                  <TextInput
-                    placeholder="••••••••"
-                    placeholderTextColor="#5A5D63"
-                    style={styles.input}
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.forgot}>
-                <Text style={styles.forgotText}>Forgot password?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cta}
-                activeOpacity={0.85}
-                onPress={handleLogin}
-              >
-                <Text style={styles.ctaText}>LOG IN</Text>
-              </TouchableOpacity>
-
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>NEW HERE</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <TouchableOpacity style={styles.secondaryCta} activeOpacity={0.7}>
-                <Text style={styles.secondaryCtaText}>Create an account</Text>
-              </TouchableOpacity>
+        <View style={styles.safe}>
+          <View style={styles.content}>
+            {/* wordmark */}
+            <View style={styles.brandRow}>
+              <Text style={styles.brandText}>GYMBRO</Text>
             </View>
-          </BlurView>
 
-          <Text style={styles.footer}>Josh Haney 2026</Text>
+            {/* glass card */}
+            <BlurView intensity={35} tint="dark" style={styles.card}>
+              <View style={styles.cardInner}>
+                <Text style={styles.eyebrow}>WELCOME BACK</Text>
+                <Text style={styles.headline}>
+                  Log in and{"\n"}get to work.
+                </Text>
+                <View style={styles.headlineBar} />
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>EMAIL</Text>
+                  <View style={styles.inputShell}>
+                    <TextInput
+                      placeholder="you@example.com"
+                      placeholderTextColor="#5A5D63"
+                      style={styles.input}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      value={email}
+                      onChangeText={setEmail}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>PASSWORD</Text>
+                  <View style={styles.inputShell}>
+                    <TextInput
+                      placeholder="••••••••"
+                      placeholderTextColor="#5A5D63"
+                      style={styles.input}
+                      secureTextEntry
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+                  </View>
+                </View>
+
+                <TouchableOpacity style={styles.forgot}>
+                  <Text style={styles.forgotText}>Forgot password?</Text>
+                </TouchableOpacity>
+
+                {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+                <TouchableOpacity
+                  style={styles.cta}
+                  activeOpacity={0.85}
+                  onPress={handleLogin}
+                  disabled={submitting}
+                >
+                  <Text style={styles.ctaText}>
+                    {submitting ? "LOGGING IN..." : "LOG IN"}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>NEW HERE</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.secondaryCta}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.secondaryCtaText}>Create an account</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+
+            <Text style={styles.footer}>Josh Haney 2026</Text>
+          </View>
         </View>
       </View>
-    </View>
+    </>
   );
 }
 
@@ -309,5 +361,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 1,
     marginTop: 24,
+  },
+  errorText: {
+    color: RED,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 12,
+    textAlign: "center",
   },
 });
