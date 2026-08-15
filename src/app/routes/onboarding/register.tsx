@@ -17,44 +17,59 @@ import {
 
 const { width } = Dimensions.get("window");
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
 
-  const login = useAuthStore((state) => state.login);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const register = useAuthStore((state) => state.register);
   const user = useAuthStore((s) => s.user);
 
-  const handleLogin = async () => {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleRegister = async () => {
     setError("");
 
+    const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
+    if (!trimmedUsername) {
+      setError("Enter a username.");
+      return;
+    }
     if (!emailValid) {
       setError("Enter a valid email address.");
       return;
     }
-    if (!password) {
-      setError("Enter your password.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords don't match.");
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await api.post("/auth/login", {
+      const res = await api.post("/auth/register", {
+        username: trimmedUsername,
         email: trimmedEmail,
         password,
       });
 
       const { user, token } = res.data;
-      await login(user, token);
+      await register(user, token);
       // Stack.Protected in RootLayout swaps to (tabs) automatically
     } catch (err: any) {
       if (err.response?.status === 400) {
-        setError(err.response.data?.message ?? "Invalid credentials.");
+        setError(err.response.data?.message ?? "Unable to create account.");
+      } else if (err.response?.status === 409) {
+        setError("That email is already registered.");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -63,9 +78,9 @@ export default function LoginScreen() {
     }
   };
 
-  //redirect after logging in
+  // redirect after registering to user setup questions
   if (user) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="./setup" />;
   }
 
   return (
@@ -80,7 +95,6 @@ export default function LoginScreen() {
           },
           headerShadowVisible: false,
           headerTintColor: "#fff",
-
           headerTitleStyle: {
             fontSize: 30,
             fontWeight: "bold",
@@ -91,7 +105,6 @@ export default function LoginScreen() {
       <View style={styles.root}>
         <StatusBar barStyle="light-content" />
 
-        {/* base gradient — flat charcoal, no color mixing */}
         <LinearGradient
           colors={["#141518", "#1B1C20", "#141518"]}
           style={StyleSheet.absoluteFill}
@@ -99,19 +112,29 @@ export default function LoginScreen() {
 
         <View style={styles.safe}>
           <View style={styles.content}>
-            {/* wordmark */}
             <View style={styles.brandRow}>
               <Text style={styles.brandText}>GYMBRO</Text>
             </View>
 
-            {/* glass card */}
             <BlurView intensity={35} tint="dark" style={styles.card}>
               <View style={styles.cardInner}>
-                <Text style={styles.eyebrow}>WELCOME BACK</Text>
-                <Text style={styles.headline}>
-                  Log in and{"\n"}get to work.
-                </Text>
+                <Text style={styles.eyebrow}>NEW HERE</Text>
+                <Text style={styles.headline}>Create your{"\n"}account.</Text>
                 <View style={styles.headlineBar} />
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>USERNAME</Text>
+                  <View style={styles.inputShell}>
+                    <TextInput
+                      placeholder="gymbro"
+                      placeholderTextColor="#5A5D63"
+                      style={styles.input}
+                      autoCapitalize="none"
+                      value={username}
+                      onChangeText={setUsername}
+                    />
+                  </View>
+                </View>
 
                 <View style={styles.field}>
                   <Text style={styles.label}>EMAIL</Text>
@@ -142,35 +165,45 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.forgot}>
-                  <Text style={styles.forgotText}>Forgot password?</Text>
-                </TouchableOpacity>
+                <View style={styles.field}>
+                  <Text style={styles.label}>CONFIRM PASSWORD</Text>
+                  <View style={styles.inputShell}>
+                    <TextInput
+                      placeholder="••••••••"
+                      placeholderTextColor="#5A5D63"
+                      style={styles.input}
+                      secureTextEntry
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                    />
+                  </View>
+                </View>
 
                 {!!error && <Text style={styles.errorText}>{error}</Text>}
 
                 <TouchableOpacity
                   style={styles.cta}
                   activeOpacity={0.85}
-                  onPress={handleLogin}
+                  onPress={handleRegister}
                   disabled={submitting}
                 >
                   <Text style={styles.ctaText}>
-                    {submitting ? "LOGGING IN..." : "LOG IN"}
+                    {submitting ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
                   </Text>
                 </TouchableOpacity>
 
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>NEW HERE</Text>
+                  <Text style={styles.dividerText}>ALREADY A MEMBER</Text>
                   <View style={styles.dividerLine} />
                 </View>
 
                 <TouchableOpacity
                   style={styles.secondaryCta}
                   activeOpacity={0.7}
-                  onPress={() => router.push("./onboarding/register")}
+                  onPress={() => router.push("../login")}
                 >
-                  <Text style={styles.secondaryCtaText}>Create an account</Text>
+                  <Text style={styles.secondaryCtaText}>Log in instead</Text>
                 </TouchableOpacity>
               </View>
             </BlurView>
@@ -187,53 +220,21 @@ const YELLOW = "#ffd61f";
 const GRAY_BORDER = "rgba(255,255,255,0.09)";
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#141518",
-  },
-  safe: {
-    flex: 1,
-  },
+  root: { flex: 1, backgroundColor: "#141518" },
+  safe: { flex: 1 },
   content: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
   },
-
-  // single ambient glow, red, top-center only
-  glow: {
-    position: "absolute",
-    width: width * 1.03,
-    height: width * 1.03,
-    borderRadius: 999,
-    backgroundColor: YELLOW,
-    top: -width * 0.3,
-    left: -width * 0.03,
-    opacity: 0.14,
-  },
-
-  // brand
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 28,
-  },
-  brandDash: {
-    width: 16,
-    height: 3,
-    borderRadius: 1,
-    backgroundColor: YELLOW,
-    marginRight: 10,
-  },
+  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
   brandText: {
     color: "#EDEDEF",
     fontSize: 15,
     fontWeight: "800",
     letterSpacing: 6,
   },
-
-  // glass card — steel gray, sharper corners than a "soft" glass card
   card: {
     width: "100%",
     borderRadius: 20,
@@ -271,10 +272,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 28,
   },
-
-  field: {
-    marginBottom: 16,
-  },
+  field: { marginBottom: 16 },
   label: {
     color: "#6A6D74",
     fontSize: 11,
@@ -294,18 +292,6 @@ const styles = StyleSheet.create({
     color: "#EDEDEF",
     fontSize: 15,
   },
-
-  forgot: {
-    alignSelf: "flex-end",
-    marginTop: 2,
-    marginBottom: 24,
-  },
-  forgotText: {
-    color: "#84878E",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
   cta: {
     height: 54,
     borderRadius: 12,
@@ -317,6 +303,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
+    marginTop: 4,
   },
   ctaText: {
     color: "#F5F5F6",
@@ -324,18 +311,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 2,
   },
-
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 26,
     marginBottom: 18,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: GRAY_BORDER,
-  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: GRAY_BORDER },
   dividerText: {
     color: "#54575D",
     fontSize: 10,
@@ -343,7 +325,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginHorizontal: 12,
   },
-
   secondaryCta: {
     height: 50,
     borderRadius: 10,
@@ -352,12 +333,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  secondaryCtaText: {
-    color: "#EDEDEF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
+  secondaryCtaText: { color: "#EDEDEF", fontSize: 14, fontWeight: "700" },
   footer: {
     color: "#46484D",
     fontSize: 12,

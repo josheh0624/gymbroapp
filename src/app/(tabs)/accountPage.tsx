@@ -24,7 +24,7 @@ const COLORS = {
   text: "#F5F6F7",
   textMuted: "#84898F",
   textFaint: "#565A60",
-  red: "#FF2A3C",
+  YELLOW: "#ffd61f",
   coral: "#FF4D5E",
 };
 
@@ -236,7 +236,7 @@ function ActionRow({
       <Ionicons
         name={icon}
         size={18}
-        color={COLORS.red}
+        color={COLORS.YELLOW}
         style={styles.rowIcon}
       />
       <Text style={styles.rowLabelAction}>{label}</Text>
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   cardLabel: {
-    color: COLORS.red,
+    color: COLORS.YELLOW,
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 2,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
-    borderColor: COLORS.red,
+    borderColor: COLORS.YELLOW,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: COLORS.red, fontSize: 18, fontWeight: "900" },
+  avatarText: { color: COLORS.YELLOW, fontSize: 18, fontWeight: "900" },
   identity: { flex: 1 },
   username: {
     color: COLORS.text,

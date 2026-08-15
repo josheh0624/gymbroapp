@@ -17,6 +17,7 @@ type AuthState = {
   setLoading: (loading: boolean) => void;
   login: (user: SafeUser, token: string) => Promise<void>;
   logout: () => Promise<void>;
+  register: (user: SafeUser, token: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -31,5 +32,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await SecureStore.deleteItemAsync("token");
     set({ user: null });
+  },
+  register: async (user, token) => {
+    await SecureStore.setItemAsync("token", token);
+    set({ user });
   },
 }));

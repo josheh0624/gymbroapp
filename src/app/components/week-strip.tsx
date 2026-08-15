@@ -1,7 +1,15 @@
-import { GlassView } from "expo-glass-effect";
+import { BlurView } from "expo-blur";
 import moment from "moment";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
+const COLORS = {
+  surface: "rgba(255,255,255,0.045)",
+  surfaceBorder: "rgba(255,255,255,0.09)",
+  text: "#F5F6F7",
+  textMuted: "rgba(255,255,255,0.5)",
+  red: "#FF2A3C",
+};
 
 type Props = {
   setSelectedWeekdayID: Dispatch<SetStateAction<number>>;
@@ -37,10 +45,7 @@ export default function WeekStrip({
 
   return (
     <View style={styles.wrapper}>
-      <GlassView
-        style={[StyleSheet.absoluteFill, styles.glassBackground]}
-        glassEffectStyle="clear"
-      />
+      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={styles.container}>
         {weekDays.map((day, index) => {
           const isSelected = selectedIndex === index;
@@ -92,14 +97,12 @@ export default function WeekStrip({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     borderRadius: 20,
     overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  glassBackground: {
-    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    backgroundColor: COLORS.surface,
   },
   container: {
     flexDirection: "row",
@@ -114,13 +117,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dayLabel: {
-    color: "rgba(255,255,255,0.5)",
+    color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.8,
   },
   selectedDayLabel: {
-    color: "#ff3b30",
+    color: COLORS.red,
   },
   dayNumberBox: {
     width: 34,
@@ -130,23 +133,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   selectedDayNumberBox: {
-    backgroundColor: "#ff3b30",
+    backgroundColor: COLORS.red,
   },
   dayNumber: {
-    color: "#fff",
+    color: COLORS.text,
     fontSize: 17,
     fontWeight: "600",
     fontVariant: ["tabular-nums"],
   },
   selectedDayNumber: {
-    color: "#fff",
+    color: COLORS.text,
     fontWeight: "800",
   },
   todayDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#ff3b30",
+    backgroundColor: COLORS.red,
   },
   dotHidden: {
     opacity: 0,

@@ -5,7 +5,7 @@ import { GlassView } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
-const ACTIVE_COLOR = "#ff0000";
+const ACTIVE_COLOR = "#ffd61f";
 const INACTIVE_COLOR = "#fff";
 
 function GlassTabBar(props: BottomTabBarProps) {
@@ -60,18 +60,17 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="workoutPage"
+        name="index"
         options={{
           title: "Workout",
           headerTitleAlign: "left",
-
           headerTitleStyle: {
             fontSize: 30,
             fontWeight: "bold",
           },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "play-circle" : "play-circle-outline"}
+              name={focused ? "barbell" : "barbell-outline"}
               size={24}
               color={color}
             />
@@ -98,11 +97,7 @@ export default function TabLayout() {
         options={{
           title: "Account",
           tabBarIcon: ({ color, focused }) => (
-            <FontAwesome6
-              name={focused ? "user-large" : "user"}
-              size={24}
-              color={color}
-            />
+            <FontAwesome6 name="circle-user" size={24} color={color} />
           ),
         }}
       />
@@ -122,7 +117,10 @@ const styles = StyleSheet.create({
   },
   row: {
     flex: 1,
+    width: "100%",
     flexDirection: "row",
+    justifyContent: "space-evenly",
+    paddingHorizontal: 12,
   },
   tabItem: {
     flex: 1,
