@@ -1,5 +1,5 @@
 import Router, { Request, Response } from "express";
-import client from "../db/db";
+import pool from "../db/db";
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.post("/create", (req: Request, res: Response) => {
   const insert_query =
     "INSERT INTO exercises (id, name, hit_area) VALUES ($1,$2,$3)";
 
-  client.query(insert_query, [id, name, hit_area], (err, result) => {
+  pool.query(insert_query, [id, name, hit_area], (err, result) => {
     if (err) {
       console.log("error");
       res.send(err);
@@ -34,7 +34,7 @@ router.post("/create", (req: Request, res: Response) => {
 router.get("/getAll", (req: Request, res: Response) => {
   const fetch_query = "SELECT * FROM exercises";
 
-  client.query(fetch_query, (err, result) => {
+  pool.query(fetch_query, (err, result) => {
     if (err) {
       console.log("error");
       res.send(err);
@@ -51,7 +51,7 @@ router.get("/fetchExercise/:id", (req: Request, res: Response) => {
   const id = req.params.id;
   const fetch_query = "SELECT * FROM exercises WHERE id = $1";
 
-  client.query(fetch_query, [id], (err, result) => {
+  pool.query(fetch_query, [id], (err, result) => {
     if (err) {
       console.log("error");
       res.send(err);
@@ -71,7 +71,7 @@ router.put("/updateExercise/:id", (req: Request, res: Response) => {
 
   const update_query = "UPDATE exercises SET name=$2, hit_area=$3 WHERE id=$1";
 
-  client.query(update_query, [id, name, hit_area], (err, result) => {
+  pool.query(update_query, [id, name, hit_area], (err, result) => {
     if (err) {
       console.log("error");
       res.send(err);
@@ -89,7 +89,7 @@ router.delete("/deleteExercise/:id", (req: Request, res: Response) => {
 
   const delete_query = "DELETE FROM exercises WHERE id=$1";
 
-  client.query(delete_query, [id], (err, result) => {
+  pool.query(delete_query, [id], (err, result) => {
     if (err) {
       console.log("error");
       res.send(err);

@@ -8,6 +8,10 @@ type SafeUser = {
   username: string;
   email: string;
   created_at: string;
+  age: number;
+  height_ft: number;
+  weight_lbs: number;
+  sex: string;
 };
 
 type AuthState = {

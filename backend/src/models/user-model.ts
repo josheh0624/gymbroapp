@@ -4,6 +4,10 @@ export interface UserRow {
   email: string;
   password_hash: string; // present in DB, but strip before sending to client
   created_at: Date;
+  age?: number;
+  height_ft?: number;
+  weight_lbs?: number;
+  sex?: string;
 }
 
 declare global {

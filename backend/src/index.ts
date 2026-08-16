@@ -4,6 +4,7 @@ import express from "express";
 import pool from "./db/db";
 import authRoutes from "./routes/auth";
 import { exerciseRouter } from "./routes/exercise";
+import { usersRouter } from "./routes/users";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ pool.connect().then(() => console.log("connected"));
 
 //ROUTES//
 app.use("/auth", authRoutes);
+app.use("/users", usersRouter);
 app.use("/exercises", exerciseRouter);
 
 app.get("/api/health", (req, res) => res.json({ ok: true, time: Date.now() }));
