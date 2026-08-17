@@ -1,36 +1,47 @@
-import liquidGlassStyles from "@/styles/liquidglass";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { GlassView } from "expo-glass-effect";
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
+
+const COLORS = {
+  accent: "#ffd61f",
+  surfaceBorder: "rgba(255,255,255,0.09)",
+};
 
 export default function AddCustomButton() {
-  //
-  // add workouts to workout page calendar
-
   return (
-    <Pressable style={styles.container}>
+    <Pressable
+      style={styles.container}
+      onPress={() => {
+        // TODO: route to custom routine builder
+      }}
+    >
       <GlassView
-        style={liquidGlassStyles.tintedGlassAddButton}
-        glassEffectStyle="clear"
+        style={StyleSheet.absoluteFill}
+        glassEffectStyle="regular"
+        tintColor="rgba(255,214,31,0.14)"
       />
-      <FontAwesome6 name="plus" size={24} color="#fff" />
+      <FontAwesome6 name="plus" size={16} color={COLORS.accent} />
+      <Text style={styles.text}>Create Custom Routine</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexDirection: "row",
     width: "100%",
+    height: 52,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 30,
-    height: 40,
+    gap: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
   },
   text: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.accent,
   },
 });

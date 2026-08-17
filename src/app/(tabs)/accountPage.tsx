@@ -15,9 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ---------------------------------------------------------------------------
 // Design tokens
+// Matches the shared dark glass-card system used across GymBro. Once
+// constants/theme.ts exists, swap this local object for an import from
+// there instead of keeping a per-screen copy.
 // ---------------------------------------------------------------------------
 const COLORS = {
-  bg: "#0A0B0D",
+  bg: "#141518",
   surface: "rgba(255,255,255,0.045)",
   surfaceBorder: "rgba(255,255,255,0.09)",
   hairline: "rgba(255,255,255,0.08)",
@@ -62,7 +65,7 @@ export default function AccountScreen() {
             style={StyleSheet.absoluteFill}
           />
           <LinearGradient
-            colors={["rgba(1, 1, 0, 0.1)", "rgba(214,255,63,0)"]}
+            colors={["rgba(255,214,31,0.07)", "rgba(255,214,31,0)"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -95,8 +98,8 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {/* Stat strip — placeholders until these are tracked */}
-        <View style={styles.statsRow}>
+        {/* Stat grid — placeholders until these are wired up to real data */}
+        <View style={styles.statsGrid}>
           <StatCard label="Workouts" value="—" />
           <StatCard label="Streak" value="—" />
           <StatCard label="PRs" value="—" />
@@ -132,6 +135,32 @@ export default function AccountScreen() {
           />
         </GlassCard>
 
+        {/* Fitness profile — feeds recommendations, plate/rep suggestions, etc. */}
+        <Text style={styles.sectionLabel}>FITNESS PROFILE</Text>
+        <GlassCard padded={false}>
+          <EditableRow icon="body-outline" label="Height" />
+          <Divider />
+          <EditableRow icon="barbell-outline" label="Weight" />
+          <Divider />
+          <EditableRow icon="flag-outline" label="Goal" />
+          <Divider />
+          <EditableRow icon="trending-up-outline" label="Experience Level" />
+        </GlassCard>
+
+        {/* Preferences */}
+        <Text style={styles.sectionLabel}>PREFERENCES</Text>
+        <GlassCard padded={false}>
+          <EditableRow
+            icon="swap-horizontal-outline"
+            label="Units"
+            value="lbs"
+          />
+          <Divider />
+          <EditableRow icon="moon-outline" label="Appearance" value="Dark" />
+          <Divider />
+          <EditableRow icon="timer-outline" label="Default Rest Timer" />
+        </GlassCard>
+
         {/* Settings */}
         <Text style={styles.sectionLabel}>SETTINGS</Text>
         <GlassCard padded={false}>
@@ -140,12 +169,37 @@ export default function AccountScreen() {
           <ActionRow icon="lock-closed-outline" label="Change Password" />
           <Divider />
           <ActionRow icon="notifications-outline" label="Notifications" />
+          <Divider />
+          <ActionRow icon="shield-checkmark-outline" label="Privacy & Data" />
+        </GlassCard>
+
+        {/* Support */}
+        <Text style={styles.sectionLabel}>SUPPORT</Text>
+        <GlassCard padded={false}>
+          <ActionRow icon="help-circle-outline" label="Help & Support" />
+          <Divider />
+          <ActionRow
+            icon="document-text-outline"
+            label="Terms & Privacy Policy"
+          />
+          <Divider />
+          <InfoRow
+            icon="information-circle-outline"
+            label="Version"
+            value="1.0.0"
+            muted
+          />
         </GlassCard>
 
         <Pressable style={styles.logoutButton} onPress={logout}>
           <Ionicons name="log-out-outline" size={18} color={COLORS.coral} />
           <Text style={styles.logoutText}>Log Out</Text>
         </Pressable>
+
+        <Pressable style={styles.deleteAccountButton}>
+          <Text style={styles.deleteAccountText}>Delete Account</Text>
+        </Pressable>
+
         <View style={styles.spacer} />
       </ScrollView>
     </View>
@@ -245,6 +299,49 @@ function ActionRow({
   );
 }
 
+// Tappable row that shows a current value (or "Add" when unset) plus a
+// chevron — for fields the user edits elsewhere (a sheet/modal/screen).
+// Wire onPress up once those edit flows exist.
+function EditableRow({
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value?: string;
+  onPress?: () => void;
+}) {
+  const isEmpty = !value;
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={COLORS.textMuted}
+        style={styles.rowIcon}
+      />
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text
+        style={[styles.rowValue, isEmpty && styles.rowValueMuted]}
+        numberOfLines={1}
+      >
+        {value ?? "Add"}
+      </Text>
+      <Ionicons
+        name="chevron-forward"
+        size={16}
+        color={COLORS.textFaint}
+        style={styles.chevronSpacing}
+      />
+    </Pressable>
+  );
+}
+
 function Divider() {
   return <View style={styles.divider} />;
 }
@@ -334,9 +431,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.hairline,
   },
 
-  statsRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 16,
+  },
   statCard: {
-    flex: 1,
+    flexBasis: "48%",
+    flexGrow: 1,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.surfaceBorder,
@@ -392,6 +495,7 @@ const styles = StyleSheet.create({
   },
   rowValue: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
   rowValueMuted: { color: COLORS.textFaint },
+  chevronSpacing: { marginLeft: 6 },
   mono: {
     fontFamily: Platform.select({ ios: "Courier", android: "monospace" }),
     letterSpacing: 1,
@@ -417,6 +521,17 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.5,
     textTransform: "uppercase",
+  },
+  deleteAccountButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 14,
+    paddingVertical: 8,
+  },
+  deleteAccountText: {
+    color: COLORS.textFaint,
+    fontSize: 12,
+    fontWeight: "600",
   },
   spacer: { height: 56 },
 });

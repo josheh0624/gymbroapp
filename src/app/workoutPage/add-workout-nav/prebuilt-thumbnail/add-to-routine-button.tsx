@@ -16,7 +16,7 @@ export default function AddToRoutine({ routine }: Props) {
   const handleAddWorkout = () => {
     // .replace replaces current screen instead of adding another to stack
     router.replace({
-      pathname: "/(tabs)/workoutPage",
+      pathname: "/",
       params: {
         addedRoutine: JSON.stringify(routine), //sends routine data back as string to send through nav safely
       },

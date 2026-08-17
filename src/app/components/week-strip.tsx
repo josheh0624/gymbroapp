@@ -8,7 +8,8 @@ const COLORS = {
   surfaceBorder: "rgba(255,255,255,0.09)",
   text: "#F5F6F7",
   textMuted: "rgba(255,255,255,0.5)",
-  red: "#FF2A3C",
+  accent: "#ffd61f",
+  accentText: "#141518",
 };
 
 type Props = {
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   selectedDayLabel: {
-    color: COLORS.red,
+    color: COLORS.accent,
   },
   dayNumberBox: {
     width: 34,
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   selectedDayNumberBox: {
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.accent,
   },
   dayNumber: {
     color: COLORS.text,
@@ -142,14 +143,14 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   selectedDayNumber: {
-    color: COLORS.text,
+    color: COLORS.accentText,
     fontWeight: "800",
   },
   todayDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.accent,
   },
   dotHidden: {
     opacity: 0,
