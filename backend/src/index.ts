@@ -4,7 +4,9 @@ import express from "express";
 import pool from "./db/db";
 import authRoutes from "./routes/auth";
 import { exerciseRouter } from "./routes/exercise";
+import { routineRouter } from "./routes/routines";
 import { usersRouter } from "./routes/users";
+import { workoutRouter } from "./routes/workouts";
 
 dotenv.config();
 
@@ -26,6 +28,8 @@ pool.connect().then(() => console.log("connected"));
 app.use("/auth", authRoutes);
 app.use("/users", usersRouter);
 app.use("/exercises", exerciseRouter);
+app.use("/workouts", workoutRouter);
+app.use("/routines", routineRouter);
 
 app.get("/api/health", (req, res) => res.json({ ok: true, time: Date.now() }));
 

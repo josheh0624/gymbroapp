@@ -44,7 +44,7 @@ CREATE TABLE workouts (
 CREATE TABLE workout_exercises (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workout_id    UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-    exercise_id   UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    exercise_id   INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
     sets          INTEGER NOT NULL,
     reps          INTEGER NOT NULL,
     order_index   INTEGER NOT NULL DEFAULT 0, -- preserves display order within the workout

@@ -1,8 +1,9 @@
+// workout-routine-model.ts
 import Workout from "./workout-model";
 
 //workout routine model to store individual days
 export default interface WorkoutRoutine {
-    name: string,
-    id: string,
-    workoutRoutine: Workout[];
+  name: string;
+  id: string;
+  workouts: Workout[]; // renamed from workoutRoutine to match backend key
 }
