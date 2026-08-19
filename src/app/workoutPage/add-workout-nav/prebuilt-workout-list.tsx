@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { prebuiltRoutines } from "../../../data/prebuilt-routines";
 import WorkoutRoutine from "../../../models/workout-routine-model";
+import { useRoutineStore } from "../../../store/routineStore";
 import PrebuiltWorkoutThumbnail from "./prebuilt-thumbnail/prebuilt-workout-thumbnail";
 
 const COLORS = {
@@ -10,8 +12,11 @@ const COLORS = {
 };
 
 export default function PrebuiltWorkoutList() {
-  const validRoutines: WorkoutRoutine[] = Array.isArray(prebuiltRoutines)
-    ? prebuiltRoutines.filter((routine): routine is WorkoutRoutine =>
+  const { routineList, fetchRoutineList } = useRoutineStore();
+  const routinesToDisplay =
+    routineList.length > 0 ? routineList : prebuiltRoutines;
+  const validRoutines: WorkoutRoutine[] = Array.isArray(routinesToDisplay)
+    ? routinesToDisplay.filter((routine): routine is WorkoutRoutine =>
         Boolean(routine),
       )
     : [];
@@ -23,6 +28,10 @@ export default function PrebuiltWorkoutList() {
       </View>
     );
   }
+
+  useEffect(() => {
+    fetchRoutineList();
+  }, [fetchRoutineList]);
 
   return (
     <View style={styles.container}>

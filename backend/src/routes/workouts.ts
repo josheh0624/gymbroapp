@@ -26,15 +26,16 @@ router.get("/getAll", async (req: Request, res: Response) => {
 router.get("/fetchWorkout/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  // pull the workout + its exercises in one query
   const fetch_query = `
     SELECT 
       w.id AS workout_id, w.name AS workout_name, w.days,
       e.id AS exercise_id, e.name AS exercise_name,
-      we.sets, we.reps, we.order_index
+      mg.name AS muscle_group_name,
+      we.sets, we.reps, we.order_index AS exercise_order
     FROM workouts w
     LEFT JOIN workout_exercises we ON we.workout_id = w.id
     LEFT JOIN exercises e ON e.id = we.exercise_id
+    LEFT JOIN muscle_groups mg ON mg.id = e.muscle_group_id
     WHERE w.id = $1
     ORDER BY we.order_index;
   `;
@@ -55,9 +56,10 @@ router.get("/fetchWorkout/:id", async (req: Request, res: Response) => {
         ? rows.map((r) => ({
             id: r.exercise_id,
             name: r.exercise_name,
+            muscleGroupName: r.muscle_group_name,
             sets: r.sets,
             reps: r.reps,
-            order_index: r.order_index,
+            orderIndex: r.exercise_order,
           }))
         : [],
     };

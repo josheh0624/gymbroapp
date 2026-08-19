@@ -1,38 +1,26 @@
-import WorkoutRoutine from "@/models/workout-routine-model";
+import { useRoutineStore } from "@/store/routineStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { GlassView } from "expo-glass-effect";
 import { router } from "expo-router";
 import { Pressable, StyleSheet } from "react-native";
 
 interface Props {
-  routine: WorkoutRoutine;
+  routineId: string;
 }
 
-export default function AddToRoutine({ routine }: Props) {
-  // when button is pressed
-  // navigates to workoutPage
-  //passes routine data back to workoutPage
+export default function AddToRoutine({ routineId }: Props) {
+  const setActiveRoutine = useRoutineStore((s) => s.setActiveRoutine);
 
   const handleAddWorkout = () => {
-    // .replace replaces current screen instead of adding another to stack
-    router.replace({
-      pathname: "/",
-      params: {
-        addedRoutine: JSON.stringify(routine), //sends routine data back as string to send through nav safely
-      },
-    });
+    setActiveRoutine(routineId);
+    router.replace({ pathname: "/" });
   };
 
   return (
-    <>
-      <Pressable style={styles.container} onPress={handleAddWorkout}>
-        <GlassView
-          style={styles.tintedGlassAddButton}
-          glassEffectStyle="clear"
-        />
-        <FontAwesome6 name="plus" size={24} color="#fff" />
-      </Pressable>
-    </>
+    <Pressable style={styles.container} onPress={handleAddWorkout}>
+      <GlassView style={styles.tintedGlassAddButton} glassEffectStyle="clear" />
+      <FontAwesome6 name="plus" size={24} color="#fff" />
+    </Pressable>
   );
 }
 
