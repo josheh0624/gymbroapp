@@ -1,11 +1,16 @@
-import WorkoutRoutine from "@/models/workout-routine-model";
 import liquidGlassStyles from "@/styles/liquidglass";
 import { GlassView } from "expo-glass-effect";
 import { Pressable, StyleSheet, Text } from "react-native";
 import AddToRoutine from "./add-to-routine-button";
 
+interface RoutineListItem {
+  id: string;
+  name: string;
+  workout_count: number;
+}
+
 interface Props {
-  routine: WorkoutRoutine;
+  routine: RoutineListItem;
 }
 
 export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
@@ -16,7 +21,7 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
         glassEffectStyle="clear"
       />
       <Text style={styles.text}>{routine.name}</Text>
-      <AddToRoutine routine={routine} />
+      <AddToRoutine routineId={routine.id} />
     </Pressable>
   );
 }
@@ -33,6 +38,6 @@ const styles = StyleSheet.create({
     top: 0,
     padding: 20,
     fontSize: 24,
-    fontWeight: 600,
+    fontWeight: "600",
   },
 });
