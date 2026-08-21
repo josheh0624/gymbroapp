@@ -1,7 +1,5 @@
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { prebuiltRoutines } from "../../../data/prebuilt-routines";
-import WorkoutRoutine from "../../../models/workout-routine-model";
 import { useRoutineStore } from "../../../store/routineStore";
 import PrebuiltWorkoutThumbnail from "./prebuilt-thumbnail/prebuilt-workout-thumbnail";
 
@@ -13,15 +11,12 @@ const COLORS = {
 
 export default function PrebuiltWorkoutList() {
   const { routineList, fetchRoutineList } = useRoutineStore();
-  const routinesToDisplay =
-    routineList.length > 0 ? routineList : prebuiltRoutines;
-  const validRoutines: WorkoutRoutine[] = Array.isArray(routinesToDisplay)
-    ? routinesToDisplay.filter((routine): routine is WorkoutRoutine =>
-        Boolean(routine),
-      )
-    : [];
 
-  if (validRoutines.length === 0) {
+  useEffect(() => {
+    fetchRoutineList();
+  }, []);
+
+  if (routineList.length === 0) {
     return (
       <View style={styles.emptyCard}>
         <Text style={styles.emptyText}>No prebuilt routines available.</Text>
@@ -29,17 +24,10 @@ export default function PrebuiltWorkoutList() {
     );
   }
 
-  useEffect(() => {
-    fetchRoutineList();
-  }, [fetchRoutineList]);
-
   return (
     <View style={styles.container}>
-      {validRoutines.map((routine, index) => (
-        <PrebuiltWorkoutThumbnail
-          routine={routine}
-          key={`${routine.id ?? "routine"}-${index}`}
-        />
+      {routineList.map((routine) => (
+        <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
       ))}
     </View>
   );

@@ -16,7 +16,7 @@ export default function WorkoutList({ routine, selectedWeekdayID }: Props) {
   };
 
   // ?? means if value is missing then use an empty array []
-  const workouts = routine?.workoutRoutine ?? []; //stores workouts[]
+  const workouts = routine?.workouts ?? []; //stores workouts[]
 
   return (
     <View style={styles.container}>

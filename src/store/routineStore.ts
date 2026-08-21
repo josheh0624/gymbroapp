@@ -50,19 +50,14 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   fetchRoutineList: async () => {
     set({ isLoading: true, error: null });
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${api}/routines/getAll`, { headers });
+      const res = await api.get<RoutineListItem[]>("/routines/getAll");
 
-      if (!res.ok) {
-        throw new Error(`Failed to fetch routines (${res.status})`);
-      }
-
-      const data: RoutineListItem[] = await res.json();
-      set({ routineList: data, isLoading: false });
+      set({ routineList: res.data, isLoading: false });
     } catch (err) {
       console.error("fetchRoutineList error:", err);
       set({
-        error: err instanceof Error ? err.message : "Failed to fetch routines",
+        error:
+          err instanceof Error ? err.message : "Failed to fetch routine list",
         isLoading: false,
       });
     }
@@ -71,24 +66,12 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   fetchRoutineById: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${api}/routines/fetchRoutine/${id}`, {
-        headers,
-      });
-
-      if (res.status === 404) {
-        throw new Error("Routine not found");
-      }
-      if (!res.ok) {
-        throw new Error(`Failed to fetch routine (${res.status})`);
-      }
-
-      const routine: WorkoutRoutine = await res.json();
+      const res = await api.get<WorkoutRoutine>(`/routines/fetchRoutine/${id}`);
 
       set((state) => ({
-        routines: state.routines.some((r) => r.id === routine.id)
-          ? state.routines.map((r) => (r.id === routine.id ? routine : r)) // update existing
-          : [...state.routines, routine], // add new
+        routines: state.routines.some((r) => r.id === res.data.id)
+          ? state.routines.map((r) => (r.id === res.data.id ? res.data : r))
+          : [...state.routines, res.data],
         isLoading: false,
       }));
     } catch (err) {
