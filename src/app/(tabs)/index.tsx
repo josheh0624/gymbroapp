@@ -52,7 +52,7 @@ export default function WorkoutScreen() {
 
     try {
       const parsedRoutine = JSON.parse(encodedRoutine) as WorkoutRoutine;
-      if (!parsedRoutine?.workoutRoutine) return;
+      if (!parsedRoutine?.workouts) return;
       addRoutine(parsedRoutine);
       setActiveRoutine(parsedRoutine.id);
     } catch {
@@ -76,7 +76,7 @@ export default function WorkoutScreen() {
   };
 
   const normalizedSelectedDay = normalizeWeekday(selectedWeekdayID);
-  const visibleWorkouts = (routine?.workoutRoutine ?? []).filter((w) =>
+  const visibleWorkouts = (routine?.workouts ?? []).filter((w) =>
     w.days.some((d) => normalizeWeekday(d) === normalizedSelectedDay),
   );
 
@@ -134,7 +134,7 @@ export default function WorkoutScreen() {
         <View style={styles.listContainer}>
           {hasWorkoutToday ? (
             <WorkoutList
-              routine={routine}
+              activeRoutine={routine}
               selectedWeekdayID={selectedWeekdayID}
             />
           ) : (

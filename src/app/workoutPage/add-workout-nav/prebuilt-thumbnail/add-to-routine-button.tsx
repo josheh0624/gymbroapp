@@ -1,6 +1,5 @@
 import { useRoutineStore } from "@/store/routineStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { GlassView } from "expo-glass-effect";
 import { router } from "expo-router";
 import { Pressable, StyleSheet } from "react-native";
 
@@ -10,42 +9,41 @@ interface Props {
 
 export default function AddToRoutine({ routineId }: Props) {
   const setActiveRoutine = useRoutineStore((s) => s.setActiveRoutine);
+  const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
 
-  const handleAddWorkout = () => {
+  const handleAddWorkout = async () => {
+    await fetchRoutineById(routineId);
     setActiveRoutine(routineId);
     router.replace({ pathname: "/" });
   };
 
   return (
-    <Pressable style={styles.container} onPress={handleAddWorkout}>
-      <GlassView style={styles.tintedGlassAddButton} glassEffectStyle="clear" />
-      <FontAwesome6 name="plus" size={24} color="#fff" />
+    <Pressable
+      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      onPress={handleAddWorkout}
+      hitSlop={8}
+    >
+      <FontAwesome6 name="plus" size={18} color="#141518" />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 30,
-    height: 40,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    textAlign: "center",
-  },
-  tintedGlassAddButton: {
-    position: "absolute",
+  button: {
     width: 40,
     height: 40,
-    borderRadius: 30,
+    borderRadius: 20,
+    backgroundColor: "#ffd61f",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    shadowColor: "#ffd61f",
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.94 }],
   },
 });

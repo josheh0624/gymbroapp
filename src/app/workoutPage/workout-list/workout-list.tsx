@@ -3,11 +3,14 @@ import { StyleSheet, View } from "react-native";
 import WorkoutThumbnail from "./workout-thumbnail/workout-thumbnail";
 
 interface Props {
-  routine?: WorkoutRoutine;
+  activeRoutine?: WorkoutRoutine;
   selectedWeekdayID: number;
 }
 
-export default function WorkoutList({ routine, selectedWeekdayID }: Props) {
+export default function WorkoutList({
+  activeRoutine,
+  selectedWeekdayID,
+}: Props) {
   // functions to map out thumbnails based on workouts in the routine
 
   const normalizeWeekday = (value: number | string) => {
@@ -16,7 +19,7 @@ export default function WorkoutList({ routine, selectedWeekdayID }: Props) {
   };
 
   // ?? means if value is missing then use an empty array []
-  const workouts = routine?.workouts ?? []; //stores workouts[]
+  const workouts = activeRoutine?.workouts ?? []; //stores workouts[]
 
   return (
     <View style={styles.container}>
@@ -32,7 +35,7 @@ export default function WorkoutList({ routine, selectedWeekdayID }: Props) {
             selectedWeekdayID={selectedWeekdayID}
             visible={isVisible}
             key={`${workout.id ?? "workout"}-${index}`}
-            routineID={routine?.id ?? ""}
+            routineID={activeRoutine?.id ?? ""}
           />
         );
       })}

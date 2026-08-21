@@ -15,7 +15,7 @@ export default function WorkoutTodo() {
   ); //gets routine that matches id
 
   //find workout in Workouts that matches ID
-  const workout = routine?.workoutRoutine.find((w) => w.id === id);
+  const workout = routine?.workouts.find((w) => w.id === id);
 
   if (!workout)
     return (

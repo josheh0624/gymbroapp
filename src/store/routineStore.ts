@@ -26,6 +26,7 @@ interface RoutineState {
 
   addRoutine: (routine: WorkoutRoutine) => void; //local add (kept for optimistic updates)
   setActiveRoutine: (id: string) => void; //set the single routine
+  getActiveRoutine: () => WorkoutRoutine | undefined; //get the single active routine
 }
 
 async function authHeaders() {
@@ -125,4 +126,9 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     })),
 
   setActiveRoutine: (id) => set({ activeRoutineId: id }),
+
+  getActiveRoutine: () => {
+    const { routines, activeRoutineId } = get();
+    return routines.find((r) => r.id === activeRoutineId);
+  },
 }));
