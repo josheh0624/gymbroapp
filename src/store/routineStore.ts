@@ -27,6 +27,8 @@ interface RoutineState {
   addRoutine: (routine: WorkoutRoutine) => void; //local add (kept for optimistic updates)
   setActiveRoutine: (id: string) => void; //set the single routine
   getActiveRoutine: () => WorkoutRoutine | undefined; //get the single active routine
+
+  markWorkoutDone: (routineId: string, workoutId: string) => Promise<void>; //POST /routines/markWorkoutDone
 }
 
 async function authHeaders() {
@@ -130,5 +132,33 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   getActiveRoutine: () => {
     const { routines, activeRoutineId } = get();
     return routines.find((r) => r.id === activeRoutineId);
+  },
+
+  markWorkoutDone: async (routineId, workoutId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(`${api}/routines/markWorkoutDone`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ routineId, workoutId }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          body.error || `Failed to mark workout done (${res.status})`,
+        );
+      }
+
+      set({ isLoading: false });
+    } catch (err) {
+      console.error("markWorkoutDone error:", err);
+      set({
+        error:
+          err instanceof Error ? err.message : "Failed to mark workout done",
+        isLoading: false,
+      });
+    }
   },
 }));

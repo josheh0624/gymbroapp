@@ -71,6 +71,47 @@ router.get("/fetchWorkout/:id", async (req: Request, res: Response) => {
   }
 });
 
+router.get(
+  "/fetchWorkoutExercises/:id",
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const fetch_query = `
+    SELECT 
+      e.id AS exercise_id, e.name AS exercise_name,
+      mg.name AS muscle_group_name,
+      we.sets, we.reps, we.order_index AS exercise_order
+    FROM workout_exercises we
+    JOIN exercises e ON e.id = we.exercise_id
+    LEFT JOIN muscle_groups mg ON mg.id = e.muscle_group_id
+    WHERE we.workout_id = $1
+    ORDER BY we.order_index;
+  `;
+
+    try {
+      const result = await pool.query(fetch_query, [id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Workout exercises not found" });
+      }
+
+      const exercises = result.rows.map((r) => ({
+        id: r.exercise_id,
+        name: r.exercise_name,
+        muscleGroupName: r.muscle_group_name,
+        sets: r.sets,
+        reps: r.reps,
+        orderIndex: r.exercise_order,
+      }));
+
+      res.json(exercises);
+    } catch (err) {
+      console.error("error fetchWorkoutExercises:", err);
+      res.status(500).json({ error: "Failed to fetch workout exercises" });
+    }
+  },
+);
+
 router.post("/create", async (req: Request, res: Response) => {
   const { name, days, exercises } = req.body;
   // exercises: [{ exerciseId, sets, reps, orderIndex }]

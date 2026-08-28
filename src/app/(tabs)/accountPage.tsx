@@ -13,12 +13,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// ---------------------------------------------------------------------------
-// Design tokens
-// Matches the shared dark glass-card system used across GymBro. Once
-// constants/theme.ts exists, swap this local object for an import from
-// there instead of keeping a per-screen copy.
-// ---------------------------------------------------------------------------
 const COLORS = {
   bg: "#141518",
   surface: "rgba(255,255,255,0.045)",
@@ -206,10 +200,6 @@ export default function AccountScreen() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Subcomponents
-// ---------------------------------------------------------------------------
-
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.statCard}>
@@ -346,9 +336,6 @@ function Divider() {
   return <View style={styles.divider} />;
 }
 
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { paddingHorizontal: 20, paddingBottom: 48 },
