@@ -9,6 +9,7 @@ CREATE TABLE users (
   height_ft NUMERIC(5,2),
   weight_lbs INTEGER,
   sex TEXT
+  image_url TEXT
 );
 
 -- ============================================

@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.gymbroapp"
+      "bundleIdentifier": "com.anonymous.gymbroapp",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Gym Bro uses your photos so you can add a profile picture."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +30,7 @@
     },
     "plugins": [
       "expo-router",
+
       [
         "expo-splash-screen",
         {
@@ -35,6 +39,14 @@
           "imageWidth": 76
         }
       ],
+
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Gym Bro uses your photos so you can add a profile picture."
+        }
+      ],
+
       "expo-image",
       "expo-status-bar",
       "expo-web-browser"

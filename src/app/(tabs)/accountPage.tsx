@@ -1,9 +1,11 @@
 import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
-import type { ReactNode } from "react";
+import { GlassView } from "expo-glass-effect";
+import * as ImagePicker from "expo-image-picker";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -15,15 +17,46 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const COLORS = {
   bg: "#141518",
+  text: "#F5F6F7",
+  textFaint: "#565A60",
+  textMuted: "rgba(255,255,255,0.5)",
+  accent: "#ffd61f",
   surface: "rgba(255,255,255,0.045)",
   surfaceBorder: "rgba(255,255,255,0.09)",
-  hairline: "rgba(255,255,255,0.08)",
-  text: "#F5F6F7",
-  textMuted: "#84898F",
-  textFaint: "#565A60",
-  YELLOW: "#ffd61f",
   coral: "#FF4D5E",
 };
+
+// Glass surface with a same-color fallback that renders instantly, with the
+// actual glass effect fading in on top — same anti-flash pattern as the
+// workout screen's bottom dock (opaque bg first, GlassView fades in after
+// a short delay, rather than conditionally mounting/unmounting it).
+function GlassSurface() {
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <>
+      <View style={[StyleSheet.absoluteFill, styles.glassFallback]} />
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity }]}>
+        <GlassView
+          style={StyleSheet.absoluteFill}
+          glassEffectStyle="regular"
+          tintColor="rgba(255,255,255,0.06)"
+        />
+      </Animated.View>
+    </>
+  );
+}
 
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
@@ -49,21 +82,11 @@ export default function AccountScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.eyebrow}>ACCOUNT</Text>
+        <Text style={styles.eyebrow}>Account</Text>
 
         {/* Membership card — signature element for the screen */}
         <View style={styles.card}>
-          <BlurView
-            intensity={40}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-          />
-          <LinearGradient
-            colors={["rgba(255,214,31,0.07)", "rgba(255,214,31,0)"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
+          <GlassSurface />
 
           <View style={styles.cardTopRow}>
             <Text style={styles.cardLabel}>GYMBRO MEMBER</Text>
@@ -72,9 +95,7 @@ export default function AccountScreen() {
 
           <View style={styles.avatarRow}>
             <View style={styles.avatarRing}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
-              </View>
+              <ProfilePhoto initials={initials} />
             </View>
             <View style={styles.identity}>
               <Text style={styles.username} numberOfLines={1}>
@@ -82,13 +103,6 @@ export default function AccountScreen() {
               </Text>
               <Text style={styles.memberSince}>MEMBER SINCE {memberSince}</Text>
             </View>
-          </View>
-
-          {/* perforated "tear strip" — ties the card to a real membership card */}
-          <View style={styles.perforation}>
-            {Array.from({ length: 26 }).map((_, i) => (
-              <View key={i} style={styles.perfDot} />
-            ))}
           </View>
         </View>
 
@@ -100,7 +114,7 @@ export default function AccountScreen() {
         </View>
 
         {/* Details */}
-        <Text style={styles.sectionLabel}>DETAILS</Text>
+        <Text style={styles.sectionLabel}>Details</Text>
         <GlassCard>
           <InfoRow
             icon="person-outline"
@@ -130,7 +144,7 @@ export default function AccountScreen() {
         </GlassCard>
 
         {/* Fitness profile — feeds recommendations, plate/rep suggestions, etc. */}
-        <Text style={styles.sectionLabel}>FITNESS PROFILE</Text>
+        <Text style={styles.sectionLabel}>Fitness Profile</Text>
         <GlassCard padded={false}>
           <EditableRow icon="body-outline" label="Height" />
           <Divider />
@@ -142,7 +156,7 @@ export default function AccountScreen() {
         </GlassCard>
 
         {/* Preferences */}
-        <Text style={styles.sectionLabel}>PREFERENCES</Text>
+        <Text style={styles.sectionLabel}>Preferences</Text>
         <GlassCard padded={false}>
           <EditableRow
             icon="swap-horizontal-outline"
@@ -156,7 +170,7 @@ export default function AccountScreen() {
         </GlassCard>
 
         {/* Settings */}
-        <Text style={styles.sectionLabel}>SETTINGS</Text>
+        <Text style={styles.sectionLabel}>Settings</Text>
         <GlassCard padded={false}>
           <ActionRow icon="create-outline" label="Edit Profile" />
           <Divider />
@@ -168,7 +182,7 @@ export default function AccountScreen() {
         </GlassCard>
 
         {/* Support */}
-        <Text style={styles.sectionLabel}>SUPPORT</Text>
+        <Text style={styles.sectionLabel}>Support</Text>
         <GlassCard padded={false}>
           <ActionRow icon="help-circle-outline" label="Help & Support" />
           <Divider />
@@ -209,9 +223,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-// Renders unconditionally — the BlurView is always mounted, never swapped
-// in/out via conditional rendering — to avoid the remount/blank-frame flash
-// on iOS. Toggle what's inside, not whether the glass surface exists.
 function GlassCard({
   children,
   padded = true,
@@ -221,7 +232,7 @@ function GlassCard({
 }) {
   return (
     <View style={styles.glassCard}>
-      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+      <GlassSurface />
       <View style={padded ? styles.glassCardInner : undefined}>{children}</View>
     </View>
   );
@@ -280,7 +291,7 @@ function ActionRow({
       <Ionicons
         name={icon}
         size={18}
-        color={COLORS.YELLOW}
+        color={COLORS.accent}
         style={styles.rowIcon}
       />
       <Text style={styles.rowLabelAction}>{label}</Text>
@@ -289,9 +300,6 @@ function ActionRow({
   );
 }
 
-// Tappable row that shows a current value (or "Add" when unset) plus a
-// chevron — for fields the user edits elsewhere (a sheet/modal/screen).
-// Wire onPress up once those edit flows exist.
 function EditableRow({
   icon,
   label,
@@ -336,17 +344,60 @@ function Divider() {
   return <View style={styles.divider} />;
 }
 
+export function ProfilePhoto({ initials }: { initials: string }) {
+  const [image, setImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      alert("Permission to access photos is required.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  return (
+    <Pressable onPress={pickImage}>
+      <View style={styles.avatar}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.profileImage} />
+        ) : (
+          <Text style={styles.avatarText}>{initials}</Text>
+        )}
+      </View>
+
+      <View style={styles.cameraButton}>
+        <Ionicons name="camera" size={14} color={COLORS.bg} />
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { paddingHorizontal: 20, paddingBottom: 48 },
 
   eyebrow: {
-    color: COLORS.textFaint,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 4,
+    color: COLORS.text,
+    fontSize: 24,
+    fontWeight: "700",
     marginTop: 12,
     marginBottom: 16,
+  },
+
+  glassFallback: {
+    backgroundColor: COLORS.surface,
   },
 
   card: {
@@ -363,7 +414,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   cardLabel: {
-    color: COLORS.YELLOW,
+    color: COLORS.accent,
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 2,
@@ -374,10 +425,15 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
-    borderColor: COLORS.YELLOW,
+    borderColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
+    shadowColor: COLORS.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
   },
   avatar: {
     width: 54,
@@ -387,20 +443,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: COLORS.YELLOW, fontSize: 18, fontWeight: "900" },
+  avatarText: { color: COLORS.accent, fontSize: 18, fontWeight: "900" },
   identity: { flex: 1 },
   username: {
     color: COLORS.text,
     fontSize: 22,
     fontWeight: "900",
-    letterSpacing: 1,
     textTransform: "uppercase",
   },
   memberSince: {
     color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.5,
     marginTop: 4,
   },
   perforation: {
@@ -408,14 +462,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.hairline,
+    borderTopColor: COLORS.surfaceBorder,
     borderStyle: "dashed",
   },
   perfDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.hairline,
+    backgroundColor: COLORS.surfaceBorder,
   },
 
   statsGrid: {
@@ -439,15 +493,13 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 10,
     fontWeight: "700",
-    letterSpacing: 1.5,
     marginTop: 4,
   },
 
   sectionLabel: {
     color: COLORS.textFaint,
     fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 3,
+    fontWeight: "700",
     marginTop: 28,
     marginBottom: 10,
   },
@@ -488,7 +540,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  divider: { height: 1, backgroundColor: COLORS.hairline, marginLeft: 46 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.surfaceBorder,
+    marginLeft: 46,
+  },
 
   logoutButton: {
     flexDirection: "row",
@@ -521,4 +577,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   spacer: { height: 56 },
+  profileImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+
+  cameraButton: {
+    position: "absolute",
+    right: -4,
+    bottom: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.accent,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

@@ -82,7 +82,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: "Muscle Map",
+            headerShown: false,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? "body" : "body-outline"}
