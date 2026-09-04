@@ -42,7 +42,9 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
     w.id AS workout_id, w.name AS workout_name, w.days,
     e.id AS exercise_id, e.name AS exercise_name,
     mg.name AS muscle_group_name,
-    we.sets, we.reps, we.order_index AS exercise_order
+    we.id AS workout_exercise_id,
+    we.sets, we.reps, we.order_index AS exercise_order,
+    we.weight, we.is_done
   FROM workout_routines r
   JOIN workout_routine_days wrd ON wrd.routine_id = r.id
   JOIN workouts w ON w.id = wrd.workout_id
@@ -55,7 +57,6 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
 
   try {
     const result = await pool.query(fetch_query, [id]);
-
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Routine not found" });
     }
@@ -82,11 +83,14 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
       }
       workoutMap.get(row.workout_id).exercises.push({
         id: row.exercise_id,
+        workoutExerciseId: row.workout_exercise_id,
         name: row.exercise_name,
         muscleGroupName: row.muscle_group_name,
         sets: row.sets,
         reps: row.reps,
         orderIndex: row.exercise_order,
+        weight: row.weight,
+        isDone: row.is_done,
       });
     }
 
@@ -96,6 +100,67 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch routine" });
   }
 });
+
+// Toggle a single exercise's done state — :id is workout_exercises.id
+router.patch("/markExerciseDone/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { isDone } = req.body as { isDone: boolean };
+
+  if (typeof isDone !== "boolean") {
+    return res.status(400).json({ error: "isDone (boolean) is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE workout_exercises
+       SET is_done = $1
+       WHERE id = $2
+       RETURNING id, is_done`,
+      [isDone, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Exercise not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("error markExerciseDone:", err);
+    res.status(500).json({ error: "Failed to update exercise" });
+  }
+});
+
+// Finish a whole workout — :id is workouts.id, marks every exercise in it done
+router.put(
+  ["/workoutDone/:id", "/markDone/:id"],
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+      const workoutResult = await pool.query(
+        "SELECT id FROM workouts WHERE id = $1",
+        [id],
+      );
+
+      if (workoutResult.rows.length === 0) {
+        return res.status(404).json({ error: "Workout not found" });
+      }
+
+      const result = await pool.query(
+        `UPDATE workout_exercises
+       SET is_done = true
+       WHERE workout_id = $1
+       RETURNING id, is_done`,
+        [id],
+      );
+
+      res.json({ workoutId: id, workoutDone: true, updated: result.rows });
+    } catch (err) {
+      console.error("error markDone:", err);
+      res.status(500).json({ error: "Failed to mark workout done" });
+    }
+  },
+);
 
 router.post("/create", async (req: Request, res: Response) => {
   const { name, workoutIds } = req.body; // workoutIds: string[] of workout UUIDs, in order

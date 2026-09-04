@@ -56,8 +56,21 @@ type WeeklyMuscleHit = {
   timesHit: number;
 };
 
+type WeeklyStats = {
+  totalWorkouts: number;
+  totalSets: number;
+  totalExercises: number;
+  daysTrained: number;
+};
+
+type WeeklySummaryResponse = {
+  muscleHits: WeeklyMuscleHit[];
+  stats: WeeklyStats;
+};
+
 function useWeeklyMuscleHits() {
   const [data, setData] = useState<WeeklyMuscleHit[]>([]);
+  const [stats, setStats] = useState<WeeklyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,13 +78,14 @@ function useWeeklyMuscleHits() {
     try {
       setLoading(true);
       setError(null);
-      const token = await SecureStore.getItemAsync("token");
+      const token = await SecureStore.getItemAsync("token"); // match your real key name
       const res = await fetch(`${api}/workouts/muscle-summary?range=week`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json: WeeklyMuscleHit[] = await res.json();
-      setData(json);
+      const json: WeeklySummaryResponse = await res.json();
+      setData(json.muscleHits);
+      setStats(json.stats);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Couldn't load this week's data",
@@ -85,11 +99,11 @@ function useWeeklyMuscleHits() {
     fetchData();
   }, [fetchData]);
 
-  return { data, loading, error, refetch: fetchData };
+  return { data, stats, loading, error, refetch: fetchData };
 }
 
 export default function MuscleMapScreen() {
-  const { data, loading, error, refetch } = useWeeklyMuscleHits();
+  const { data, stats, loading, error, refetch } = useWeeklyMuscleHits();
   const [side, setSide] = useState<"front" | "back">("front");
 
   const bodyData = useMemo(() => {
@@ -103,6 +117,13 @@ export default function MuscleMapScreen() {
       }
     }
     return parts;
+  }, [data]);
+
+  const mostTrained = useMemo(() => {
+    if (data.length === 0) return null;
+    return data.reduce((max, curr) =>
+      curr.timesHit > max.timesHit ? curr : max,
+    );
   }, [data]);
 
   return (
@@ -170,6 +191,44 @@ export default function MuscleMapScreen() {
                 />
               )}
             </BlurView>
+
+            {stats && (
+              <View style={styles.statsSection}>
+                <Text style={styles.sectionLabel}>This Week</Text>
+                <View style={styles.statsGrid}>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>{stats.totalWorkouts}</Text>
+                    <Text style={styles.statLabel}>Workouts</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>{stats.daysTrained}/7</Text>
+                    <Text style={styles.statLabel}>Days trained</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>{stats.totalSets}</Text>
+                    <Text style={styles.statLabel}>Sets</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>{stats.totalExercises}</Text>
+                    <Text style={styles.statLabel}>Exercises</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>{data.length}</Text>
+                    <Text style={styles.statLabel}>Muscle groups</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text
+                      style={[styles.statValue, styles.statValueAccent]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {mostTrained ? mostTrained.muscleGroupName : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>Most trained</Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
@@ -255,6 +314,35 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   retryText: { color: COLORS.bg, fontWeight: "700" },
+  statsSection: { marginTop: 20, paddingHorizontal: 20 },
+  sectionLabel: {
+    color: COLORS.textFaint,
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  statCard: {
+    flexBasis: "31%",
+    flexGrow: 1,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    gap: 4,
+  },
+  statValue: { color: COLORS.text, fontSize: 20, fontWeight: "700" },
+  statValueAccent: { color: COLORS.accent, fontSize: 16 },
+  statLabel: { color: COLORS.textFaint, fontSize: 11, textAlign: "center" },
   legendRow: {
     flexDirection: "row",
     justifyContent: "center",

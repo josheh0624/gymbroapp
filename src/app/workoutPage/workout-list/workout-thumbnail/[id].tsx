@@ -1,14 +1,11 @@
 import NotFoundScreen from "@/app/+not-found";
 import { useRoutineStore } from "@/store/routineStore";
 import { BlurView } from "expo-blur";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function WorkoutTodo() {
-  const [exerciseDone, setExerciseDone] = useState(false);
-
-  //unique workoutID
   const { id, routineID } = useLocalSearchParams<{
     id: string;
     routineID: string;
@@ -16,10 +13,20 @@ export default function WorkoutTodo() {
 
   const routine = useRoutineStore((s) =>
     s.routines.find((r) => r.id === routineID),
-  ); //gets routine that matches id
+  );
+  const markExerciseDone = useRoutineStore((s) => s.markExerciseDone);
+  const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
 
-  //find workout in Workouts that matches ID
   const workout = routine?.workouts.find((w) => w.id === id);
+  const needsWorkoutExerciseIds = workout?.exercises.some(
+    (exercise) => !exercise.workoutExerciseId,
+  );
+
+  useEffect(() => {
+    if (routineID && needsWorkoutExerciseIds) {
+      void fetchRoutineById(routineID);
+    }
+  }, [fetchRoutineById, routineID, needsWorkoutExerciseIds]);
 
   if (!workout)
     return (
@@ -34,9 +41,7 @@ export default function WorkoutTodo() {
         options={{
           headerTitle: "Workout",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: {
-            backgroundColor: "#141518",
-          },
+          headerStyle: { backgroundColor: "#141518" },
           headerShadowVisible: false,
           headerTintColor: "#F5F6F7",
           headerTitleStyle: {
@@ -51,9 +56,9 @@ export default function WorkoutTodo() {
           <Text style={styles.title}>{workout.name}</Text>
 
           <View style={styles.list}>
-            {workout.exercises.map((exercise, index) => (
+            {workout.exercises.map((exercise) => (
               <BlurView
-                key={exercise.id ?? index}
+                key={exercise.workoutExerciseId ?? exercise.id}
                 intensity={40}
                 tint="dark"
                 style={styles.card}
@@ -61,12 +66,20 @@ export default function WorkoutTodo() {
                 <Pressable
                   style={[
                     styles.cardPressable,
-                    exerciseDone && {
+                    exercise.isDone && {
                       opacity: 0.7,
                       backgroundColor: "#176007",
                     },
                   ]}
-                  onPress={() => setExerciseDone(!exerciseDone)}
+                  onPress={() =>
+                    markExerciseDone(
+                      routineID,
+                      workout.id,
+                      exercise.workoutExerciseId,
+                      exercise.id,
+                      !exercise.isDone,
+                    )
+                  }
                 >
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
                   <Text style={styles.exerciseDetail}>
@@ -94,15 +107,15 @@ function DoneButton({
   routineID: string;
   workoutID: string;
 }) {
+  const router = useRouter();
   const markWorkoutDone = useRoutineStore((s) => s.markWorkoutDone);
-
-  const handlePress = () => {
-    markWorkoutDone(routineID, workoutID);
-  };
 
   return (
     <Pressable
-      onPress={handlePress}
+      onPress={async () => {
+        const completed = await markWorkoutDone(routineID, workoutID);
+        if (completed) router.replace("/workoutPage/workoutPage");
+      }}
       style={{
         backgroundColor: "#ffd61f",
         paddingVertical: 20,
@@ -130,27 +143,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 20,
   },
-  list: {
-    gap: 12,
-  },
+  list: { gap: 12 },
   card: {
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
-  cardPressable: {
-    padding: 16,
-  },
+  cardPressable: { padding: 16 },
   exerciseName: {
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
   },
-  exerciseDetail: {
-    color: "#ffd61f",
-    fontSize: 14,
-    fontWeight: "500",
-  },
+  exerciseDetail: { color: "#ffd61f", fontSize: 14, fontWeight: "500" },
 });

@@ -1,11 +1,10 @@
 import { useAuthStore } from "@/store/authStore";
+import { COLORS } from "@/styles/appStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
-import * as ImagePicker from "expo-image-picker";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import {
   Animated,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -14,17 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const COLORS = {
-  bg: "#141518",
-  text: "#F5F6F7",
-  textFaint: "#565A60",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
-  surface: "rgba(255,255,255,0.045)",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-  coral: "#FF4D5E",
-};
+import { PickProfilePhoto } from "../components/profile-photo";
 
 // Glass surface with a same-color fallback that renders instantly, with the
 // actual glass effect fading in on top — same anti-flash pattern as the
@@ -95,7 +84,7 @@ export default function AccountScreen() {
 
           <View style={styles.avatarRow}>
             <View style={styles.avatarRing}>
-              <ProfilePhoto initials={initials} />
+              <PickProfilePhoto initials={initials} />
             </View>
             <View style={styles.identity}>
               <Text style={styles.username} numberOfLines={1}>
@@ -104,13 +93,6 @@ export default function AccountScreen() {
               <Text style={styles.memberSince}>MEMBER SINCE {memberSince}</Text>
             </View>
           </View>
-        </View>
-
-        {/* Stat grid — placeholders until these are wired up to real data */}
-        <View style={styles.statsGrid}>
-          <StatCard label="Workouts" value="—" />
-          <StatCard label="Streak" value="—" />
-          <StatCard label="PRs" value="—" />
         </View>
 
         {/* Details */}
@@ -344,46 +326,6 @@ function Divider() {
   return <View style={styles.divider} />;
 }
 
-export function ProfilePhoto({ initials }: { initials: string }) {
-  const [image, setImage] = useState<string | null>(null);
-
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      alert("Permission to access photos is required.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
-  };
-
-  return (
-    <Pressable onPress={pickImage}>
-      <View style={styles.avatar}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.profileImage} />
-        ) : (
-          <Text style={styles.avatarText}>{initials}</Text>
-        )}
-      </View>
-
-      <View style={styles.cameraButton}>
-        <Ionicons name="camera" size={14} color={COLORS.bg} />
-      </View>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { paddingHorizontal: 20, paddingBottom: 48 },
@@ -497,7 +439,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    color: COLORS.textFaint,
+    color: COLORS.text,
     fontSize: 12,
     fontWeight: "700",
     marginTop: 28,

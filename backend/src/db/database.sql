@@ -50,6 +50,8 @@ CREATE TABLE workout_exercises (
     reps          INTEGER NOT NULL,
     order_index   INTEGER NOT NULL DEFAULT 0, -- preserves display order within the workout
     UNIQUE (workout_id, exercise_id)
+    ADD COLUMN weight NUMERIC(6,2),
+    ADD COLUMN is_done BOOLEAN NOT NULL DEFAULT false;
 );
 
 -- ============================================

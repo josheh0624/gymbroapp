@@ -1,4 +1,5 @@
 import { useRoutineStore } from "@/store/routineStore";
+import { COLORS, WORKOUT_PAGE_COLORS } from "@/styles/appStyles";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
@@ -21,17 +22,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import WorkoutRoutine from "../../models/workout-routine-model";
 import WeekStrip from "../components/week-strip";
 import WorkoutList from "./workout-list/workout-list";
-
-const COLORS = {
-  bg: "#141518",
-  text: "#F5F6F7",
-  textFaint: "#565A60",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
-  surface: "rgba(255,255,255,0.045)",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-  dockNeutral: "#34353A",
-};
 
 const WEEKDAY_NAMES = [
   "Sunday",
@@ -480,7 +470,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   addWorkoutButton: {
-    backgroundColor: COLORS.dockNeutral,
+    backgroundColor: WORKOUT_PAGE_COLORS.dockNeutral,
   },
   dockLabel: {
     color: COLORS.text,
@@ -493,6 +483,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   changeRoutineButton: {
-    backgroundColor: COLORS.dockNeutral,
+    backgroundColor: WORKOUT_PAGE_COLORS.dockNeutral,
   },
 });

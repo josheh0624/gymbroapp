@@ -6,4 +6,7 @@ export default interface Exercise {
   sets: number;
   reps: number;
   orderIndex: number;
+  workoutExerciseId?: string; // workout_exercises row id — needed to mark done / set weight
+  weight?: number | null;
+  isDone?: boolean;
 }
