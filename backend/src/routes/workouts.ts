@@ -1,5 +1,6 @@
 import Router, { Request, Response } from "express";
 import pool from "../db/db";
+import { protect } from "../middleware/auth";
 
 const router = Router();
 
@@ -8,6 +9,117 @@ const router = Router();
 
 router.get("/", (req: Request, res: Response) => {
   res.send("hello from workouts route");
+});
+
+router.get("/muscle-summary", protect, async (req: Request, res: Response) => {
+  const start = String(req.query.start ?? "");
+  const end = String(req.query.end ?? "");
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+    return res.status(400).json({ error: "start and end must be YYYY-MM-DD" });
+  }
+
+  const completedWorkoutsQuery = `
+      WITH completed_workouts AS (
+        SELECT w.id, MAX(we.completed_at) AS completed_at
+        FROM workouts w
+        JOIN workout_exercises we ON we.workout_id = w.id
+        GROUP BY w.id
+        HAVING BOOL_AND(we.is_done)
+      )
+      SELECT id, completed_at::date AS completed_date
+      FROM completed_workouts
+      WHERE completed_at::date <= CURRENT_DATE
+      ORDER BY completed_date;
+    `;
+
+  const muscleHitsQuery = `
+      WITH completed_workouts AS (
+        SELECT w.id, MAX(we.completed_at) AS completed_at
+        FROM workouts w
+        JOIN workout_exercises we ON we.workout_id = w.id
+        GROUP BY w.id
+        HAVING BOOL_AND(we.is_done)
+      )
+      SELECT mg.name AS "muscleGroupName",
+             COUNT(DISTINCT cw.id)::integer AS "timesHit"
+      FROM completed_workouts cw
+      JOIN workout_exercises we ON we.workout_id = cw.id
+      JOIN exercises e ON e.id = we.exercise_id
+      JOIN muscle_groups mg ON mg.id = e.muscle_group_id
+      WHERE cw.completed_at::date BETWEEN $1::date AND $2::date
+      GROUP BY mg.name
+      ORDER BY "timesHit" DESC, mg.name;
+    `;
+
+  const statsQuery = `
+      WITH completed_workouts AS (
+        SELECT w.id, MAX(we.completed_at) AS completed_at
+        FROM workouts w
+        JOIN workout_exercises we ON we.workout_id = w.id
+        GROUP BY w.id
+        HAVING BOOL_AND(we.is_done)
+      )
+      SELECT COUNT(DISTINCT cw.id)::integer AS "totalWorkouts",
+             COALESCE(SUM(we.sets), 0)::integer AS "totalSets",
+             COUNT(we.id)::integer AS "totalExercises",
+             COUNT(DISTINCT cw.completed_at::date)::integer AS "daysTrained",
+             COALESCE(SUM(we.weight * we.reps * we.sets), 0)::float8 AS "totalVolume"
+      FROM completed_workouts cw
+      JOIN workout_exercises we ON we.workout_id = cw.id
+      WHERE cw.completed_at::date BETWEEN $1::date AND $2::date;
+    `;
+
+  const dailyActivityQuery = `
+      WITH completed_workouts AS (
+        SELECT w.id, MAX(we.completed_at) AS completed_at
+        FROM workouts w
+        JOIN workout_exercises we ON we.workout_id = w.id
+        GROUP BY w.id
+        HAVING BOOL_AND(we.is_done)
+      ), days AS (
+        SELECT generate_series($1::date, $2::date, '1 day'::interval)::date AS date
+      )
+      SELECT to_char(days.date, 'YYYY-MM-DD') AS date,
+             (COUNT(cw.id) > 0) AS trained,
+             COUNT(cw.id)::integer AS "workoutCount"
+      FROM days
+      LEFT JOIN completed_workouts cw ON cw.completed_at::date = days.date
+      GROUP BY days.date
+      ORDER BY days.date;
+    `;
+
+  try {
+    const [muscleHits, stats, dailyActivity, completedWorkouts] =
+      await Promise.all([
+        pool.query(muscleHitsQuery, [start, end]),
+        pool.query(statsQuery, [start, end]),
+        pool.query(dailyActivityQuery, [start, end]),
+        pool.query(completedWorkoutsQuery),
+      ]);
+
+    const completedDates = new Set(
+      completedWorkouts.rows.map((row) =>
+        new Date(row.completed_date).toISOString().slice(0, 10),
+      ),
+    );
+    let currentStreak = 0;
+    const cursor = new Date();
+    cursor.setUTCHours(0, 0, 0, 0);
+    while (completedDates.has(cursor.toISOString().slice(0, 10))) {
+      currentStreak += 1;
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+
+    res.json({
+      muscleHits: muscleHits.rows,
+      stats: { ...stats.rows[0], currentStreak },
+      dailyActivity: dailyActivity.rows,
+    });
+  } catch (err) {
+    console.error("error muscle-summary:", err);
+    res.status(500).json({ error: "Failed to fetch muscle summary" });
+  }
 });
 
 // static routes before /:id-style routes

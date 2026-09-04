@@ -113,7 +113,8 @@ router.patch("/markExerciseDone/:id", async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `UPDATE workout_exercises
-       SET is_done = $1
+       SET is_done = $1,
+           completed_at = CASE WHEN $1 THEN COALESCE(completed_at, NOW()) ELSE NULL END
        WHERE id = $2
        RETURNING id, is_done`,
       [isDone, id],
@@ -148,7 +149,8 @@ router.put(
 
       const result = await pool.query(
         `UPDATE workout_exercises
-       SET is_done = true
+       SET is_done = true,
+           completed_at = COALESCE(completed_at, NOW())
        WHERE workout_id = $1
        RETURNING id, is_done`,
         [id],

@@ -8,7 +8,7 @@ CREATE TABLE users (
   age INTEGER,
   height_ft NUMERIC(5,2),
   weight_lbs INTEGER,
-  sex TEXT
+  sex TEXT,
   image_url TEXT
 );
 
@@ -49,9 +49,10 @@ CREATE TABLE workout_exercises (
     sets          INTEGER NOT NULL,
     reps          INTEGER NOT NULL,
     order_index   INTEGER NOT NULL DEFAULT 0, -- preserves display order within the workout
-    UNIQUE (workout_id, exercise_id)
-    ADD COLUMN weight NUMERIC(6,2),
-    ADD COLUMN is_done BOOLEAN NOT NULL DEFAULT false;
+    UNIQUE (workout_id, exercise_id),
+    weight NUMERIC(6,2),
+    is_done BOOLEAN NOT NULL DEFAULT false,
+    completed_at TIMESTAMPTZ;
 );
 
 -- ============================================
