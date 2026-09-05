@@ -67,6 +67,7 @@ export default function TabLayout() {
           <GlassTabBar {...(props as unknown as BottomTabBarProps)} />
         )}
         screenOptions={{
+          animation: "none",
           tabBarActiveTintColor: "#ffd33d",
           tabBarInactiveTintColor: "#fff",
           headerStyle: {

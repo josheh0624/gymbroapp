@@ -1,8 +1,8 @@
 import { api } from "@/lib/api";
-import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "@/styles/appStyles";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,22 +13,16 @@ import {
   View,
 } from "react-native";
 import Body, { type ExtendedBodyPart } from "react-native-body-highlighter";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Ellipse } from "react-native-svg";
 
-const COLORS = {
-  bg: "#141518",
-  text: "#F5F6F7",
-  textFaint: "#565A60",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
-  surface: "rgba(255,255,255,0.045)",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
-
-// Light red for 1 session this week, deep red for 2+ — still reads as
-// "trained = red" but lets you spot under/over-trained groups at a glance.
-const HIT_COLORS = ["#F87171", "#DC2626"];
-const UNHIT_FILL = "#2B2D33";
+// One hue (the app's accent yellow) at two opacities — a lighter tone for
+// 1 session this week, full strength for 2+ — so the diagram reads as a
+// single calm highlight instead of competing with anything else on the
+// page. Untrained muscles sit just a shade above the background so only
+// what's actually been trained pulls the eye.
+const HIT_COLORS = ["rgba(255,214,31,0.45)", COLORS.accent];
+const UNHIT_FILL = "#1C1D22";
 
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -53,6 +47,43 @@ const MUSCLE_GROUP_TO_SLUG: Record<string, string[]> = {
   Glutes: ["gluteal"],
   Calves: ["calves"],
 };
+
+// react-native-body-highlighter draws its own head/hair as one detailed
+// illustrated shape, which reads oddly next to the plain muscle silhouette.
+// We hide that shape (`hiddenParts`) and draw a single soft oval over the
+// same spot instead. These numbers describe where the head sits inside the
+// library's fixed 724-unit-wide body artwork (front and back happen to
+// place it in almost the same spot), measured directly from its SVG paths.
+const BODY_SCALE = 1.4;
+const BODY_RENDER_WIDTH_UNSCALED = 200;
+const BODY_RENDER_HEIGHT_UNSCALED = 400;
+const BODY_VIEWBOX_HALF_WIDTH = 724;
+const HEAD_CENTER_X = 362;
+const HEAD_CENTER_Y = 172;
+const HEAD_RADIUS_X = 64;
+const HEAD_RADIUS_Y = 82;
+
+function SimpleHeadOutline({ scale }: { scale: number }) {
+  const factor = (BODY_RENDER_WIDTH_UNSCALED * scale) / BODY_VIEWBOX_HALF_WIDTH;
+  return (
+    <Svg
+      width={BODY_RENDER_WIDTH_UNSCALED * scale}
+      height={BODY_RENDER_HEIGHT_UNSCALED * scale}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    >
+      <Ellipse
+        cx={HEAD_CENTER_X * factor}
+        cy={HEAD_CENTER_Y * factor}
+        rx={HEAD_RADIUS_X * factor}
+        ry={HEAD_RADIUS_Y * factor}
+        fill={UNHIT_FILL}
+        stroke={COLORS.textFaint}
+        strokeWidth={1.5}
+      />
+    </Svg>
+  );
+}
 
 type WeeklyMuscleHit = {
   muscleGroupName: string;
@@ -176,7 +207,37 @@ function useWeeklyMuscleHits(weekOffset: number) {
   return { data, stats, dailyActivity, loading, error, refetch: fetchData };
 }
 
+// Plain icon touch target — no fill, no border, no glass backdrop. Opacity
+// dips on press/disabled instead of a button "chrome" so icons read as part
+// of the page rather than as boxed controls.
+function IconButton({
+  icon,
+  onPress,
+  disabled,
+  color = COLORS.text,
+  size = 20,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  disabled?: boolean;
+  color?: string;
+  size?: number;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={12}
+      style={({ pressed }) => (pressed || disabled) && styles.iconButtonDimmed}
+    >
+      <Ionicons name={icon} size={size} color={color} />
+    </Pressable>
+  );
+}
+
 export default function MuscleMapScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [weekOffset, setWeekOffset] = useState(0);
   const { data, stats, dailyActivity, loading, error, refetch } =
     useWeeklyMuscleHits(weekOffset);
@@ -220,9 +281,6 @@ export default function MuscleMapScreen() {
     }
     return computeLongestStreak(dailyActivity);
   }, [isCurrentWeek, stats?.currentStreak, dailyActivity]);
-  const streakLabel = isCurrentWeek
-    ? "Current streak"
-    : "Best streak that week";
 
   // Don't count days that haven't happened yet as rest days.
   const restDays = useMemo(() => {
@@ -243,382 +301,340 @@ export default function MuscleMapScreen() {
 
   return (
     <>
-      <View style={styles.root}>
-        <LinearGradient
-          colors={["#1b1d23", COLORS.bg]}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.header}>
-              <Text style={styles.title}>Muscle Map</Text>
-              <Text style={styles.subtitle}>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.topBar}>
+            <IconButton
+              icon="chevron-down"
+              size={22}
+              onPress={() => router.back()}
+            />
+            <IconButton
+              icon="refresh-outline"
+              onPress={refetch}
+              disabled={loading}
+            />
+          </View>
+
+          <View style={styles.header}>
+            <IconButton
+              icon="chevron-back"
+              onPress={goToPreviousWeek}
+              disabled={loading}
+            />
+            <View style={styles.headerTitleBlock}>
+              <Text style={styles.eyebrow}>Muscle Map</Text>
+              <Text style={styles.dateText}>{weekLabel}</Text>
+              {weekLabel !== weekRangeText && (
+                <Text style={styles.weekRangeCaption}>{weekRangeText}</Text>
+              )}
+            </View>
+            <IconButton
+              icon="chevron-forward"
+              onPress={goToNextWeek}
+              disabled={loading || isCurrentWeek}
+            />
+          </View>
+
+          {/* Subtitle and streak used to be two separate rows; combined so
+              the header settles into a single line instead of stacking. */}
+          {!loading && !error && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaText}>
                 {data.length > 0
                   ? `${data.length} muscle group${data.length === 1 ? "" : "s"} trained ${isCurrentWeek ? "this week" : "that week"}`
                   : `Nothing logged ${isCurrentWeek ? "yet this week" : "that week"}`}
               </Text>
-            </View>
-
-            <View style={styles.weekNavRow}>
-              <Pressable
-                onPress={goToPreviousWeek}
-                disabled={loading}
-                style={({ pressed }) => [
-                  styles.weekNavButton,
-                  (loading || pressed) && styles.weekNavButtonPressed,
-                ]}
-                hitSlop={8}
-              >
-                <Ionicons name="chevron-back" size={18} color={COLORS.text} />
-              </Pressable>
-
-              <View style={styles.weekLabelContainer}>
-                <Text style={styles.weekLabelText}>{weekLabel}</Text>
-                {weekLabel !== weekRangeText && (
-                  <Text style={styles.weekRangeText}>{weekRangeText}</Text>
-                )}
-              </View>
-
-              <Pressable
-                onPress={goToNextWeek}
-                disabled={loading || isCurrentWeek}
-                style={({ pressed }) => [
-                  styles.weekNavButton,
-                  (loading || isCurrentWeek || pressed) &&
-                    styles.weekNavButtonPressed,
-                  isCurrentWeek && styles.weekNavButtonDisabled,
-                ]}
-                hitSlop={8}
-              >
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={isCurrentWeek ? COLORS.textFaint : COLORS.text}
-                />
-              </Pressable>
-            </View>
-
-            {!loading && !error && stats && (
-              <View style={styles.streakBanner}>
-                <View style={styles.streakIconWrap}>
-                  <Ionicons name="flame" size={20} color={COLORS.accent} />
-                </View>
-                <View style={styles.streakTextWrap}>
-                  <Text style={styles.streakValue}>
+              {streakValue > 0 && (
+                <View style={styles.streakInline}>
+                  <Ionicons name="flame" size={13} color={COLORS.accent} />
+                  <Text style={styles.streakInlineText}>
                     {streakValue} day{streakValue === 1 ? "" : "s"}
                   </Text>
-                  <Text style={styles.streakLabel}>{streakLabel}</Text>
                 </View>
-              </View>
-            )}
-
-            {!loading && !error && dailyActivity.length > 0 && (
-              <View style={styles.dayStripRow}>
-                {dailyActivity.map((day, index) => {
-                  const isFuture = dayjs(day.date).isAfter(dayjs(), "day");
-                  const isToday = dayjs(day.date).isSame(dayjs(), "day");
-                  return (
-                    <View key={day.date} style={styles.dayPill}>
-                      <View
-                        style={[
-                          styles.dayDot,
-                          day.trained && styles.dayDotTrained,
-                          isFuture && styles.dayDotFuture,
-                          isToday && styles.dayDotToday,
-                        ]}
-                      />
-                      <Text style={styles.dayLabel}>{DAY_LABELS[index]}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            <View style={styles.toggleRow}>
-              {(["front", "back"] as const).map((option) => (
-                <Pressable
-                  key={option}
-                  onPress={() => setSide(option)}
-                  style={[
-                    styles.toggleButton,
-                    side === option && styles.toggleButtonActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      side === option && styles.toggleTextActive,
-                    ]}
-                  >
-                    {option === "front" ? "Front" : "Back"}
-                  </Text>
-                </Pressable>
-              ))}
+              )}
             </View>
+          )}
 
-            <BlurView intensity={20} tint="dark" style={styles.diagramCard}>
-              {loading ? (
-                <ActivityIndicator color={COLORS.accent} size="large" />
-              ) : error ? (
-                <View style={styles.errorState}>
-                  <Text style={styles.errorText}>{error}</Text>
-                  <Pressable onPress={refetch} style={styles.retryButton}>
-                    <Text style={styles.retryText}>Retry</Text>
-                  </Pressable>
-                </View>
-              ) : (
+          {!loading && !error && dailyActivity.length > 0 && (
+            <View style={styles.dayStripRow}>
+              {dailyActivity.map((day, index) => {
+                const isFuture = dayjs(day.date).isAfter(dayjs(), "day");
+                const isToday = dayjs(day.date).isSame(dayjs(), "day");
+                return (
+                  <View key={day.date} style={styles.dayPill}>
+                    <View
+                      style={[
+                        styles.dayDot,
+                        day.trained && styles.dayDotTrained,
+                        isFuture && styles.dayDotFuture,
+                        isToday && styles.dayDotToday,
+                      ]}
+                    />
+                    <Text style={styles.dayLabel}>{DAY_LABELS[index]}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          <View style={styles.sideToggleRow}>
+            <Pressable onPress={() => setSide("front")} hitSlop={8}>
+              <Text
+                style={[
+                  styles.sideToggleText,
+                  side === "front" && styles.sideToggleTextActive,
+                ]}
+              >
+                Front
+              </Text>
+            </Pressable>
+            <Text style={styles.sideToggleDivider}>·</Text>
+            <Pressable onPress={() => setSide("back")} hitSlop={8}>
+              <Text
+                style={[
+                  styles.sideToggleText,
+                  side === "back" && styles.sideToggleTextActive,
+                ]}
+              >
+                Back
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.diagramCard}>
+            {loading ? (
+              <ActivityIndicator color={COLORS.accent} size="large" />
+            ) : error ? (
+              <View style={styles.errorState}>
+                <Text style={styles.errorText}>{error}</Text>
+                <Pressable onPress={refetch} hitSlop={8}>
+                  <Text style={styles.retryText}>Retry</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View
+                style={{
+                  width: BODY_RENDER_WIDTH_UNSCALED * BODY_SCALE,
+                  height: BODY_RENDER_HEIGHT_UNSCALED * BODY_SCALE,
+                }}
+              >
                 <Body
                   data={bodyData}
                   side={side}
                   gender="male"
-                  scale={1.4}
+                  scale={BODY_SCALE}
                   colors={HIT_COLORS}
                   defaultFill={UNHIT_FILL}
                   border="none"
+                  hiddenParts={["head", "hair"]}
                 />
-              )}
-            </BlurView>
-
-            {stats && (
-              <View style={styles.statsSection}>
-                <Text style={styles.sectionLabel}>
-                  {isCurrentWeek ? "This Week" : weekRangeText}
-                </Text>
-                <View style={styles.statsGrid}>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{stats.totalWorkouts}</Text>
-                    <Text style={styles.statLabel}>Workouts</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{stats.daysTrained}/7</Text>
-                    <Text style={styles.statLabel}>Days trained</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{restDays}</Text>
-                    <Text style={styles.statLabel}>Rest days</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{stats.totalSets}</Text>
-                    <Text style={styles.statLabel}>Sets</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{avgSetsPerWorkout}</Text>
-                    <Text style={styles.statLabel}>Avg sets/workout</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{stats.totalExercises}</Text>
-                    <Text style={styles.statLabel}>Exercises</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{data.length}</Text>
-                    <Text style={styles.statLabel}>Muscle groups</Text>
-                  </View>
-                  {typeof stats.totalVolume === "number" && (
-                    <View style={styles.statCard}>
-                      <Text style={styles.statValue}>
-                        {stats.totalVolume.toLocaleString()}
-                      </Text>
-                      <Text style={styles.statLabel}>Volume (lbs)</Text>
-                    </View>
-                  )}
-                  <View style={styles.statCard}>
-                    <Text
-                      style={[styles.statValue, styles.statValueAccent]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                    >
-                      {mostTrained ? mostTrained.muscleGroupName : "—"}
-                    </Text>
-                    <Text style={styles.statLabel}>Most trained</Text>
-                  </View>
-                </View>
+                <SimpleHeadOutline scale={BODY_SCALE} />
               </View>
             )}
+          </View>
 
-            {data.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipRow}
-              >
-                {data.map((hit) => (
-                  <View key={hit.muscleGroupName} style={styles.chip}>
-                    <Text style={styles.chipText}>{hit.muscleGroupName}</Text>
-                    <Text style={styles.chipCount}>{hit.timesHit}×</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-          </ScrollView>
-        </SafeAreaView>
+          {stats && (
+            <View style={styles.statsSection}>
+              <Text style={styles.sectionLabel}>
+                {isCurrentWeek ? "This Week" : weekRangeText}
+              </Text>
+
+              {/* Just the headline numbers up front — everything else reads
+                  as a single caption line below instead of its own card. */}
+              <View style={styles.statsPrimaryRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{stats.totalWorkouts}</Text>
+                  <Text style={styles.statLabel}>Workouts</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{stats.daysTrained}/7</Text>
+                  <Text style={styles.statLabel}>Days trained</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{stats.totalSets}</Text>
+                  <Text style={styles.statLabel}>Sets</Text>
+                </View>
+              </View>
+
+              <Text style={styles.statsSecondaryLine}>
+                {restDays} rest day{restDays === 1 ? "" : "s"} ·{" "}
+                {avgSetsPerWorkout} sets/workout · {stats.totalExercises}{" "}
+                exercise{stats.totalExercises === 1 ? "" : "s"}
+                {typeof stats.totalVolume === "number"
+                  ? ` · ${stats.totalVolume.toLocaleString()} lbs`
+                  : ""}
+              </Text>
+
+              {mostTrained && (
+                <Text style={styles.mostTrainedLine}>
+                  Most trained:{" "}
+                  <Text style={styles.mostTrainedValue}>
+                    {mostTrained.muscleGroupName}
+                  </Text>
+                </Text>
+              )}
+            </View>
+          )}
+
+          {data.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              {data.map((hit) => (
+                <View key={hit.muscleGroupName} style={styles.chip}>
+                  <Text style={styles.chipText}>{hit.muscleGroupName}</Text>
+                  <Text style={styles.chipCount}>{hit.timesHit}×</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </ScrollView>
       </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safeArea: { flex: 1 },
-  scrollContent: { paddingBottom: 32 },
-  header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
-  title: { color: COLORS.text, fontSize: 24, fontWeight: "700" },
-  subtitle: { color: COLORS.textMuted, fontSize: 13, marginTop: 4 },
-  weekNavRow: {
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 4,
+  },
+  iconButtonDimmed: { opacity: 0.4 },
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 6,
   },
-  weekNavButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-    alignItems: "center",
-    justifyContent: "center",
+  headerTitleBlock: { flex: 1, alignItems: "center" },
+  eyebrow: {
+    color: COLORS.accent,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginBottom: 4,
+    textAlign: "center",
   },
-  weekNavButtonPressed: { opacity: 0.5 },
-  weekNavButtonDisabled: { opacity: 0.3 },
-  weekLabelContainer: { alignItems: "center" },
-  weekLabelText: { color: COLORS.text, fontSize: 16, fontWeight: "700" },
-  weekRangeText: {
-    color: COLORS.textFaint,
+  dateText: {
+    color: COLORS.text,
+    fontSize: 26,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+    textAlign: "center",
+  },
+  weekRangeCaption: {
+    color: COLORS.textMuted,
     fontSize: 12,
     marginTop: 2,
+    textAlign: "center",
   },
-  streakBanner: {
+  metaRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginHorizontal: 20,
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-  },
-  streakIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,214,31,0.12)",
-    alignItems: "center",
+    flexWrap: "wrap",
     justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 20,
+    marginTop: 4,
   },
-  streakTextWrap: { flex: 1 },
-  streakValue: { color: COLORS.text, fontSize: 17, fontWeight: "700" },
-  streakLabel: { color: COLORS.textFaint, fontSize: 12, marginTop: 1 },
+  metaText: { color: COLORS.textMuted, fontSize: 13, textAlign: "center" },
+  streakInline: { flexDirection: "row", alignItems: "center", gap: 4 },
+  streakInlineText: { color: COLORS.text, fontSize: 13, fontWeight: "700" },
   dayStripRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 32,
-    marginTop: 14,
+    marginTop: 16,
   },
   dayPill: { alignItems: "center", gap: 6 },
   dayDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: UNHIT_FILL,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.textFaint,
+    opacity: 0.35,
   },
-  dayDotTrained: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  dayDotFuture: { backgroundColor: "transparent", borderStyle: "dashed" },
-  dayDotToday: { borderColor: COLORS.text, borderWidth: 1.5 },
+  dayDotTrained: { backgroundColor: COLORS.accent, opacity: 1 },
+  dayDotFuture: { opacity: 0.12 },
+  dayDotToday: { width: 8, height: 8, borderRadius: 4 },
   dayLabel: { color: COLORS.textFaint, fontSize: 11 },
-  toggleRow: {
+  sideToggleRow: {
     flexDirection: "row",
+    alignItems: "center",
     alignSelf: "center",
-    marginTop: 16,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-    padding: 4,
-    gap: 4,
+    gap: 10,
+    marginTop: 14,
   },
-  toggleButton: { paddingVertical: 8, paddingHorizontal: 24, borderRadius: 9 },
-  toggleButtonActive: { backgroundColor: COLORS.accent },
-  toggleText: { color: COLORS.textFaint, fontSize: 14, fontWeight: "600" },
-  toggleTextActive: { color: COLORS.bg },
+  sideToggleText: {
+    color: COLORS.textFaint,
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  sideToggleTextActive: { color: COLORS.text },
+  sideToggleDivider: { color: COLORS.textFaint, fontSize: 13 },
   diagramCard: {
     marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    marginTop: 10,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 380,
     overflow: "hidden",
   },
-  errorState: { alignItems: "center", gap: 12, padding: 24 },
+  errorState: { alignItems: "center", gap: 10, padding: 24 },
   errorText: { color: COLORS.textMuted, textAlign: "center" },
-  retryButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.accent,
-  },
-  retryText: { color: COLORS.bg, fontWeight: "700" },
-  statsSection: { marginTop: 20, paddingHorizontal: 20 },
+  retryText: { color: COLORS.accent, fontSize: 14, fontWeight: "700" },
+  statsSection: { marginTop: 22, paddingHorizontal: 20 },
   sectionLabel: {
-    color: COLORS.textFaint,
+    color: COLORS.text,
     fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 10,
+    fontWeight: "800",
+    marginBottom: 12,
   },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
+  statsPrimaryRow: { flexDirection: "row" },
   statCard: {
-    flexBasis: "31%",
-    flexGrow: 1,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
+    width: "33.33%",
+    paddingVertical: 10,
     alignItems: "center",
     gap: 4,
   },
-  statValue: { color: COLORS.text, fontSize: 20, fontWeight: "700" },
-  statValueAccent: { color: COLORS.accent, fontSize: 16 },
+  statValue: { color: COLORS.text, fontSize: 22, fontWeight: "700" },
   statLabel: { color: COLORS.textFaint, fontSize: 11, textAlign: "center" },
-  legendRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginTop: 16,
+  statsSecondaryLine: {
+    color: COLORS.textFaint,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 6,
+    lineHeight: 18,
   },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { color: COLORS.textFaint, fontSize: 12 },
-  chipRow: { paddingHorizontal: 20, paddingVertical: 16, gap: 8 },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+  mostTrainedLine: {
+    color: COLORS.textFaint,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 6,
   },
-  chipText: { color: COLORS.text, fontSize: 13, fontWeight: "500" },
+  mostTrainedValue: { color: COLORS.accent, fontWeight: "700" },
+  chipRow: { paddingHorizontal: 20, paddingVertical: 10, gap: 22 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 4 },
+  chipText: { color: COLORS.textMuted, fontSize: 13, fontWeight: "500" },
   chipCount: { color: COLORS.accent, fontSize: 13, fontWeight: "700" },
 });
