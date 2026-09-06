@@ -39,6 +39,12 @@ interface RoutineState {
     exerciseId: string,
     isDone: boolean,
   ) => Promise<void>;
+  updateExerciseDetails: (
+    routineId: string,
+    workoutId: string,
+    workoutExerciseId: string,
+    updates: { weight?: number | null; reps?: number; sets?: number },
+  ) => Promise<void>;
 }
 
 async function authHeaders() {
@@ -247,6 +253,50 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       console.error("markExerciseDone error:", err);
       set({
         error: err instanceof Error ? err.message : "Failed to update exercise",
+      });
+    }
+  },
+
+  updateExerciseDetails: async (
+    routineId,
+    workoutId,
+    workoutExerciseId,
+    updates,
+  ) => {
+    set((state) => ({
+      routines: state.routines.map((routine) =>
+        routine.id !== routineId
+          ? routine
+          : {
+              ...routine,
+              workouts: routine.workouts.map((workout) =>
+                workout.id !== workoutId
+                  ? workout
+                  : {
+                      ...workout,
+                      exercises: workout.exercises.map((exercise) =>
+                        exercise.workoutExerciseId !== workoutExerciseId
+                          ? exercise
+                          : { ...exercise, ...updates },
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+
+    try {
+      await api.patch(
+        `/routines/updateExerciseDetails/${workoutExerciseId}`,
+        updates,
+      );
+    } catch (err) {
+      console.error("updateExerciseDetails error:", err);
+      set({
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to update exercise details",
       });
     }
   },

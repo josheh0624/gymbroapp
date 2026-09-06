@@ -64,7 +64,15 @@ router.get("/muscle-summary", protect, async (req: Request, res: Response) => {
              COALESCE(SUM(we.sets), 0)::integer AS "totalSets",
              COUNT(we.id)::integer AS "totalExercises",
              COUNT(DISTINCT cw.completed_at::date)::integer AS "daysTrained",
-             COALESCE(SUM(we.weight * we.reps * we.sets), 0)::float8 AS "totalVolume"
+             COALESCE(SUM(we.weight * we.reps * we.sets), 0)::float8 AS "totalVolume",
+             COUNT(DISTINCT we.exercise_id) FILTER (
+               WHERE we.weight IS NOT NULL
+                 AND we.weight = (
+                   SELECT MAX(history.weight)
+                   FROM workout_exercises history
+                   WHERE history.exercise_id = we.exercise_id
+                 )
+             )::integer AS "personalRecords"
       FROM completed_workouts cw
       JOIN workout_exercises we ON we.workout_id = cw.id
       WHERE cw.completed_at::date BETWEEN $1::date AND $2::date;
@@ -143,7 +151,9 @@ router.get("/fetchWorkout/:id", async (req: Request, res: Response) => {
       w.id AS workout_id, w.name AS workout_name, w.days,
       e.id AS exercise_id, e.name AS exercise_name,
       mg.name AS muscle_group_name,
-      we.sets, we.reps, we.order_index AS exercise_order
+      we.id AS workout_exercise_id,
+      we.sets, we.reps, we.weight, we.is_done,
+      we.order_index AS exercise_order
     FROM workouts w
     LEFT JOIN workout_exercises we ON we.workout_id = w.id
     LEFT JOIN exercises e ON e.id = we.exercise_id
@@ -167,10 +177,13 @@ router.get("/fetchWorkout/:id", async (req: Request, res: Response) => {
       exercises: rows[0].exercise_id
         ? rows.map((r) => ({
             id: r.exercise_id,
+            workoutExerciseId: r.workout_exercise_id,
             name: r.exercise_name,
             muscleGroupName: r.muscle_group_name,
             sets: r.sets,
             reps: r.reps,
+            weight: r.weight,
+            isDone: r.is_done,
             orderIndex: r.exercise_order,
           }))
         : [],
@@ -192,7 +205,9 @@ router.get(
     SELECT 
       e.id AS exercise_id, e.name AS exercise_name,
       mg.name AS muscle_group_name,
-      we.sets, we.reps, we.order_index AS exercise_order
+      we.id AS workout_exercise_id,
+      we.sets, we.reps, we.weight, we.is_done,
+      we.order_index AS exercise_order
     FROM workout_exercises we
     JOIN exercises e ON e.id = we.exercise_id
     LEFT JOIN muscle_groups mg ON mg.id = e.muscle_group_id
@@ -209,10 +224,13 @@ router.get(
 
       const exercises = result.rows.map((r) => ({
         id: r.exercise_id,
+        workoutExerciseId: r.workout_exercise_id,
         name: r.exercise_name,
         muscleGroupName: r.muscle_group_name,
         sets: r.sets,
         reps: r.reps,
+        weight: r.weight,
+        isDone: r.is_done,
         orderIndex: r.exercise_order,
       }));
 
@@ -226,7 +244,7 @@ router.get(
 
 router.post("/create", async (req: Request, res: Response) => {
   const { name, days, exercises } = req.body;
-  // exercises: [{ exerciseId, sets, reps, orderIndex }]
+  // exercises: [{ exerciseId, sets, reps, weight, orderIndex }]
 
   if (!name) {
     return res.status(400).json({ error: "name is required" });
@@ -246,8 +264,15 @@ router.post("/create", async (req: Request, res: Response) => {
       for (let i = 0; i < exercises.length; i++) {
         const ex = exercises[i];
         await client.query(
-          "INSERT INTO workout_exercises (workout_id, exercise_id, sets, reps, order_index) VALUES ($1, $2, $3, $4, $5)",
-          [workoutId, ex.exerciseId, ex.sets, ex.reps, ex.orderIndex ?? i],
+          "INSERT INTO workout_exercises (workout_id, exercise_id, sets, reps, weight, order_index) VALUES ($1, $2, $3, $4, $5, $6)",
+          [
+            workoutId,
+            ex.exerciseId,
+            ex.sets,
+            ex.reps,
+            ex.weight ?? null,
+            ex.orderIndex ?? i,
+          ],
         );
       }
     }

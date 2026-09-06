@@ -131,6 +131,60 @@ router.patch("/markExerciseDone/:id", async (req: Request, res: Response) => {
   }
 });
 
+router.patch(
+  "/updateExerciseDetails/:id",
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { weight, reps, sets } = req.body as {
+      weight?: number | null;
+      reps?: number;
+      sets?: number;
+    };
+
+    if (
+      (weight !== undefined && weight !== null && typeof weight !== "number") ||
+      (reps !== undefined && typeof reps !== "number") ||
+      (sets !== undefined && typeof sets !== "number") ||
+      (weight !== undefined && weight !== null && weight < 0) ||
+      (reps !== undefined && reps <= 0) ||
+      (sets !== undefined && sets <= 0)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "weight, reps, and sets must be valid numbers" });
+    }
+
+    try {
+      const result = await pool.query(
+        `UPDATE workout_exercises
+         SET weight = CASE WHEN $1 THEN $2 ELSE weight END,
+           reps = CASE WHEN $3 THEN $4 ELSE reps END,
+           sets = CASE WHEN $5 THEN $6 ELSE sets END
+         WHERE id = $7
+       RETURNING id, weight, reps, sets`,
+        [
+          weight !== undefined,
+          weight ?? null,
+          reps !== undefined,
+          reps ?? null,
+          sets !== undefined,
+          sets ?? null,
+          id,
+        ],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Exercise not found" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error("error updateExerciseDetails:", err);
+      res.status(500).json({ error: "Failed to update exercise details" });
+    }
+  },
+);
+
 // Finish a whole workout — :id is workouts.id, marks every exercise in it done
 router.put(
   ["/workoutDone/:id", "/markDone/:id"],
