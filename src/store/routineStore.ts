@@ -32,6 +32,7 @@ interface RoutineState {
   getExerciseById: (routineId: string, workoutId: string) => Promise<void>;
 
   markWorkoutDone: (routineId: string, workoutId: string) => Promise<boolean>;
+  resetWorkoutProgress: (routineId: string, workoutId: string) => void;
   markExerciseDone: (
     routineId: string,
     workoutId: string,
@@ -174,7 +175,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   markWorkoutDone: async (routineId, workoutId) => {
     set({ isLoading: true, error: null });
     try {
-      await api.put(`/routines/markDone/${workoutId}`);
+      await api.put(`/routines/markDone/${workoutId}`, { routineId });
 
       set((state) => ({
         routines: state.routines.map((r) =>
@@ -209,6 +210,28 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
+  resetWorkoutProgress: (routineId, workoutId) =>
+    set((state) => ({
+      routines: state.routines.map((routine) =>
+        routine.id !== routineId
+          ? routine
+          : {
+              ...routine,
+              workouts: routine.workouts.map((workout) =>
+                workout.id !== workoutId
+                  ? workout
+                  : {
+                      ...workout,
+                      exercises: workout.exercises.map((exercise) => ({
+                        ...exercise,
+                        isDone: false,
+                      })),
+                    },
+              ),
+            },
+      ),
+    })),
+
   markExerciseDone: async (
     routineId,
     workoutId,
@@ -240,21 +263,8 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
 
     applyIsDone(isDone); // optimistic — feels instant on tap
 
-    if (!workoutExerciseId) {
-      set({ error: "Exercise details are still loading." });
-      return;
-    }
-
-    try {
-      await api.patch(`/routines/markExerciseDone/${workoutExerciseId}`, {
-        isDone,
-      });
-    } catch (err) {
-      console.error("markExerciseDone error:", err);
-      set({
-        error: err instanceof Error ? err.message : "Failed to update exercise",
-      });
-    }
+    // Exercise completion is intentionally local during a workout. The
+    // backend is updated once the user presses Finish Workout.
   },
 
   updateExerciseDetails: async (
@@ -263,33 +273,40 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     workoutExerciseId,
     updates,
   ) => {
-    set((state) => ({
-      routines: state.routines.map((routine) =>
-        routine.id !== routineId
-          ? routine
-          : {
-              ...routine,
-              workouts: routine.workouts.map((workout) =>
-                workout.id !== workoutId
-                  ? workout
-                  : {
-                      ...workout,
-                      exercises: workout.exercises.map((exercise) =>
-                        exercise.workoutExerciseId !== workoutExerciseId
-                          ? exercise
-                          : { ...exercise, ...updates },
-                      ),
-                    },
-              ),
-            },
-      ),
-    }));
-
     try {
-      await api.patch(
-        `/routines/updateExerciseDetails/${workoutExerciseId}`,
-        updates,
-      );
+      const response = await api.patch<{
+        id: string;
+        weight: number | null;
+        reps: number;
+        sets: number;
+      }>(`/routines/updateExerciseDetails/${workoutExerciseId}`, updates);
+
+      set((state) => ({
+        routines: state.routines.map((routine) =>
+          routine.id !== routineId
+            ? routine
+            : {
+                ...routine,
+                workouts: routine.workouts.map((workout) =>
+                  workout.id !== workoutId
+                    ? workout
+                    : {
+                        ...workout,
+                        exercises: workout.exercises.map((exercise) =>
+                          exercise.workoutExerciseId !== workoutExerciseId
+                            ? exercise
+                            : {
+                                ...exercise,
+                                weight: response.data.weight,
+                                reps: response.data.reps,
+                                sets: response.data.sets,
+                              },
+                        ),
+                      },
+                ),
+              },
+        ),
+      }));
     } catch (err) {
       console.error("updateExerciseDetails error:", err);
       set({

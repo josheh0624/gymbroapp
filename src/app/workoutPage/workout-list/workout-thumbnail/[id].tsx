@@ -2,7 +2,7 @@ import NotFoundScreen from "@/app/+not-found";
 import { useRoutineStore } from "@/store/routineStore";
 import { BlurView } from "expo-blur";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -25,7 +25,9 @@ export default function WorkoutTodo() {
   );
   const markExerciseDone = useRoutineStore((s) => s.markExerciseDone);
   const updateExerciseDetails = useRoutineStore((s) => s.updateExerciseDetails);
+  const resetWorkoutProgress = useRoutineStore((s) => s.resetWorkoutProgress);
   const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
+  const resetKey = useRef<string | null>(null);
 
   const workout = routine?.workouts.find((w) => w.id === id);
   const needsWorkoutExerciseIds = workout?.exercises.some(
@@ -37,6 +39,20 @@ export default function WorkoutTodo() {
       void fetchRoutineById(routineID);
     }
   }, [fetchRoutineById, needsWorkoutExerciseIds, routine, routineID, workout]);
+
+  useEffect(() => {
+    if (
+      !routineID ||
+      !workout ||
+      needsWorkoutExerciseIds ||
+      resetKey.current === `${routineID}:${id}`
+    ) {
+      return;
+    }
+
+    resetKey.current = `${routineID}:${id}`;
+    resetWorkoutProgress(routineID, workout.id);
+  }, [id, needsWorkoutExerciseIds, resetWorkoutProgress, routineID, workout]);
 
   if (!workout && routineID) {
     return (

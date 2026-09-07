@@ -73,6 +73,14 @@ CREATE TABLE workout_routine_days (
     UNIQUE (routine_id, workout_id)
 );
 
+  CREATE TABLE routine_exercise_progress (
+    routine_id UUID NOT NULL REFERENCES workout_routines(id) ON DELETE CASCADE,
+    workout_exercise_id UUID NOT NULL REFERENCES workout_exercises(id) ON DELETE CASCADE,
+    is_done BOOLEAN NOT NULL DEFAULT false,
+    completed_at TIMESTAMPTZ,
+    PRIMARY KEY (routine_id, workout_exercise_id)
+  );
+
 -- Helpful indexes for common lookups
 CREATE INDEX idx_workout_exercises_workout_id ON workout_exercises(workout_id);
 CREATE INDEX idx_workout_routine_days_routine_id ON workout_routine_days(routine_id);

@@ -44,13 +44,15 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
     mg.name AS muscle_group_name,
     we.id AS workout_exercise_id,
     we.sets, we.reps, we.order_index AS exercise_order,
-    we.weight, we.is_done
+    we.weight::float8 AS weight, COALESCE(rep.is_done, false) AS is_done
   FROM workout_routines r
   JOIN workout_routine_days wrd ON wrd.routine_id = r.id
   JOIN workouts w ON w.id = wrd.workout_id
   JOIN workout_exercises we ON we.workout_id = w.id
   JOIN exercises e ON e.id = we.exercise_id
   LEFT JOIN muscle_groups mg ON mg.id = e.muscle_group_id
+  LEFT JOIN routine_exercise_progress rep
+    ON rep.routine_id = r.id AND rep.workout_exercise_id = we.id
   WHERE r.id = $1
   ORDER BY wrd.order_index, we.order_index;
 `;
@@ -104,20 +106,34 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
 // Toggle a single exercise's done state — :id is workout_exercises.id
 router.patch("/markExerciseDone/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { isDone } = req.body as { isDone: boolean };
+  const { routineId, isDone } = req.body as {
+    routineId?: string;
+    isDone: boolean;
+  };
 
-  if (typeof isDone !== "boolean") {
-    return res.status(400).json({ error: "isDone (boolean) is required" });
+  if (!routineId || typeof isDone !== "boolean") {
+    return res
+      .status(400)
+      .json({ error: "routineId and isDone (boolean) are required" });
   }
 
   try {
     const result = await pool.query(
-      `UPDATE workout_exercises
-       SET is_done = $1,
-           completed_at = CASE WHEN $1 THEN COALESCE(completed_at, NOW()) ELSE NULL END
-       WHERE id = $2
-       RETURNING id, is_done`,
-      [isDone, id],
+      `INSERT INTO routine_exercise_progress
+         (routine_id, workout_exercise_id, is_done, completed_at)
+       SELECT $1, we.id, $2,
+              CASE WHEN $2 THEN COALESCE(rep.completed_at, NOW()) ELSE NULL END
+       FROM workout_exercises we
+       JOIN workout_routine_days wrd ON wrd.workout_id = we.workout_id
+       LEFT JOIN routine_exercise_progress rep
+         ON rep.routine_id = $1 AND rep.workout_exercise_id = we.id
+       WHERE we.id = $3 AND wrd.routine_id = $1
+       ON CONFLICT (routine_id, workout_exercise_id)
+       DO UPDATE SET
+         is_done = EXCLUDED.is_done,
+         completed_at = EXCLUDED.completed_at
+       RETURNING workout_exercise_id AS id, is_done`,
+      [routineId, isDone, id],
     );
 
     if (result.rows.length === 0) {
@@ -161,7 +177,7 @@ router.patch(
            reps = CASE WHEN $3 THEN $4 ELSE reps END,
            sets = CASE WHEN $5 THEN $6 ELSE sets END
          WHERE id = $7
-       RETURNING id, weight, reps, sets`,
+      RETURNING id, weight::float8 AS weight, reps, sets`,
         [
           weight !== undefined,
           weight ?? null,
@@ -190,6 +206,11 @@ router.put(
   ["/workoutDone/:id", "/markDone/:id"],
   async (req: Request, res: Response) => {
     const { id } = req.params;
+    const { routineId } = req.body as { routineId?: string };
+
+    if (!routineId) {
+      return res.status(400).json({ error: "routineId is required" });
+    }
 
     try {
       const workoutResult = await pool.query(
@@ -202,12 +223,18 @@ router.put(
       }
 
       const result = await pool.query(
-        `UPDATE workout_exercises
-       SET is_done = true,
-           completed_at = COALESCE(completed_at, NOW())
-       WHERE workout_id = $1
-       RETURNING id, is_done`,
-        [id],
+        `INSERT INTO routine_exercise_progress
+           (routine_id, workout_exercise_id, is_done, completed_at)
+         SELECT $1, we.id, true, NOW()
+         FROM workout_exercises we
+         JOIN workout_routine_days wrd ON wrd.workout_id = we.workout_id
+         WHERE we.workout_id = $2 AND wrd.routine_id = $1
+         ON CONFLICT (routine_id, workout_exercise_id)
+         DO UPDATE SET is_done = true, completed_at = COALESCE(
+           routine_exercise_progress.completed_at, NOW()
+         )
+         RETURNING workout_exercise_id AS id, is_done`,
+        [routineId, id],
       );
 
       res.json({ workoutId: id, workoutDone: true, updated: result.rows });

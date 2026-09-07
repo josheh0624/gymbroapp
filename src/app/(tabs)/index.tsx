@@ -631,17 +631,6 @@ export default function MuscleMapScreen() {
           {/* Hero visualization — front and back shown together, matching
               the reference image, rather than behind a toggle. */}
           <View style={styles.hero}>
-            <View style={styles.heroTop}>
-              <View>
-                <Text style={styles.heroEyebrow}>Weekly Recovery</Text>
-                <Text style={styles.heroTitle}>
-                  {muscleCount > 0
-                    ? `${muscleCount} muscle groups hit`
-                    : "No muscle groups yet"}
-                </Text>
-              </View>
-            </View>
-
             <View style={styles.mapToggle}>
               {(["front", "back"] as const).map((option) => (
                 <Pressable

@@ -14,7 +14,7 @@ export default function AddToRoutine({ routineId }: Props) {
   const handleAddWorkout = async () => {
     await fetchRoutineById(routineId);
     setActiveRoutine(routineId);
-    router.replace({ pathname: "/" });
+    router.replace("/workoutPage/workoutPage");
   };
 
   return (
