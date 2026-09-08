@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import path from "path/win32";
 import pool from "./db/db";
 import authRoutes from "./routes/auth";
 import { exerciseRouter } from "./routes/exercise";
@@ -30,6 +31,7 @@ app.use("/users", usersRouter);
 app.use("/exercises", exerciseRouter);
 app.use("/workouts", workoutRouter);
 app.use("/routines", routineRouter);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/api/health", (req, res) => res.json({ ok: true, time: Date.now() }));
 

@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api/api";
 import { useAuthStore } from "@/store/authStore";
 import { Stack } from "expo-router";
 import * as SecureStore from "expo-secure-store";

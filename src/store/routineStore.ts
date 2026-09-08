@@ -2,7 +2,7 @@ import Exercise from "@/models/excerciseModel";
 import WorkoutRoutine from "@/models/workout-routine-model";
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
-import { api } from "../lib/api"; // adjust to your actual config location
+import { api } from "../api/api"; // adjust to your actual config location
 
 //ROUTINE STORE THAT WILL LATER BE UPDATED TO BE AN API MIDDLEWARE AND PERSIST
 //AND DO MORE STUFF

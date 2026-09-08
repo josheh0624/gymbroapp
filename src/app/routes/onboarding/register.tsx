@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api/api";
 import { useAuthStore } from "@/store/authStore";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";

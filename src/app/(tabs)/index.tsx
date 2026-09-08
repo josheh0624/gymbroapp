@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api/api";
 import { COLORS } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
@@ -808,6 +808,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 18,
+    marginBottom: 106,
   },
 
   header: {

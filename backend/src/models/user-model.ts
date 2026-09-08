@@ -8,6 +8,7 @@ export interface UserRow {
   height_ft?: number;
   weight_lbs?: number;
   sex?: string;
+  image_url: string | null;
 }
 
 declare global {
@@ -18,6 +19,6 @@ declare global {
   }
 }
 
-export { };
+export {};
 
 export type SafeUser = Omit<UserRow, "password_hash">;

@@ -3,7 +3,7 @@ import { create } from "zustand";
 
 //zustand store to house code relating to a user (basically a class kinda)
 
-type SafeUser = {
+export type SafeUser = {
   id: number;
   username: string;
   email: string;
@@ -12,6 +12,7 @@ type SafeUser = {
   height_ft: number;
   weight_lbs: number;
   sex: string;
+  image_url: string | null;
 };
 
 type AuthState = {

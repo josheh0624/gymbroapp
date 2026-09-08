@@ -260,7 +260,7 @@ function DoneButton({
     <Pressable
       onPress={async () => {
         const completed = await markWorkoutDone(routineID, workoutID);
-        if (completed) router.replace("/workoutPage/workoutPage");
+        if (completed) router.back();
       }}
       style={{
         backgroundColor: "#ffd61f",

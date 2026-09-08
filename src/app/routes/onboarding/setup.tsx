@@ -1,21 +1,21 @@
-import { api } from "@/lib/api";
+import { api } from "@/api/api";
 import { useAuthStore } from "@/store/authStore";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect, Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    UIManager,
-    View,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from "react-native";
 
 if (
