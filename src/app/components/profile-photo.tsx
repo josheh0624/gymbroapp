@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/api/api";
 import { uploadProfilePhoto } from "@/api/user";
 import { useAuthStore } from "@/store/authStore";
 import { COLORS } from "@/styles/appStyles";
@@ -13,9 +14,12 @@ import {
   View,
 } from "react-native";
 
-export function PickProfilePhoto({ initials }: { initials: string }) {
+export function PickProfilePhoto() {
   const { user, setUser } = useAuthStore();
   const [uploading, setUploading] = useState(false);
+  const initials = user?.username
+    ? user.username.slice(0, 2).toUpperCase()
+    : "??";
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -45,11 +49,23 @@ export function PickProfilePhoto({ initials }: { initials: string }) {
     }
   };
 
+  const getFullImageUrl = (url: string) => {
+    let finalUrl = url;
+    if (finalUrl.startsWith("http")) return finalUrl;
+
+    const base = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
+    const path = finalUrl.startsWith("/") ? finalUrl : `/${finalUrl}`;
+    return `${base}${path}`;
+  };
+
   return (
     <Pressable onPress={pickImage} disabled={uploading}>
       <View style={styles.avatar}>
         {user?.image_url ? (
-          <Image source={{ uri: user.image_url }} style={styles.profileImage} />
+          <Image
+            source={{ uri: getFullImageUrl(user.image_url) }}
+            style={styles.profileImage}
+          />
         ) : (
           <Text style={styles.avatarText}>{initials}</Text>
         )}
@@ -66,15 +82,55 @@ export function PickProfilePhoto({ initials }: { initials: string }) {
   );
 }
 
-export function ProfilePhoto({ initials }: { initials: string }) {
+export function ProfilePhoto({
+  size = 54,
+  color = COLORS.accent,
+}: {
+  size?: number;
+  color?: string;
+}) {
   const { user } = useAuthStore();
+  const initials = user?.username
+    ? user.username.slice(0, 2).toUpperCase()
+    : "??";
+
+  const getFullImageUrl = (url: string) => {
+    let finalUrl = url;
+    if (finalUrl.startsWith("http://localhost:3000")) {
+      finalUrl = finalUrl.replace("http://localhost:3000", "");
+    }
+    if (finalUrl.startsWith("http")) return finalUrl;
+
+    const base = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
+    const path = finalUrl.startsWith("/") ? finalUrl : `/${finalUrl}`;
+    return `${base}${path}`;
+  };
 
   return (
-    <View style={styles.avatar}>
+    <View
+      style={[
+        styles.avatar,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderColor: color,
+          borderWidth: 1,
+        },
+      ]}
+    >
       {user?.image_url ? (
-        <Image source={{ uri: user.image_url }} style={styles.profileImage} />
+        <Image
+          source={{ uri: getFullImageUrl(user.image_url) }}
+          style={[
+            styles.profileImage,
+            { width: size, height: size, borderRadius: size / 2 },
+          ]}
+        />
       ) : (
-        <Text style={styles.avatarText}>{initials}</Text>
+        <Text style={[styles.avatarText, { fontSize: size * 0.33, color }]}>
+          {initials}
+        </Text>
       )}
     </View>
   );

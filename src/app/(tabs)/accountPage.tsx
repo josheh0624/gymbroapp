@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/store/authStore";
 import { COLORS } from "@/styles/appStyles";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassView } from "expo-glass-effect";
+import { BlurView } from "expo-blur";
 import { ReactNode, useEffect, useRef } from "react";
 import {
   Animated,
@@ -37,11 +37,7 @@ function GlassSurface() {
     <>
       <View style={[StyleSheet.absoluteFill, styles.glassFallback]} />
       <Animated.View style={[StyleSheet.absoluteFill, { opacity }]}>
-        <GlassView
-          style={StyleSheet.absoluteFill}
-          glassEffectStyle="regular"
-          tintColor="rgba(255,255,255,0.06)"
-        />
+        <BlurView style={StyleSheet.absoluteFill} tint="dark" intensity={20} />
       </Animated.View>
     </>
   );
@@ -84,7 +80,7 @@ export default function AccountScreen() {
 
           <View style={styles.avatarRow}>
             <View style={styles.avatarRing}>
-              <PickProfilePhoto initials={initials} />
+              <PickProfilePhoto />
             </View>
             <View style={styles.identity}>
               <Text style={styles.username} numberOfLines={1}>
@@ -281,7 +277,6 @@ function ActionRow({
     </Pressable>
   );
 }
-
 function EditableRow({
   icon,
   label,

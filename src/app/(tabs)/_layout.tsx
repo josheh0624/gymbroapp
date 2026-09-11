@@ -1,7 +1,7 @@
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { ProfilePhoto } from "@/app/components/profile-photo";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { GlassView } from "expo-glass-effect";
+import { BlurView } from "expo-blur";
 import { router, Tabs, usePathname } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -35,7 +35,7 @@ function GlassTabBar(props: BottomTabBarProps) {
   };
 
   return (
-    <GlassView style={styles.tabBar} glassEffectStyle="regular">
+    <BlurView style={styles.tabBar} tint="dark" intensity={80}>
       <View style={styles.row}>
         {state.routes.map((route, index) =>
           route.name === "index" ? renderTab(route, index) : null,
@@ -52,9 +52,33 @@ function GlassTabBar(props: BottomTabBarProps) {
           route.name !== "index" ? renderTab(route, index) : null,
         )}
       </View>
-    </GlassView>
+    </BlurView>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: "absolute",
+    bottom: 24,
+    left: 20,
+    right: 20,
+    height: 64,
+    borderRadius: 32,
+    overflow: "hidden",
+  },
+  row: {
+    flex: 1,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    paddingHorizontal: 12,
+  },
+  tabItem: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
 
 export default function TabLayout() {
   const pathname = usePathname();
@@ -100,7 +124,7 @@ export default function TabLayout() {
             title: "Account",
             headerShown: false,
             tabBarIcon: ({ color, focused }) => (
-              <FontAwesome6 name="circle-user" size={24} color={color} />
+              <ProfilePhoto size={24} color={color} />
             ),
           }}
         />
@@ -108,27 +132,3 @@ export default function TabLayout() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    position: "absolute",
-    bottom: 24,
-    left: 20,
-    right: 20,
-    height: 64,
-    borderRadius: 32,
-    overflow: "hidden",
-  },
-  row: {
-    flex: 1,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    paddingHorizontal: 12,
-  },
-  tabItem: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

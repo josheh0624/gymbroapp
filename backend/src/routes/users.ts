@@ -4,6 +4,7 @@ import fs from "fs";
 import multer from "multer";
 import path from "path";
 import pool from "../db/db";
+import { __dirname } from "../lib/path";
 import { protect } from "../middleware/auth";
 import { SafeUser } from "../models/user-model";
 
@@ -104,7 +105,7 @@ router.patch(
       return res.status(400).json({ error: "No photo uploaded" });
     }
 
-    const imageUrl = `${process.env.SERVER_URL}/uploads/profile-photos/${req.file.filename}`;
+    const relativeUrl = `/uploads/profile-photos/${req.file.filename}`;
 
     try {
       const { rows } = await pool.query<SafeUser>(
@@ -112,7 +113,7 @@ router.patch(
          SET image_url = $1
          WHERE id = $2
          RETURNING id, username, email, created_at, age, height_ft, weight_lbs, sex, image_url`,
-        [imageUrl, req.user.id],
+        [relativeUrl, req.user.id],
       );
 
       if (rows.length === 0) {

@@ -4,7 +4,7 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
 import { BlurView } from "expo-blur";
-import { GlassView } from "expo-glass-effect";
+
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import moment from "moment";
 import { ReactNode, useEffect, useRef, useState } from "react";
@@ -180,10 +180,10 @@ export default function WorkoutScreen() {
                 { opacity: pressed ? 0.6 : 1 },
               ]}
             >
-              <GlassView
+              <BlurView
                 style={StyleSheet.absoluteFill}
-                glassEffectStyle="regular"
-                tintColor="rgba(255,255,255,0.06)"
+                tint="dark"
+                intensity={20}
               />
               <Ionicons name="chevron-down" size={20} color={COLORS.text} />
             </Pressable>
@@ -202,10 +202,10 @@ export default function WorkoutScreen() {
                 // TODO: route to routine settings / switch active routine
               }}
             >
-              <GlassView
+              <BlurView
                 style={StyleSheet.absoluteFill}
-                glassEffectStyle="regular"
-                tintColor="rgba(255,255,255,0.06)"
+                tint="dark"
+                intensity={20}
               />
               <Ionicons name="settings-outline" size={18} color={COLORS.text} />
             </Pressable>
@@ -265,10 +265,10 @@ export default function WorkoutScreen() {
           <Animated.View
             style={[StyleSheet.absoluteFill, { opacity: dockGlassOpacity }]}
           >
-            <GlassView
+            <BlurView
               style={StyleSheet.absoluteFill}
-              glassEffectStyle="regular"
-              tintColor="rgba(255,255,255,0.06)"
+              tint="dark"
+              intensity={80}
             />
           </Animated.View>
 

@@ -1,4 +1,6 @@
 import { api } from "@/api/api";
+import { ProfilePhoto } from "@/app/components/profile-photo"; // adjust to your actual alias
+import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
 import { COLORS } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
@@ -48,6 +50,12 @@ type DailyActivity = {
   date: string;
   trained: boolean;
   workoutCount: number;
+  // Assumption: the backend flags a day as a scheduled rest day (e.g. from
+  // the user's active routine/program) separately from a day that was
+  // simply skipped. If your API doesn't send this yet, it needs to — the
+  // streak logic below can't tell "planned rest" from "missed workout"
+  // without it.
+  isRestDay?: boolean;
 };
 
 type WeeklyStats = {
@@ -80,12 +88,19 @@ function formatWeekRange(start: Dayjs, end: Dayjs) {
   return `${start.format("MMM D")} – ${end.format(sameMonth ? "D" : "MMM D")}`;
 }
 
+// A streak survives a trained day OR a scheduled rest day, and breaks the
+// moment a day is neither — i.e. a day that should've had a workout but
+// didn't.
+function keepsStreak(day: DailyActivity) {
+  return day.trained || Boolean(day.isRestDay);
+}
+
 function computeLongestStreak(days: DailyActivity[]) {
   let longest = 0;
   let current = 0;
 
   for (const day of days) {
-    if (day.trained) {
+    if (keepsStreak(day)) {
       current += 1;
       longest = Math.max(longest, current);
     } else {
@@ -103,7 +118,7 @@ function computeTrailingStreak(days: DailyActivity[]) {
     const day = days[i];
     if (dayjs(day.date).isAfter(dayjs(), "day")) continue;
 
-    if (day.trained) {
+    if (keepsStreak(day)) {
       streak += 1;
     } else {
       break;
@@ -468,6 +483,10 @@ function bodyMapData(data: WeeklyMuscleHit[]): ExtendedBodyPart[] {
   });
 }
 
+const BODY_SCALE = 1.4;
+const HEAD_CROP_HEIGHT = 60;
+const BODY_BOX_HEIGHT = 500; // was 260 — tall enough for the full figure post-crop
+
 function AnatomicalMap({
   side,
   data,
@@ -476,45 +495,39 @@ function AnatomicalMap({
   data: WeeklyMuscleHit[];
 }) {
   return (
-    <Body
-      data={bodyMapData(data)}
-      side={side}
-      gender="male"
-      scale={1.4}
-      defaultFill={BODY_BASE}
-      hiddenParts={["head", "hair"]}
-      border="none"
-    />
+    <View style={styles.bodyCropBox}>
+      <View style={{ transform: [{ translateY: -HEAD_CROP_HEIGHT }] }}>
+        <Body
+          data={bodyMapData(data)}
+          side={side}
+          gender="male"
+          scale={BODY_SCALE}
+          defaultFill={BODY_BASE}
+          hiddenParts={["head", "hair"]}
+          border="none"
+        />
+      </View>
+    </View>
   );
 }
 
-function DayActivity({
-  dailyActivity,
-  streak,
-}: {
-  dailyActivity: DailyActivity[];
-  streak: number;
-}) {
-  if (dailyActivity.length === 0) return null;
-
-  const trainedDays = dailyActivity.filter((day) => day.trained).length;
+function WeekDots({ dailyActivity }: { dailyActivity: DailyActivity[] }) {
+  if (dailyActivity.length === 0) return <View style={styles.weekDotsRow} />;
 
   return (
-    <View style={styles.activityRow}>
-      <View style={styles.streakCounterIcon}>
-        <Ionicons name="flame" size={22} color={COLORS.accent} />
-      </View>
-      <View style={styles.streakCounterText}>
-        <Text style={styles.streakCounterValue}>
-          {streak} day{streak === 1 ? "" : "s"}
-        </Text>
-        <Text style={styles.streakCounterLabel}>Current Streak</Text>
-      </View>
-      <View style={styles.streakCounterDivider} />
-      <View style={styles.streakCounterWeek}>
-        <Text style={styles.streakCounterWeekValue}>{trainedDays}/7</Text>
-        <Text style={styles.streakCounterWeekLabel}>This Week</Text>
-      </View>
+    <View style={styles.weekDotsRow}>
+      {dailyActivity.map((day) => (
+        <View key={day.date} style={styles.weekDotItem}>
+          <View style={[styles.weekDot, day.trained && styles.weekDotFilled]}>
+            {day.trained && (
+              <Ionicons name="checkmark" size={11} color={COLORS.bg} />
+            )}
+          </View>
+          <Text style={styles.weekDotLabel}>
+            {dayjs(day.date).format("dd").charAt(0)}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -546,6 +559,11 @@ function IconButton({
 
 export default function MuscleMapScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
+  const initials = useMemo(
+    () => user?.username?.slice(0, 2).toUpperCase() ?? "?",
+    [user?.username],
+  );
   const [weekOffset, setWeekOffset] = useState(0);
   const [mapSide, setMapSide] = useState<MuscleSide>("front");
   const { data, stats, dailyActivity, loading, error, refetch } =
@@ -561,6 +579,8 @@ export default function MuscleMapScreen() {
     }
     return computeLongestStreak(dailyActivity);
   }, [isCurrentWeek, stats?.currentStreak, dailyActivity]);
+
+  const hasActiveStreak = streak > 0;
 
   const mostTrained = useMemo(() => {
     if (!data.length) return null;
@@ -596,37 +616,52 @@ export default function MuscleMapScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>
-                {isCurrentWeek ? "This Week" : weekRange}
-              </Text>
-            </View>
-
-            <View style={styles.headerActions}>
-              <IconButton
-                icon="chevron-back"
-                onPress={() => setWeekOffset((value) => value - 1)}
-                disabled={loading}
-              />
-              <IconButton
-                icon="chevron-forward"
-                onPress={() => setWeekOffset((value) => Math.min(0, value + 1))}
-                disabled={loading || isCurrentWeek}
-              />
-            </View>
-          </View>
-
-          <View style={styles.rangeRow}>
-            <Text style={styles.rangeText}>{weekRange}</Text>
-            {streak > 0 && (
-              <View style={styles.streakPill}>
-                <Ionicons name="flame" size={13} color={COLORS.accent} />
-                <Text style={styles.streakText}>{streak} day streak</Text>
+            <View style={styles.headerTop}>
+              <View>
+                <Text style={styles.title}>GymBro</Text>
               </View>
-            )}
+
+              <View style={styles.headerRight}>
+                <View
+                  style={[
+                    styles.streakBadge,
+                    !hasActiveStreak && styles.streakBadgeInactive,
+                  ]}
+                >
+                  <Ionicons
+                    name={hasActiveStreak ? "flame" : "flame-outline"}
+                    size={13}
+                    color={hasActiveStreak ? COLORS.accent : COLORS.textFaint}
+                  />
+                  <Text
+                    style={[
+                      styles.streakBadgeText,
+                      !hasActiveStreak && styles.streakBadgeTextInactive,
+                    ]}
+                  >
+                    {streak}
+                  </Text>
+                </View>
+                <ProfilePhoto size={36} />
+              </View>
+            </View>
+
+            <Text style={styles.weekPagerText}>{weekRange}</Text>
           </View>
 
-          <DayActivity dailyActivity={dailyActivity} streak={streak} />
+          <View style={styles.weekStrip}>
+            <IconButton
+              icon="chevron-back"
+              onPress={() => setWeekOffset((value) => value - 1)}
+              disabled={loading}
+            />
+            <WeekDots dailyActivity={dailyActivity} />
+            <IconButton
+              icon="chevron-forward"
+              onPress={() => setWeekOffset((value) => Math.min(0, value + 1))}
+              disabled={loading || isCurrentWeek}
+            />
+          </View>
 
           {/* Hero visualization — front and back shown together, matching
               the reference image, rather than behind a toggle. */}
@@ -750,12 +785,10 @@ export default function MuscleMapScreen() {
                 <Text style={styles.detailText}>
                   {restDays} rest day{restDays === 1 ? "" : "s"}
                 </Text>
-                {streak > 0 && (
-                  <>
-                    <Text style={styles.detailBullet}>•</Text>
-                    <Text style={styles.detailText}>{streak} day streak</Text>
-                  </>
-                )}
+                <Text style={styles.detailBullet}>•</Text>
+                <Text style={styles.detailText}>
+                  {streak} day streak{hasActiveStreak ? "" : " (start one!)"}
+                </Text>
               </View>
             </View>
           )}
@@ -810,13 +843,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     marginBottom: 106,
   },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingTop: 16,
-  },
   kicker: {
     color: COLORS.accent,
     fontSize: 11,
@@ -828,30 +854,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 30,
     lineHeight: 34,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   headerActions: {
     flexDirection: "row",
     gap: 7,
   },
-  navIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#16181D",
-    borderWidth: 1,
-    borderColor: "#26282F",
-  },
-  navIconPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.97 }],
-  },
-  navIconDisabled: {
-    opacity: 0.3,
-  },
-
   rangeRow: {
     marginTop: 8,
     flexDirection: "row",
@@ -936,31 +944,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1,
   },
-
-  hero: {
-    marginTop: 18,
-    borderRadius: 28,
-    backgroundColor: "#111318",
-    borderWidth: 1,
-    borderColor: "#282A31",
-    overflow: "hidden",
-  },
   heroTop: {
     paddingHorizontal: 18,
-    paddingTop: 18,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-  },
-  mapToggle: {
-    alignSelf: "center",
-    flexDirection: "row",
-    marginTop: 14,
-    padding: 3,
-    borderRadius: 11,
-    backgroundColor: "#17191E",
-    borderWidth: 1,
-    borderColor: "#292B32",
   },
   mapToggleButton: {
     minWidth: 78,
@@ -992,15 +980,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 4,
   },
-  mapRow: {
-    minHeight: 280,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
   errorState: {
     alignItems: "center",
     justifyContent: "center",
@@ -1017,36 +996,6 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontSize: 13,
     fontWeight: "800",
-  },
-  legendBlock: {
-    marginTop: 6,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 8,
-  },
-  legendRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 22,
-  },
-  legendRowCenter: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  legendText: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontWeight: "500",
   },
   heroFooter: {
     marginHorizontal: 16,
@@ -1233,5 +1182,158 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontSize: 13,
     fontWeight: "800",
+  },
+  header: {
+    paddingTop: 16,
+    gap: 14,
+  },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  streakBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: "#17181D",
+    borderWidth: 1,
+    borderColor: "#2B2B30",
+  },
+  streakBadgeInactive: {
+    opacity: 0.55,
+  },
+  streakBadgeText: {
+    color: COLORS.accent,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  streakBadgeTextInactive: {
+    color: COLORS.textFaint,
+  },
+  weekPager: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  weekDotItem: {
+    alignItems: "center",
+    gap: 6,
+  },
+  weekDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#34363D",
+  },
+  weekDotFilled: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+  weekDotLabel: {
+    color: COLORS.textFaint,
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+
+  weekNavRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  weekPagerText: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  weekStrip: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "#17181D",
+    borderWidth: 1,
+    borderColor: "#2B2B30",
+    gap: 2,
+  },
+
+  weekDotsRow: {
+    flex: 1, // was its own bordered box; now just the middle section of weekStrip
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  navIcon: {
+    width: 28, // was 38 — no longer its own circular chip
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    // background/border removed so it reads as one shape with the strip
+  },
+  navIconPressed: {
+    opacity: 0.6,
+  },
+  navIconDisabled: {
+    opacity: 0.25,
+  },
+  hero: {
+    marginTop: 10,
+    borderRadius: 28,
+    backgroundColor: "#111318",
+    borderWidth: 1,
+    borderColor: "#282A31",
+    overflow: "hidden",
+  },
+
+  mapToggle: {
+    alignSelf: "center",
+    flexDirection: "row",
+    marginTop: 14, // back to original
+    padding: 3,
+    borderRadius: 11,
+    backgroundColor: "#17191E",
+    borderWidth: 1,
+    borderColor: "#292B32",
+  },
+
+  mapRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+    paddingTop: 0,
+    paddingBottom: 4,
+    // minHeight removed — bodyCropBox now owns the height
+  },
+
+  bodyWrap: {
+    marginTop: -34, // clips the empty head/hair space react-native-body-highlighter reserves even with hiddenParts
+    overflow: "hidden",
+  },
+  bodyCropBox: {
+    height: BODY_BOX_HEIGHT,
+    width: "100%",
+    overflow: "hidden",
+    alignItems: "center",
   },
 });

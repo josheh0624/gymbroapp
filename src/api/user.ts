@@ -1,33 +1,34 @@
-import { api } from "@/api/api";
+import { BASE_URL } from "@/api/api";
 import * as SecureStore from "expo-secure-store";
 import { SafeUser } from "../store/authStore";
 
 export async function uploadProfilePhoto(uri: string): Promise<SafeUser> {
   const token = await SecureStore.getItemAsync("token");
 
-  const filename = uri.split("/").pop() ?? "photo.jpg";
+  const filename = uri.split("/").pop()?.split("?")[0] ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
-  const ext = match ? match[1] : "jpg";
+  const ext = (match ? match[1] : "jpg").toLowerCase();
+  const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+
+  const fileResponse = await fetch(uri);
+  const rawBlob = await fileResponse.blob();
+  const blob = rawBlob.slice(0, rawBlob.size, mimeType);
 
   const formData = new FormData();
-  formData.append("photo", {
-    uri,
-    name: filename,
-    type: `image/${ext}`,
-  } as any); // RN's FormData typing doesn't match the DOM lib
+  formData.append("photo", blob, filename);
 
-  const res = await fetch(`${api}/users/profile-photo`, {
+  const res = await fetch(`${BASE_URL}/users/profile-photo`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "multipart/form-data",
     },
     body: formData,
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? "Failed to upload photo");
+    const text = await res.text();
+    console.error("Upload failed:", res.status, text);
+    throw new Error(text || "Failed to upload photo");
   }
 
   return res.json();

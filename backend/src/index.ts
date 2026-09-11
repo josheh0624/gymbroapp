@@ -1,8 +1,9 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import path from "path/win32";
+import path from "path";
 import pool from "./db/db";
+import { __dirname } from "./lib/path";
 import authRoutes from "./routes/auth";
 import { exerciseRouter } from "./routes/exercise";
 import { routineRouter } from "./routes/routines";
@@ -31,27 +32,9 @@ app.use("/users", usersRouter);
 app.use("/exercises", exerciseRouter);
 app.use("/workouts", workoutRouter);
 app.use("/routines", routineRouter);
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 app.get("/api/health", (req, res) => res.json({ ok: true, time: Date.now() }));
-
-///////////////////
-//workout routes //
-
-//create a workout
-
-//update a workout
-
-//delete a workout
-
-///////////////////////////
-//workout routine routes //
-
-//create a routine
-
-//update a routine
-
-//delete a routine
 
 const PORT = process.env.PORT || 3000;
 
