@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bg,
   },
   scrollContent: {
-    paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
   },
@@ -66,11 +65,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 3,
     marginBottom: 12,
+    marginHorizontal: 16,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.surfaceBorder,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopWidth: 1.5,
+    borderTopColor: "#25262E",
   },
 });

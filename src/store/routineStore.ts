@@ -107,31 +107,24 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   createRoutine: async (name, workoutIds) => {
     set({ isLoading: true, error: null });
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${api}/routines/create`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ name, workoutIds }),
-      });
+      const res = await api.post("/routines/create", { name, workoutIds });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          body.error || `Failed to create routine (${res.status})`,
-        );
+      const created = res.data;
+      if (!created || !created.id) {
+        throw new Error("Invalid response format from server");
       }
 
-      const created: { id: string; name: string } = await res.json();
-
-      // refresh the lightweight list so the new routine shows up
       await get().fetchRoutineList();
 
       set({ isLoading: false });
       return created.id;
-    } catch (err) {
+    } catch (err: any) {
       console.error("createRoutine error:", err);
       set({
-        error: err instanceof Error ? err.message : "Failed to create routine",
+        error:
+          err?.response?.data?.error ||
+          err.message ||
+          "Failed to create routine",
         isLoading: false,
       });
       return null;

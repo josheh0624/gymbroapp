@@ -1,10 +1,8 @@
 import { useRoutineStore } from "@/store/routineStore";
-import { COLORS, WORKOUT_PAGE_COLORS } from "@/styles/appStyles";
+import { COLORS } from "@/styles/appStyles";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
-import { BlurView } from "expo-blur";
-
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import moment from "moment";
 import { ReactNode, useEffect, useRef, useState } from "react";
@@ -110,19 +108,6 @@ export default function WorkoutScreen() {
     }
   }, [params.addedRoutine]);
 
-  const dockGlassOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      Animated.timing(dockGlassOpacity, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    }, 60);
-    return () => clearTimeout(timer);
-  }, []);
-
   const currentDate = dayjs().format("MMMM D, YYYY");
 
   function getWeekdayID(date: moment.Moment): number {
@@ -180,11 +165,6 @@ export default function WorkoutScreen() {
                 { opacity: pressed ? 0.6 : 1 },
               ]}
             >
-              <BlurView
-                style={StyleSheet.absoluteFill}
-                tint="dark"
-                intensity={20}
-              />
               <Ionicons name="chevron-down" size={20} color={COLORS.text} />
             </Pressable>
           </View>
@@ -202,11 +182,6 @@ export default function WorkoutScreen() {
                 // TODO: route to routine settings / switch active routine
               }}
             >
-              <BlurView
-                style={StyleSheet.absoluteFill}
-                tint="dark"
-                intensity={20}
-              />
               <Ionicons name="settings-outline" size={18} color={COLORS.text} />
             </Pressable>
           </View>
@@ -235,11 +210,6 @@ export default function WorkoutScreen() {
               />
             ) : (
               <View style={styles.emptyCard}>
-                <BlurView
-                  intensity={20}
-                  tint="dark"
-                  style={StyleSheet.absoluteFill}
-                />
                 <Ionicons
                   name={hasRoutine ? "moon-outline" : "barbell-outline"}
                   size={26}
@@ -260,18 +230,6 @@ export default function WorkoutScreen() {
 
         {/* bottom dock */}
         <View style={[styles.bottomDock, { paddingBottom: insets.bottom + 6 }]}>
-          <View style={[StyleSheet.absoluteFill, styles.dockFallbackBg]} />
-
-          <Animated.View
-            style={[StyleSheet.absoluteFill, { opacity: dockGlassOpacity }]}
-          >
-            <BlurView
-              style={StyleSheet.absoluteFill}
-              tint="dark"
-              intensity={80}
-            />
-          </Animated.View>
-
           <View style={styles.dockRow}>
             <View style={styles.dockItem}>
               <DockButton
@@ -332,7 +290,6 @@ export default function WorkoutScreen() {
     </>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -350,17 +307,17 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   eyebrow: {
-    color: COLORS.accent,
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 1.5,
+    color: COLORS.text,
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: 1,
     marginBottom: 4,
   },
   dateText: {
-    color: COLORS.text,
-    fontSize: 28,
+    color: COLORS.accent,
+    fontSize: 16,
     fontWeight: "800",
-    letterSpacing: 0.2,
+    letterSpacing: 0.5,
   },
   settingsButton: {
     width: 38,
@@ -368,9 +325,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    backgroundColor: "#1C1D22",
   },
   weekCalendarContainer: {
     width: "100%",
@@ -398,11 +353,9 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   emptyCard: {
-    marginHorizontal: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-    backgroundColor: COLORS.surface,
+    marginHorizontal: 16,
+    borderRadius: 24,
+    backgroundColor: "#1C1D22",
     overflow: "hidden",
     paddingVertical: 40,
     paddingHorizontal: 24,
@@ -432,12 +385,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-  },
-  dockFallbackBg: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: "#1C1D22",
   },
   bottomDock: {
     position: "absolute",
@@ -445,11 +393,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingTop: 28,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: "hidden",
-    borderTopWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    backgroundColor: "#16171B",
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: "#34363D",
   },
   dockRow: {
     flexDirection: "row",
@@ -470,7 +420,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   addWorkoutButton: {
-    backgroundColor: WORKOUT_PAGE_COLORS.dockNeutral,
+    backgroundColor: "#1C1D22",
   },
   dockLabel: {
     color: COLORS.text,
@@ -483,6 +433,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   changeRoutineButton: {
-    backgroundColor: WORKOUT_PAGE_COLORS.dockNeutral,
+    backgroundColor: "#1C1D22",
   },
 });

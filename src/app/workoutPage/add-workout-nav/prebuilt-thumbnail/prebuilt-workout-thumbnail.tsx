@@ -1,6 +1,4 @@
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { GlassView } from "expo-glass-effect";
-import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import AddToRoutine from "./add-to-routine-button";
 
@@ -14,27 +12,11 @@ interface Props {
   routine: RoutineListItem;
 }
 
-const CARD_RADIUS = 20;
-
 export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
   return (
     <Pressable
       style={({ pressed }) => [styles.workoutCard, pressed && styles.pressed]}
     >
-      <GlassView
-        style={styles.glassBase}
-        glassEffectStyle="regular"
-        tintColor="#141518CC"
-        isInteractive
-      />
-
-      <LinearGradient
-        colors={["transparent", "rgba(10,10,12,0.85)"]}
-        start={{ x: 0, y: 0.3 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.scrim}
-      />
-
       <View style={styles.countBadge}>
         <FontAwesome6 name="dumbbell" size={10} color="#ffd61f" />
         <Text style={styles.countText}>{routine.workout_count}</Text>
@@ -55,56 +37,46 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
 
 const styles = StyleSheet.create({
   workoutCard: {
-    width: "90%",
+    marginHorizontal: 16,
     height: 160,
-    alignSelf: "center",
     marginBottom: 14,
-    borderRadius: CARD_RADIUS,
-    overflow: "hidden",
-    backgroundColor: "#141518", // solid fallback so it never flashes/shows a hole pre-mount or on unsupported devices
+    borderRadius: 24,
+    backgroundColor: "#1C1D22",
+    padding: 20,
+    justifyContent: "space-between",
   },
   pressed: {
-    transform: [{ scale: 0.98 }], // no opacity here — opacity on a GlassView's parent stops the glass effect from rendering
-  },
-  glassBase: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: CARD_RADIUS, // set directly on the glass view itself, not inherited from the parent
-  },
-  scrim: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: CARD_RADIUS,
+    transform: [{ scale: 0.98 }],
+    opacity: 0.85,
   },
   countBadge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(255,214,31,0.12)",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 20,
   },
   countText: {
-    color: "#fff",
+    color: "#ffd61f",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   textContainer: {
-    position: "absolute",
-    bottom: 16,
-    left: 18,
-    right: 64,
+    flex: 1,
+    justifyContent: "flex-end",
+    paddingRight: 48,
   },
   text: {
     color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 22,
+    fontWeight: "800",
   },
   addButtonWrapper: {
     position: "absolute",
-    bottom: 14,
-    right: 14,
+    bottom: 16,
+    right: 16,
   },
 });

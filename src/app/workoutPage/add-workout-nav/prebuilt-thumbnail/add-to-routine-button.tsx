@@ -30,17 +30,12 @@ export default function AddToRoutine({ routineId }: Props) {
 
 const styles = StyleSheet.create({
   button: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#ffd61f",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#ffd61f",
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
   },
   pressed: {
     opacity: 0.85,

@@ -1,11 +1,8 @@
-import { BlurView } from "expo-blur";
 import moment from "moment";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const COLORS = {
-  surface: "rgba(255,255,255,0.045)",
-  surfaceBorder: "rgba(255,255,255,0.09)",
   text: "#F5F6F7",
   textMuted: "rgba(255,255,255,0.5)",
   accent: "#ffd61f",
@@ -46,7 +43,6 @@ export default function WeekStrip({
 
   return (
     <View style={styles.wrapper}>
-      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={styles.container}>
         {weekDays.map((day, index) => {
           const isSelected = selectedIndex === index;
@@ -98,18 +94,15 @@ export default function WeekStrip({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginHorizontal: 20,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-    backgroundColor: COLORS.surface,
+    marginHorizontal: 16,
+    borderRadius: 24,
+    backgroundColor: "#1C1D22",
   },
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 10,
-    paddingVertical: 12,
+    paddingVertical: 18,
   },
   dayColumn: {
     alignItems: "center",
@@ -120,7 +113,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     color: COLORS.textMuted,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "800",
     letterSpacing: 0.8,
   },
   selectedDayLabel: {
@@ -139,12 +132,12 @@ const styles = StyleSheet.create({
   dayNumber: {
     color: COLORS.text,
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   selectedDayNumber: {
     color: COLORS.accentText,
-    fontWeight: "800",
+    fontWeight: "900",
   },
   todayDot: {
     width: 4,

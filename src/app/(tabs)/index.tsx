@@ -618,25 +618,29 @@ export default function MuscleMapScreen() {
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <View>
-                <Text style={styles.title}>GymBro</Text>
+                <Text style={styles.eyebrow}>Activity</Text>
               </View>
 
               <View style={styles.headerRight}>
                 <View
                   style={[
                     styles.streakBadge,
-                    !hasActiveStreak && styles.streakBadgeInactive,
+                    hasActiveStreak
+                      ? styles.streakBadgeActive
+                      : styles.streakBadgeInactive,
                   ]}
                 >
                   <Ionicons
                     name={hasActiveStreak ? "flame" : "flame-outline"}
-                    size={13}
+                    size={11}
                     color={hasActiveStreak ? COLORS.accent : COLORS.textFaint}
                   />
                   <Text
                     style={[
                       styles.streakBadgeText,
-                      !hasActiveStreak && styles.streakBadgeTextInactive,
+                      hasActiveStreak
+                        ? styles.streakBadgeTextActive
+                        : styles.streakBadgeTextInactive,
                     ]}
                   >
                     {streak}
@@ -645,310 +649,300 @@ export default function MuscleMapScreen() {
                 <ProfilePhoto size={36} />
               </View>
             </View>
-
-            <Text style={styles.weekPagerText}>{weekRange}</Text>
           </View>
 
-          <View style={styles.weekStrip}>
-            <IconButton
-              icon="chevron-back"
-              onPress={() => setWeekOffset((value) => value - 1)}
-              disabled={loading}
-            />
-            <WeekDots dailyActivity={dailyActivity} />
-            <IconButton
-              icon="chevron-forward"
-              onPress={() => setWeekOffset((value) => Math.min(0, value + 1))}
-              disabled={loading || isCurrentWeek}
-            />
-          </View>
-
-          {/* Hero visualization — front and back shown together, matching
-              the reference image, rather than behind a toggle. */}
-          <View style={styles.hero}>
-            <View style={styles.mapToggle}>
-              {(["front", "back"] as const).map((option) => (
-                <Pressable
-                  key={option}
-                  onPress={() => setMapSide(option)}
-                  style={[
-                    styles.mapToggleButton,
-                    mapSide === option && styles.mapToggleButtonActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.mapToggleText,
-                      mapSide === option && styles.mapToggleTextActive,
-                    ]}
-                  >
-                    {option === "front" ? "Front" : "Back"}
-                  </Text>
-                </Pressable>
-              ))}
+          <View style={styles.grid}>
+            {/* Week Strip Widget */}
+            <View style={[styles.widget, styles.widgetFull, styles.weekWidget]}>
+              <View style={styles.weekWidgetTop}>
+                <Text style={styles.weekWidgetLabel}>This Week</Text>
+                <Text style={styles.weekPagerText}>{weekRange}</Text>
+              </View>
+              <View style={styles.weekStripInner}>
+                <IconButton
+                  icon="chevron-back"
+                  onPress={() => setWeekOffset((value) => value - 1)}
+                  disabled={loading}
+                />
+                <WeekDots dailyActivity={dailyActivity} />
+                <IconButton
+                  icon="chevron-forward"
+                  onPress={() =>
+                    setWeekOffset((value) => Math.min(0, value + 1))
+                  }
+                  disabled={loading || isCurrentWeek}
+                />
+              </View>
             </View>
 
-            <View style={styles.mapRow}>
-              {loading ? (
-                <ActivityIndicator color={COLORS.accent} size="large" />
-              ) : error ? (
-                <View style={styles.errorState}>
-                  <Ionicons
-                    name="warning-outline"
-                    size={22}
-                    color={COLORS.textMuted}
-                  />
-                  <Text style={styles.errorText}>{error}</Text>
-                  <Pressable onPress={refetch}>
-                    <Text style={styles.retryText}>Try again</Text>
+            {/* Anatomical Map Widget */}
+            <View style={[styles.widget, styles.widgetFull, styles.mapWidget]}>
+              <View style={styles.mapToggle}>
+                {(["front", "back"] as const).map((option) => (
+                  <Pressable
+                    key={option}
+                    onPress={() => setMapSide(option)}
+                    style={[
+                      styles.mapToggleButton,
+                      mapSide === option && styles.mapToggleButtonActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.mapToggleText,
+                        mapSide === option && styles.mapToggleTextActive,
+                      ]}
+                    >
+                      {option === "front" ? "Front" : "Back"}
+                    </Text>
                   </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.mapRow}>
+                {loading ? (
+                  <ActivityIndicator color={COLORS.accent} size="large" />
+                ) : error ? (
+                  <View style={styles.errorState}>
+                    <Ionicons
+                      name="warning-outline"
+                      size={22}
+                      color={COLORS.textMuted}
+                    />
+                    <Text style={styles.errorText}>{error}</Text>
+                    <Pressable onPress={refetch}>
+                      <Text style={styles.retryText}>Try again</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <AnatomicalMap side={mapSide} data={data} />
+                )}
+              </View>
+
+              {mostTrained && (
+                <View style={styles.heroFooter}>
+                  <View>
+                    <Text style={styles.heroFooterLabel}>Most Trained</Text>
+                    <Text style={styles.heroFooterValue}>
+                      {normalizeGroup(mostTrained.muscleGroupName)}
+                    </Text>
+                  </View>
+                  <Text style={styles.heroFooterCount}>
+                    {mostTrained.timesHit}×
+                  </Text>
                 </View>
-              ) : (
-                <AnatomicalMap side={mapSide} data={data} />
               )}
             </View>
 
-            {mostTrained && (
-              <View style={styles.heroFooter}>
-                <View>
-                  <Text style={styles.heroFooterLabel}>Most Trained</Text>
-                  <Text style={styles.heroFooterValue}>
-                    {normalizeGroup(mostTrained.muscleGroupName)}
-                  </Text>
+            {/* 4 Stat Widgets (2x2 Grid) */}
+            {stats && (
+              <>
+                <DashboardStat
+                  label="Workouts"
+                  value={stats.totalWorkouts}
+                  icon="barbell"
+                />
+                <DashboardStat
+                  label="Sets"
+                  value={stats.totalSets}
+                  icon="layers"
+                />
+                <DashboardStat
+                  label="Volume"
+                  value={
+                    typeof stats.totalVolume === "number"
+                      ? stats.totalVolume.toLocaleString()
+                      : "—"
+                  }
+                  icon="analytics"
+                />
+                <DashboardStat
+                  label="PRS"
+                  value={stats.personalRecords ?? 0}
+                  icon="trophy"
+                />
+              </>
+            )}
+
+            {/* Muscle list Widget */}
+            {data.length > 0 && (
+              <View
+                style={[styles.widget, styles.widgetFull, styles.listWidget]}
+              >
+                <View style={styles.groupsHeader}>
+                  <Text style={styles.groupsTitle}>Muscles Targeted</Text>
+                  <Text style={styles.groupsCaption}>Sessions</Text>
                 </View>
-                <Text style={styles.heroFooterCount}>
-                  {mostTrained.timesHit}×
-                </Text>
+                <View style={styles.groupsList}>
+                  {[...data]
+                    .sort((a, b) => b.timesHit - a.timesHit)
+                    .map((hit) => (
+                      <View key={hit.muscleGroupName} style={styles.groupRow}>
+                        <View style={styles.groupLeft}>
+                          <View
+                            style={[
+                              styles.groupIndicator,
+                              {
+                                backgroundColor:
+                                  hit.timesHit >= 2
+                                    ? PRIMARY_COLOR
+                                    : SECONDARY_COLOR,
+                              },
+                            ]}
+                          />
+                          <Text style={styles.groupName}>
+                            {normalizeGroup(hit.muscleGroupName)}
+                          </Text>
+                        </View>
+                        <Text style={styles.groupCount}>{hit.timesHit}×</Text>
+                      </View>
+                    ))}
+                </View>
               </View>
             )}
           </View>
-
-          {/* Weekly metrics */}
-          {stats && (
-            <View style={styles.statsCard}>
-              <View style={styles.statsHeader}>
-                <View>
-                  <Text style={styles.statsKicker}>Weekly Output</Text>
-                  <Text style={styles.statsTitle}>Training summary</Text>
-                </View>
-                <Ionicons
-                  name="stats-chart-outline"
-                  size={19}
-                  color={COLORS.accent}
-                />
-              </View>
-
-              <View style={styles.highlightStats}>
-                <View style={styles.highlightStat}>
-                  <Text style={styles.primaryStatLabel}>WEIGHT LIFTED</Text>
-                  <Text style={styles.primaryStatValue}>
-                    {typeof stats.totalVolume === "number"
-                      ? stats.totalVolume.toLocaleString()
-                      : "—"}
-                  </Text>
-                  <Text style={styles.highlightUnit}>LB VOLUME</Text>
-                </View>
-                <View style={styles.highlightDivider} />
-                <View style={styles.highlightStat}>
-                  <Text style={styles.primaryStatLabel}>PRS</Text>
-                  <Text style={styles.primaryStatValue}>
-                    {stats.personalRecords ?? 0}
-                  </Text>
-                  <Text style={styles.highlightUnit}>ALL-TIME BESTS</Text>
-                </View>
-              </View>
-
-              <View style={styles.statDivider} />
-
-              <View style={styles.metricsRow}>
-                <View style={styles.metric}>
-                  <Text style={styles.metricValue}>{stats.totalWorkouts}</Text>
-                  <Text style={styles.metricLabel}>Workouts</Text>
-                </View>
-                <View style={styles.metric}>
-                  <Text style={styles.metricValue}>{stats.totalSets}</Text>
-                  <Text style={styles.metricLabel}>Sets</Text>
-                </View>
-                <View style={styles.metric}>
-                  <Text style={styles.metricValue}>{stats.totalExercises}</Text>
-                  <Text style={styles.metricLabel}>Exercises</Text>
-                </View>
-                <View style={styles.metric}>
-                  <Text style={styles.metricValue}>{stats.daysTrained}/7</Text>
-                  <Text style={styles.metricLabel}>Days</Text>
-                </View>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailText}>{avgSets} sets/workout</Text>
-                <Text style={styles.detailBullet}>•</Text>
-                <Text style={styles.detailText}>
-                  {restDays} rest day{restDays === 1 ? "" : "s"}
-                </Text>
-                <Text style={styles.detailBullet}>•</Text>
-                <Text style={styles.detailText}>
-                  {streak} day streak{hasActiveStreak ? "" : " (start one!)"}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {/* Muscle list */}
-          {data.length > 0 && (
-            <View style={styles.groupsSection}>
-              <View style={styles.groupsHeader}>
-                <Text style={styles.groupsTitle}>Muscle groups</Text>
-                <Text style={styles.groupsCaption}>sessions</Text>
-              </View>
-
-              <View style={styles.groupsList}>
-                {[...data]
-                  .sort((a, b) => b.timesHit - a.timesHit)
-                  .map((hit) => (
-                    <View key={hit.muscleGroupName} style={styles.groupRow}>
-                      <View style={styles.groupLeft}>
-                        <View
-                          style={[
-                            styles.groupIndicator,
-                            {
-                              backgroundColor:
-                                hit.timesHit >= 2
-                                  ? PRIMARY_COLOR
-                                  : SECONDARY_COLOR,
-                            },
-                          ]}
-                        />
-                        <Text style={styles.groupName}>
-                          {normalizeGroup(hit.muscleGroupName)}
-                        </Text>
-                      </View>
-                      <Text style={styles.groupCount}>{hit.timesHit}×</Text>
-                    </View>
-                  ))}
-              </View>
-            </View>
-          )}
         </ScrollView>
       </View>
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  scrollContent: {
-    paddingHorizontal: 18,
-    marginBottom: 106,
-  },
-  kicker: {
-    color: COLORS.accent,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 2,
-  },
-  title: {
-    marginTop: 5,
-    color: COLORS.text,
-    fontSize: 30,
-    lineHeight: 34,
-    fontWeight: "700",
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 7,
-  },
-  rangeRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  rangeText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-  },
-  streakPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#17181D",
-    borderWidth: 1,
-    borderColor: "#2B2B30",
-  },
-  streakText: {
-    color: COLORS.text,
-    fontSize: 11,
-    fontWeight: "700",
-  },
+function DashboardStat({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <View style={[styles.widget, styles.widgetHalf, styles.statWidget]}>
+      <View style={styles.statIconContainer}>
+        <Ionicons name={icon} size={20} color={COLORS.accent} />
+      </View>
+      <View style={styles.statContent}>
+        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    </View>
+  );
+}
 
-  activityRow: {
-    marginTop: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    backgroundColor: "#17181D",
-    borderWidth: 1,
-    borderColor: "#2B2B30",
-  },
-  streakCounterIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,214,31,0.12)",
-  },
-  streakCounterText: {
-    flex: 1,
-    marginLeft: 11,
-  },
-  streakCounterValue: {
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: COLORS.bg },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 64 },
+  eyebrow: {
     color: COLORS.text,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  streakCounterLabel: {
-    marginTop: 2,
-    color: COLORS.textFaint,
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1.1,
-  },
-  streakCounterDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 30,
-    backgroundColor: "#34363D",
-    marginHorizontal: 14,
-  },
-  streakCounterWeek: {
-    alignItems: "center",
-    minWidth: 48,
-  },
-  streakCounterWeekValue: {
-    color: COLORS.accent,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  streakCounterWeekLabel: {
-    marginTop: 2,
-    color: COLORS.textFaint,
-    fontSize: 9,
-    fontWeight: "800",
+    fontSize: 28,
+    fontWeight: "900",
     letterSpacing: 1,
   },
-  heroTop: {
-    paddingHorizontal: 18,
+
+  header: { paddingTop: 16, marginBottom: 24, paddingHorizontal: 4 },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  streakBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1C1D22",
+    borderWidth: 1.5,
+    borderColor: "#2B2B30",
+  },
+  streakBadgeActive: {
+    backgroundColor: "rgba(255, 214, 31, 0.12)",
+    borderColor: "rgba(255, 214, 31, 0.3)",
+  },
+  streakBadgeInactive: { opacity: 0.55 },
+  streakBadgeText: { color: COLORS.text, fontSize: 11, fontWeight: "800" },
+  streakBadgeTextActive: { color: COLORS.accent },
+  streakBadgeTextInactive: { color: COLORS.textFaint },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  widget: {
+    backgroundColor: "#1C1D22",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 12,
+  },
+  widgetFull: { width: "100%" },
+  widgetHalf: { width: "48%" },
+
+  weekWidget: { paddingHorizontal: 16, paddingVertical: 18 },
+  weekWidgetTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  weekWidgetLabel: {
+    color: COLORS.textFaint,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  weekPagerText: { color: COLORS.text, fontSize: 13, fontWeight: "800" },
+  weekStripInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  weekDotsRow: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+  },
+  weekDotItem: { alignItems: "center", gap: 6 },
+  weekDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#34363D",
+  },
+  weekDotFilled: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  weekDotLabel: {
+    color: COLORS.textFaint,
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  navIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navIconPressed: { opacity: 0.6 },
+  navIconDisabled: { opacity: 0.25 },
+
+  mapWidget: { paddingHorizontal: 0, paddingBottom: 0, overflow: "hidden" },
+  mapToggle: {
+    alignSelf: "center",
+    flexDirection: "row",
+    marginTop: 0,
+    padding: 3,
+    borderRadius: 11,
+    backgroundColor: "#111214",
+    borderWidth: 1,
+    borderColor: "#292B32",
   },
   mapToggleButton: {
     minWidth: 78,
@@ -957,34 +951,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  mapToggleButtonActive: {
-    backgroundColor: COLORS.accent,
+  mapToggleButtonActive: { backgroundColor: COLORS.accent },
+  mapToggleText: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
+  mapToggleTextActive: { color: COLORS.bg },
+  mapRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 0,
+    paddingBottom: 4,
   },
-  mapToggleText: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  mapToggleTextActive: {
-    color: COLORS.bg,
-  },
-  heroEyebrow: {
-    color: COLORS.textFaint,
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.4,
-  },
-  heroTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: "800",
-    marginTop: 4,
+  bodyCropBox: {
+    height: BODY_BOX_HEIGHT,
+    width: "100%",
+    overflow: "hidden",
+    alignItems: "center",
   },
   errorState: {
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
     paddingHorizontal: 28,
+    height: 200,
   },
   errorText: {
     color: COLORS.textMuted,
@@ -992,17 +980,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  retryText: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: "800",
-  },
+  retryText: { color: COLORS.accent, fontSize: 13, fontWeight: "800" },
   heroFooter: {
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 13,
     borderRadius: 17,
-    backgroundColor: "#17191E",
+    backgroundColor: "#111214",
     borderWidth: 1,
     borderColor: "#25272D",
     flexDirection: "row",
@@ -1021,129 +1005,42 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 3,
   },
-  heroFooterCount: {
-    color: COLORS.accent,
-    fontSize: 18,
-    fontWeight: "900",
-  },
+  heroFooterCount: { color: COLORS.accent, fontSize: 18, fontWeight: "900" },
 
-  statsCard: {
-    marginTop: 16,
-    borderRadius: 24,
-    backgroundColor: "#111318",
-    borderWidth: 1,
-    borderColor: "#282A31",
-    padding: 18,
-  },
-  statsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+  statWidget: {
+    flexDirection: "column",
     justifyContent: "space-between",
+    minHeight: 120,
   },
-  statsKicker: {
+  statIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 214, 31, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  statContent: { alignItems: "flex-start" },
+  statValue: { color: COLORS.text, fontSize: 26, fontWeight: "900" },
+  statLabel: {
     color: COLORS.textFaint,
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1.4,
-  },
-  statsTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.5,
     marginTop: 4,
   },
-  primaryStat: {
-    marginTop: 18,
-  },
-  highlightStats: {
-    marginTop: 18,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  highlightStat: {
-    flex: 1,
-  },
-  highlightDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 54,
-    marginHorizontal: 16,
-    backgroundColor: "#292B32",
-  },
-  primaryStatLabel: {
-    color: COLORS.textFaint,
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1.3,
-  },
-  primaryStatValue: {
-    marginTop: 2,
-    color: COLORS.accent,
-    fontSize: 38,
-    lineHeight: 42,
-    fontWeight: "900",
-  },
-  highlightUnit: {
-    marginTop: 1,
-    color: COLORS.textFaint,
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  statDivider: {
-    marginTop: 14,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#292B32",
-  },
-  metricsRow: {
-    marginTop: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  metric: {
-    alignItems: "center",
-    flex: 1,
-  },
-  metricValue: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  metricLabel: {
-    marginTop: 3,
-    color: COLORS.textFaint,
-    fontSize: 10,
-  },
-  detailRow: {
-    marginTop: 16,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 7,
-  },
-  detailText: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-  },
-  detailBullet: {
-    color: COLORS.textFaint,
-    fontSize: 11,
-  },
 
-  groupsSection: {
-    marginTop: 20,
-  },
+  listWidget: { paddingHorizontal: 0, paddingBottom: 10 },
   groupsHeader: {
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
-    paddingHorizontal: 3,
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    marginTop: 4,
   },
-  groupsTitle: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
+  groupsTitle: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
   groupsCaption: {
     color: COLORS.textFaint,
     fontSize: 10,
@@ -1151,7 +1048,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   groupsList: {
-    marginTop: 9,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "#292B32",
   },
@@ -1162,178 +1058,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#24262C",
+    paddingHorizontal: 20,
   },
-  groupLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-  },
-  groupIndicator: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  groupName: {
-    color: COLORS.text,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  groupCount: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  header: {
-    paddingTop: 16,
-    gap: 14,
-  },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  streakBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 12,
-    borderRadius: 999,
-    backgroundColor: "#17181D",
-    borderWidth: 1,
-    borderColor: "#2B2B30",
-  },
-  streakBadgeInactive: {
-    opacity: 0.55,
-  },
-  streakBadgeText: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  streakBadgeTextInactive: {
-    color: COLORS.textFaint,
-  },
-  weekPager: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-  weekDotItem: {
-    alignItems: "center",
-    gap: 6,
-  },
-  weekDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#34363D",
-  },
-  weekDotFilled: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
-  weekDotLabel: {
-    color: COLORS.textFaint,
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-
-  weekNavRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  weekPagerText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-
-  weekStrip: {
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 6,
-    paddingRight: 6,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: "#17181D",
-    borderWidth: 1,
-    borderColor: "#2B2B30",
-    gap: 2,
-  },
-
-  weekDotsRow: {
-    flex: 1, // was its own bordered box; now just the middle section of weekStrip
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  navIcon: {
-    width: 28, // was 38 — no longer its own circular chip
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    // background/border removed so it reads as one shape with the strip
-  },
-  navIconPressed: {
-    opacity: 0.6,
-  },
-  navIconDisabled: {
-    opacity: 0.25,
-  },
-  hero: {
-    marginTop: 10,
-    borderRadius: 28,
-    backgroundColor: "#111318",
-    borderWidth: 1,
-    borderColor: "#282A31",
-    overflow: "hidden",
-  },
-
-  mapToggle: {
-    alignSelf: "center",
-    flexDirection: "row",
-    marginTop: 14, // back to original
-    padding: 3,
-    borderRadius: 11,
-    backgroundColor: "#17191E",
-    borderWidth: 1,
-    borderColor: "#292B32",
-  },
-
-  mapRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-    paddingTop: 0,
-    paddingBottom: 4,
-    // minHeight removed — bodyCropBox now owns the height
-  },
-
-  bodyWrap: {
-    marginTop: -34, // clips the empty head/hair space react-native-body-highlighter reserves even with hiddenParts
-    overflow: "hidden",
-  },
-  bodyCropBox: {
-    height: BODY_BOX_HEIGHT,
-    width: "100%",
-    overflow: "hidden",
-    alignItems: "center",
-  },
+  groupLeft: { flexDirection: "row", alignItems: "center", gap: 9 },
+  groupIndicator: { width: 7, height: 7, borderRadius: 3.5 },
+  groupName: { color: COLORS.text, fontSize: 13, fontWeight: "600" },
+  groupCount: { color: COLORS.accent, fontSize: 13, fontWeight: "800" },
 });

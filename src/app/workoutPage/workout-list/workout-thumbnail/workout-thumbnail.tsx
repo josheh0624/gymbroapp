@@ -1,10 +1,7 @@
 import WorkoutModel from "@/models/workout-model";
-import liquidGlassStyles from "@/styles/liquidglass";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { GlassView } from "expo-glass-effect";
 import { useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const COLORS = {
   bg: "#141518",
@@ -12,7 +9,6 @@ const COLORS = {
   textFaint: "#565A60",
   textMuted: "rgba(255,255,255,0.5)",
   accent: "#ffd61f",
-  surface: "rgba(255,255,255,0.045)",
   surfaceBorder: "rgba(255,255,255,0.09)",
 };
 
@@ -28,19 +24,6 @@ export default function WorkoutThumbnail({
   routineID,
 }: Props) {
   const router = useRouter();
-
-  const glassOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      Animated.timing(glassOpacity, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    }, 60);
-    return () => clearTimeout(timer);
-  }, []);
 
   const exerciseCount = workout.exercises.length;
 
@@ -59,16 +42,6 @@ export default function WorkoutThumbnail({
         );
       }}
     >
-      <View style={[StyleSheet.absoluteFill, styles.cardFallbackBg]} />
-      <Animated.View
-        style={[StyleSheet.absoluteFill, { opacity: glassOpacity }]}
-      >
-        <GlassView
-          style={liquidGlassStyles.tintedGlassThumbnail}
-          glassEffectStyle="clear"
-        />
-      </Animated.View>
-
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.title} numberOfLines={1}>
@@ -105,18 +78,13 @@ export default function WorkoutThumbnail({
 
 const styles = StyleSheet.create({
   workoutCard: {
-    width: "92%",
-    minHeight: 200,
-    alignSelf: "center",
-    marginBottom: 10,
+    marginHorizontal: 16,
+    minHeight: 180,
+    marginBottom: 12,
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    backgroundColor: "#1C1D22",
     overflow: "hidden",
-    padding: 16,
-  },
-  cardFallbackBg: {
-    backgroundColor: COLORS.surface,
+    padding: 20,
   },
   pressed: {
     opacity: 0.85,
@@ -128,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   headerText: {
     flexShrink: 1,
@@ -152,7 +120,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   exerciseRowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -161,13 +129,13 @@ const styles = StyleSheet.create({
   exerciseName: {
     color: COLORS.text,
     fontSize: 15,
-    fontWeight: "500",
+    fontWeight: "600",
     flexShrink: 1,
     paddingRight: 12,
   },
   exerciseMeta: {
     color: COLORS.textMuted,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
 });

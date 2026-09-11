@@ -1,6 +1,5 @@
 import NotFoundScreen from "@/app/+not-found";
 import { useRoutineStore } from "@/store/routineStore";
-import { BlurView } from "expo-blur";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -76,7 +75,7 @@ export default function WorkoutTodo() {
         options={{
           headerTitle: "Workout",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: "#141518" },
+          headerStyle: { backgroundColor: "#111214" },
           headerShadowVisible: false,
           headerTintColor: "#F5F6F7",
           headerTitleStyle: {
@@ -86,16 +85,14 @@ export default function WorkoutTodo() {
           },
         }}
       />
-      <View style={{ flex: 1, backgroundColor: "#141518" }}>
+      <View style={{ flex: 1, backgroundColor: "#111214" }}>
         <ScrollView style={styles.container}>
           <Text style={styles.title}>{workout.name}</Text>
 
           <View style={styles.list}>
             {workout.exercises.map((exercise) => (
-              <BlurView
+              <View
                 key={exercise.workoutExerciseId ?? exercise.id}
-                intensity={40}
-                tint="dark"
                 style={styles.card}
               >
                 <ExerciseCard
@@ -119,7 +116,7 @@ export default function WorkoutTodo() {
                     );
                   }}
                 />
-              </BlurView>
+              </View>
             ))}
           </View>
         </ScrollView>
@@ -279,8 +276,8 @@ function DoneButton({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#141518",
-    paddingHorizontal: 20,
+    backgroundColor: "#111214",
+    paddingHorizontal: 16,
     paddingTop: 24,
   },
   loadingContainer: {
@@ -288,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#141518",
+    backgroundColor: "#111214",
   },
   loadingText: {
     color: "rgba(255,255,255,0.6)",
@@ -297,20 +294,19 @@ const styles = StyleSheet.create({
   title: {
     color: "#ffffff",
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "800",
     marginBottom: 20,
   },
   list: { gap: 12 },
   card: {
-    borderRadius: 16,
+    borderRadius: 24,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#1C1D22",
   },
-  cardPressable: { padding: 16 },
+  cardPressable: { padding: 20 },
   cardCompleted: {
-    opacity: 0.7,
-    backgroundColor: "#176007",
+    opacity: 0.8,
+    backgroundColor: "#1D3A20", // slightly greener but muted for dark mode
   },
   exerciseName: {
     flex: 1,

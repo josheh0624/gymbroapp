@@ -1,5 +1,5 @@
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { GlassView } from "expo-glass-effect";
+import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 const COLORS = {
@@ -8,19 +8,16 @@ const COLORS = {
 };
 
 export default function AddCustomButton() {
+  const router = useRouter();
+
   return (
     <Pressable
-      style={styles.container}
+      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={() => {
-        // TODO: route to custom routine builder
+        router.push("/workoutPage/add-workout-nav/custom-workout");
       }}
     >
-      <GlassView
-        style={StyleSheet.absoluteFill}
-        glassEffectStyle="regular"
-        tintColor="rgba(255,214,31,0.14)"
-      />
-      <FontAwesome6 name="plus" size={16} color={COLORS.accent} />
+      <FontAwesome6 name="plus" size={16} color="#141518" />
       <Text style={styles.text}>Create Custom Routine</Text>
     </Pressable>
   );
@@ -30,18 +27,20 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     width: "100%",
-    height: 52,
-    borderRadius: 18,
+    height: 56,
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
     gap: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    backgroundColor: COLORS.accent,
+  },
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   text: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: COLORS.accent,
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#141518",
   },
 });

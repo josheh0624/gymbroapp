@@ -32,7 +32,6 @@ export default function WorkoutList({
         return (
           <WorkoutThumbnail
             workout={workout}
-            selectedWeekdayID={selectedWeekdayID}
             visible={isVisible}
             key={`${workout.id ?? "workout"}-${index}`}
             routineID={activeRoutine?.id ?? ""}
