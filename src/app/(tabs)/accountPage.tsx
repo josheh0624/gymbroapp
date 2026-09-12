@@ -17,13 +17,13 @@ export default function AccountScreen() {
     : "—";
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Text style={styles.eyebrow}>Dashboard</Text>
+          <Text style={styles.eyebrow}>Account</Text>
         </View>
 
         <View style={styles.grid}>

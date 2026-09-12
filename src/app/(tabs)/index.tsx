@@ -608,12 +608,12 @@ export default function MuscleMapScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={[styles.page, { paddingTop: insets.top }]}>
+      <View style={styles.page}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: 26 + insets.bottom },
+            { paddingBottom: 26 + insets.bottom, paddingTop: insets.top },
           ]}
         >
           {/* Header */}

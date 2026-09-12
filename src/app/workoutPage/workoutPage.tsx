@@ -4,6 +4,7 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ProfilePhoto } from "@/app/components/profile-photo";
 import moment from "moment";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import {
@@ -141,9 +142,9 @@ export default function WorkoutScreen() {
           animation: "slide_from_bottom",
         }}
       />
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.container}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.topBar}>
@@ -161,6 +162,9 @@ export default function WorkoutScreen() {
               ]}
             >
               <Ionicons name="chevron-down" size={20} color={COLORS.text} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/(tabs)/accountPage")}>
+              <ProfilePhoto size={38} color={COLORS.text} />
             </Pressable>
           </View>
 
@@ -370,6 +374,8 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 4,
   },
