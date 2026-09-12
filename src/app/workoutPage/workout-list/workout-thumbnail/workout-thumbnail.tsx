@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 const COLORS = {
   bg: "#141518",
   text: "#F5F6F7",
-  textFaint: "#565A60",
+  textFaint: "#8A8F98",
   textMuted: "rgba(255,255,255,0.5)",
   accent: "#ffd61f",
   surfaceBorder: "rgba(255,255,255,0.09)",
@@ -16,12 +16,14 @@ interface Props {
   workout: WorkoutModel;
   visible: boolean;
   routineID: string;
+  selectedDateString?: string;
 }
 
 export default function WorkoutThumbnail({
   workout,
   visible,
   routineID,
+  selectedDateString,
 }: Props) {
   const router = useRouter();
 
@@ -38,7 +40,7 @@ export default function WorkoutThumbnail({
       onPress={() => {
         console.log("Navigating with:", { workoutId: workout.id, routineID });
         router.push(
-          `/workoutPage/workout-list/workout-thumbnail/${workout.id}?routineID=${routineID}`,
+          `/workoutPage/workout-list/workout-thumbnail/${workout.id}?routineID=${routineID}&selectedDateString=${selectedDateString || ''}`,
         );
       }}
     >

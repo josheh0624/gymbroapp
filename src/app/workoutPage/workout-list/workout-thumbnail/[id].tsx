@@ -14,9 +14,10 @@ import {
 } from "react-native";
 
 export default function WorkoutTodo() {
-  const { id, routineID } = useLocalSearchParams<{
+  const { id, routineID, selectedDateString } = useLocalSearchParams<{
     id: string;
     routineID: string;
+    selectedDateString?: string;
   }>();
 
   const routine = useRoutineStore((s) =>
@@ -24,7 +25,7 @@ export default function WorkoutTodo() {
   );
   const markExerciseDone = useRoutineStore((s) => s.markExerciseDone);
   const updateExerciseDetails = useRoutineStore((s) => s.updateExerciseDetails);
-  const resetWorkoutProgress = useRoutineStore((s) => s.resetWorkoutProgress);
+  const syncWorkoutProgress = useRoutineStore((s) => s.syncWorkoutProgress);
   const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
   const resetKey = useRef<string | null>(null);
 
@@ -44,14 +45,15 @@ export default function WorkoutTodo() {
       !routineID ||
       !workout ||
       needsWorkoutExerciseIds ||
-      resetKey.current === `${routineID}:${id}`
+      !selectedDateString ||
+      resetKey.current === `${routineID}:${id}:${selectedDateString}`
     ) {
       return;
     }
 
-    resetKey.current = `${routineID}:${id}`;
-    resetWorkoutProgress(routineID, workout.id);
-  }, [id, needsWorkoutExerciseIds, resetWorkoutProgress, routineID, workout]);
+    resetKey.current = `${routineID}:${id}:${selectedDateString}`;
+    syncWorkoutProgress(routineID, workout.id, selectedDateString);
+  }, [id, needsWorkoutExerciseIds, syncWorkoutProgress, routineID, workout, selectedDateString]);
 
   if (!workout && routineID) {
     return (
@@ -104,6 +106,7 @@ export default function WorkoutTodo() {
                       exercise.workoutExerciseId,
                       exercise.id,
                       !exercise.isDone,
+                      selectedDateString
                     )
                   }
                   onSave={(updates) => {
@@ -123,7 +126,7 @@ export default function WorkoutTodo() {
         <View
           style={{ paddingHorizontal: 34, paddingBottom: 20, paddingTop: 20 }}
         >
-          <DoneButton routineID={routineID} workoutID={id} />
+          <DoneButton routineID={routineID} workoutID={id} selectedDateString={selectedDateString} />
         </View>
       </View>
     </>
@@ -246,9 +249,11 @@ function ExerciseCard({
 function DoneButton({
   routineID,
   workoutID,
+  selectedDateString,
 }: {
   routineID: string;
   workoutID: string;
+  selectedDateString?: string;
 }) {
   const router = useRouter();
   const markWorkoutDone = useRoutineStore((s) => s.markWorkoutDone);
@@ -256,7 +261,7 @@ function DoneButton({
   return (
     <Pressable
       onPress={async () => {
-        const completed = await markWorkoutDone(routineID, workoutID);
+        const completed = await markWorkoutDone(routineID, workoutID, selectedDateString);
         if (completed) router.back();
       }}
       style={{

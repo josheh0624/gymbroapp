@@ -6,5 +6,5 @@ import { PushDay } from "./push-day";
 export const PushPullLegs: WorkoutRoutine = {
   id: "ppl",
   name: "Push Pull Legs",
-  workoutRoutine: [PushDay, PullDay, LegDay],
+  workouts: [PushDay, PullDay, LegDay],
 };

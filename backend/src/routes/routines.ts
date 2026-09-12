@@ -1,5 +1,6 @@
 import Router, { Request, Response } from "express";
 import pool from "../db/db";
+import { protect } from "../middleware/auth";
 
 const router = Router();
 
@@ -45,15 +46,14 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
     mg.name AS muscle_group_name,
     we.id AS workout_exercise_id,
     we.sets, we.reps, we.order_index AS exercise_order,
-    we.weight::float8 AS weight, COALESCE(rep.is_done, false) AS is_done
+    we.weight::float8 AS weight, false AS is_done
   FROM workout_routines r
   JOIN workout_routine_days wrd ON wrd.routine_id = r.id
   JOIN workouts w ON w.id = wrd.workout_id
   JOIN workout_exercises we ON we.workout_id = w.id
   JOIN exercises e ON e.id = we.exercise_id
   LEFT JOIN muscle_groups mg ON mg.id = e.muscle_group_id
-  LEFT JOIN routine_exercise_progress rep
-    ON rep.routine_id = r.id AND rep.workout_exercise_id = we.id
+  
   WHERE r.id = $1
   ORDER BY wrd.order_index, we.order_index;
 `;
@@ -105,51 +105,37 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
 });
 
 // Toggle a single exercise's done state — :id is workout_exercises.id
-router.patch("/markExerciseDone/:id", async (req: Request, res: Response) => {
+router.patch("/markExerciseDone/:id", protect, async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { routineId, isDone } = req.body as {
-    routineId?: string;
-    isDone: boolean;
-  };
-
-  if (!routineId || typeof isDone !== "boolean") {
-    return res
-      .status(400)
-      .json({ error: "routineId and isDone (boolean) are required" });
-  }
+  const { isDone, completedAt } = req.body as any;
+  const userId = (req as any).user.id;
 
   try {
-    const result = await pool.query(
-      `INSERT INTO routine_exercise_progress
-         (routine_id, workout_exercise_id, is_done, completed_at)
-       SELECT $1, we.id, $2,
-              CASE WHEN $2 THEN COALESCE(rep.completed_at, NOW()) ELSE NULL END
-       FROM workout_exercises we
-       JOIN workout_routine_days wrd ON wrd.workout_id = we.workout_id
-       LEFT JOIN routine_exercise_progress rep
-         ON rep.routine_id = $1 AND rep.workout_exercise_id = we.id
-       WHERE we.id = $3 AND wrd.routine_id = $1
-       ON CONFLICT (routine_id, workout_exercise_id)
-       DO UPDATE SET
-         is_done = EXCLUDED.is_done,
-         completed_at = EXCLUDED.completed_at
-       RETURNING workout_exercise_id AS id, is_done`,
-      [routineId, isDone, id],
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Exercise not found" });
+    if (isDone) {
+      await pool.query(
+        `INSERT INTO workout_log (user_id, workout_exercise_id, completed_at)
+         VALUES ($1, $2, COALESCE($3::timestamptz, NOW()))
+         ON CONFLICT (user_id, workout_exercise_id, ((completed_at AT TIME ZONE 'UTC')::date))
+         DO UPDATE SET completed_at = EXCLUDED.completed_at`,
+        [userId, id, completedAt || null]
+      );
+    } else {
+      await pool.query(
+        `DELETE FROM workout_log 
+         WHERE user_id = $1 AND workout_exercise_id = $2 AND (completed_at AT TIME ZONE 'UTC')::date = (COALESCE($3::timestamptz, NOW()) AT TIME ZONE 'UTC')::date`,
+        [userId, id, completedAt || null]
+      );
     }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("error markExerciseDone:", err);
-    res.status(500).json({ error: "Failed to update exercise" });
+    res.json({ success: true });
+  } catch(err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to update exercise" });
   }
 });
 
 router.patch(
   "/updateExerciseDetails/:id",
+  protect,
   async (req: Request, res: Response) => {
     const { id } = req.params;
     const { weight, reps, sets } = req.body as {
@@ -203,48 +189,42 @@ router.patch(
 );
 
 // Finish a whole workout — :id is workouts.id, marks every exercise in it done
-router.put(
-  ["/workoutDone/:id", "/markDone/:id"],
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { routineId } = req.body as { routineId?: string };
+router.put(["/workoutDone/:id", "/markDone/:id"], protect, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { doneExerciseIds, completedAt } = req.body as any;
+  const userId = (req as any).user.id;
 
-    if (!routineId) {
-      return res.status(400).json({ error: "routineId is required" });
+  try {
+    const workoutResult = await pool.query("SELECT id FROM workouts WHERE id = $1", [id]);
+    if (workoutResult.rows.length === 0) return res.status(404).json({ error: "Workout not found" });
+
+    if (doneExerciseIds && doneExerciseIds.length > 0) {
+      await pool.query(
+        `INSERT INTO workout_log (user_id, workout_exercise_id, completed_at)
+         SELECT $1, unnest($2::uuid[]), COALESCE($3::timestamptz, NOW())
+         ON CONFLICT (user_id, workout_exercise_id, ((completed_at AT TIME ZONE 'UTC')::date))
+         DO UPDATE SET completed_at = EXCLUDED.completed_at`,
+         [userId, doneExerciseIds, completedAt || null]
+      );
     }
 
-    try {
-      const workoutResult = await pool.query(
-        "SELECT id FROM workouts WHERE id = $1",
-        [id],
-      );
+    await pool.query(
+      `DELETE FROM workout_log wl
+       USING workout_exercises we
+       WHERE wl.workout_exercise_id = we.id
+         AND we.workout_id = $2
+         AND wl.user_id = $1
+         AND (wl.completed_at AT TIME ZONE 'UTC')::date = (COALESCE($3::timestamptz, NOW()) AT TIME ZONE 'UTC')::date
+         AND ($4::uuid[] IS NULL OR NOT (we.id = ANY($4::uuid[])))`,
+      [userId, id, completedAt || null, doneExerciseIds && doneExerciseIds.length > 0 ? doneExerciseIds : null]
+    );
 
-      if (workoutResult.rows.length === 0) {
-        return res.status(404).json({ error: "Workout not found" });
-      }
-
-      const result = await pool.query(
-        `INSERT INTO routine_exercise_progress
-           (routine_id, workout_exercise_id, is_done, completed_at)
-         SELECT $1, we.id, true, NOW()
-         FROM workout_exercises we
-         JOIN workout_routine_days wrd ON wrd.workout_id = we.workout_id
-         WHERE we.workout_id = $2 AND wrd.routine_id = $1
-         ON CONFLICT (routine_id, workout_exercise_id)
-         DO UPDATE SET is_done = true, completed_at = COALESCE(
-           routine_exercise_progress.completed_at, NOW()
-         )
-         RETURNING workout_exercise_id AS id, is_done`,
-        [routineId, id],
-      );
-
-      res.json({ workoutId: id, workoutDone: true, updated: result.rows });
-    } catch (err) {
-      console.error("error markDone:", err);
-      res.status(500).json({ error: "Failed to mark workout done" });
-    }
-  },
-);
+    res.json({ workoutId: id, workoutDone: true });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to mark workout done" });
+  }
+});
 
 router.post("/create", async (req: Request, res: Response) => {
   const { name, workoutIds } = req.body; // workoutIds: string[] of workout UUIDs, in order

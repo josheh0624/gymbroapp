@@ -110,13 +110,8 @@ export default function WorkoutScreen() {
 
   const currentDate = dayjs().format("MMMM D, YYYY");
 
-  function getWeekdayID(date: moment.Moment): number {
-    return date.day();
-  }
-
-  const [selectedWeekdayID, setSelectedWeekdayID] = useState<number>(
-    getWeekdayID(moment()),
-  );
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const selectedWeekdayID = selectedDate.getDay();
 
   const normalizeWeekday = (value: number | string) => {
     const normalized = Number(value);
@@ -188,8 +183,8 @@ export default function WorkoutScreen() {
 
           <View style={styles.weekCalendarContainer}>
             <WeekStrip
-              setSelectedWeekdayID={setSelectedWeekdayID}
-              getWeekdayID={getWeekdayID}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
             />
           </View>
 
@@ -207,6 +202,7 @@ export default function WorkoutScreen() {
               <WorkoutList
                 activeRoutine={routine}
                 selectedWeekdayID={selectedWeekdayID}
+                selectedDate={selectedDate}
               />
             ) : (
               <View style={styles.emptyCard}>

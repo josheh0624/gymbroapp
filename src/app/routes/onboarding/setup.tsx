@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   field: { marginBottom: 16 },
   label: {
-    color: "#6A6D74",
+    color: "#8A8F98",
     fontSize: 11,
     fontWeight: "normal",
     marginBottom: 8,
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   skipLinkText: {
-    color: "#6A6D74",
+    color: "#8A8F98",
     fontSize: 13,
     fontWeight: "600",
   },

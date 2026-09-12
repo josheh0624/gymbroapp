@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const COLORS = {
   bg: "#111214",
   text: "#F5F6F7",
-  textFaint: "#565A60",
+  textFaint: "#8A8F98",
   textMuted: "rgba(255,255,255,0.5)",
   accent: "#ffd61f",
   widgetBg: "#1C1D22",
@@ -62,6 +62,25 @@ export default function CreateWorkout() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingExercise, setIsCreatingExercise] = useState(false);
   const [showMgDropdown, setShowMgDropdown] = useState(false);
+  const [showDaysDropdown, setShowDaysDropdown] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  
+  const DAYS_OF_WEEK = [
+    { id: 1, name: "Monday" },
+    { id: 2, name: "Tuesday" },
+    { id: 3, name: "Wednesday" },
+    { id: 4, name: "Thursday" },
+    { id: 5, name: "Friday" },
+    { id: 6, name: "Saturday" },
+    { id: 7, name: "Sunday" },
+  ];
+  
+  const toggleDay = (dayId: number) => {
+    setSelectedDays(prev => 
+      prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId].sort((a,b) => a - b)
+    );
+  };
+  
 
   useEffect(() => {
     async function fetchData() {
@@ -135,6 +154,10 @@ export default function CreateWorkout() {
   };
 
   const handleSaveWorkout = async () => {
+    if (selectedDays.length === 0) {
+      Alert.alert("Error", "Please select at least one scheduled day");
+      return;
+    }
     if (!workoutName.trim()) {
       Alert.alert("Error", "Please enter a workout name");
       return;
@@ -148,7 +171,7 @@ export default function CreateWorkout() {
     try {
       const payload = {
         name: workoutName.trim(),
-        days: [],
+        days: selectedDays,
         exercises: addedExercises.map((ex, idx) => ({
           exerciseId: ex.exerciseId,
           sets: ex.sets,
@@ -211,6 +234,52 @@ export default function CreateWorkout() {
               onChangeText={setWorkoutName}
               returnKeyType="done"
             />
+            
+            <Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Scheduled Days</Text>
+            <Pressable
+              style={[styles.dropdownToggle, { marginTop: 0 }]}
+              onPress={() => setShowDaysDropdown(!showDaysDropdown)}
+            >
+              <Text
+                style={[
+                  styles.dropdownToggleText,
+                  selectedDays.length === 0 && { color: COLORS.textFaint },
+                ]}
+              >
+                {selectedDays.length > 0
+                  ? selectedDays.map(d => DAYS_OF_WEEK.find(dw => dw.id === d)?.name.slice(0,3)).join(', ')
+                  : "Select days..."}
+              </Text>
+              <Ionicons
+                name={showDaysDropdown ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={COLORS.textFaint}
+              />
+            </Pressable>
+
+            {showDaysDropdown && (
+              <ScrollView style={styles.dropdownList} nestedScrollEnabled={true}>
+                {DAYS_OF_WEEK.map((day) => (
+                  <Pressable
+                    key={day.id}
+                    style={styles.dropdownItem}
+                    onPress={() => toggleDay(day.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        selectedDays.includes(day.id) && styles.dropdownItemTextActive,
+                      ]}
+                    >
+                      {day.name}
+                    </Text>
+                    {selectedDays.includes(day.id) && (
+                      <Ionicons name="checkmark" size={18} color={COLORS.accent} style={{ position: 'absolute', right: 16, top: 14 }} />
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {addedExercises.length > 0 && (

@@ -10,23 +10,23 @@ const COLORS = {
 };
 
 type Props = {
-  setSelectedWeekdayID: Dispatch<SetStateAction<number>>;
-  getWeekdayID(date: moment.Moment): number;
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 };
 
 export default function WeekStrip({
-  setSelectedWeekdayID,
-  getWeekdayID,
+  selectedDate,
+  onSelectDate,
 }: Props) {
   const today = new Date();
   const startOfWeek = useMemo(() => {
     const date = new Date(today);
-    date.setDate(today.getDate() - today.getDay());
+    const dow = today.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    date.setDate(today.getDate() + diff);
     date.setHours(0, 0, 0, 0);
     return date;
   }, [today]);
-
-  const [selectedIndex, setSelectedIndex] = useState(today.getDay());
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
@@ -36,22 +36,21 @@ export default function WeekStrip({
     });
   }, [startOfWeek]);
 
-  const handleSelectDay = (date: Date, index: number) => {
-    setSelectedIndex(index);
-    setSelectedWeekdayID(getWeekdayID(moment(date)));
+  const handleSelectDay = (date: Date) => {
+    onSelectDate(date);
   };
 
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
         {weekDays.map((day, index) => {
-          const isSelected = selectedIndex === index;
+          const isSelected = day.toDateString() === selectedDate.toDateString();
           const isToday = day.toDateString() === today.toDateString();
 
           return (
             <Pressable
               key={`${day.toISOString()}-${index}`}
-              onPress={() => handleSelectDay(day, index)}
+              onPress={() => handleSelectDay(day)}
               style={styles.dayColumn}
               hitSlop={4}
             >

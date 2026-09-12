@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ColorValue,
 } from "react-native";
 
 export function PickProfilePhoto() {
@@ -87,7 +88,7 @@ export function ProfilePhoto({
   color = COLORS.accent,
 }: {
   size?: number;
-  color?: string;
+  color?: ColorValue | string;
 }) {
   const { user } = useAuthStore();
   const initials = user?.username

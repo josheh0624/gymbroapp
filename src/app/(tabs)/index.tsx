@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
 import { COLORS } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
-import { Stack } from "expo-router";
+import { Stack, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -163,9 +163,11 @@ function useWeeklyMuscleHits(weekOffset: number) {
     }
   }, [weekOffset]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   return { data, stats, dailyActivity, loading, error, refetch: fetchData };
 }

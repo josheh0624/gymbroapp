@@ -37,14 +37,16 @@ interface RoutineState {
   getActiveRoutine: () => WorkoutRoutine | undefined; //get the single active routine
   getExerciseById: (routineId: string, workoutId: string) => Promise<void>;
 
-  markWorkoutDone: (routineId: string, workoutId: string) => Promise<boolean>;
+  markWorkoutDone: (routineId: string, workoutId: string, selectedDateString?: string) => Promise<boolean>;
   resetWorkoutProgress: (routineId: string, workoutId: string) => void;
+  syncWorkoutProgress: (routineId: string, workoutId: string, dateStr: string) => Promise<void>;
   markExerciseDone: (
     routineId: string,
     workoutId: string,
     workoutExerciseId: string | undefined,
     exerciseId: string,
     isDone: boolean,
+    selectedDateString?: string,
   ) => Promise<void>;
   updateExerciseDetails: (
     routineId: string,
@@ -211,32 +213,22 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
-  markWorkoutDone: async (routineId, workoutId) => {
+  markWorkoutDone: async (routineId, workoutId, selectedDateString) => {
     set({ isLoading: true, error: null });
     try {
-      await api.put(`/routines/markDone/${workoutId}`, { routineId });
+      const routine = get().routines.find((r) => r.id === routineId);
+      const workout = routine?.workouts.find((w) => w.id === workoutId);
+      const doneExerciseIds = workout?.exercises
+        .filter((e) => e.isDone)
+        .map((e) => e.workoutExerciseId) || [];
 
-      set((state) => ({
-        routines: state.routines.map((r) =>
-          r.id !== routineId
-            ? r
-            : {
-                ...r,
-                workouts: r.workouts.map((w) =>
-                  w.id !== workoutId
-                    ? w
-                    : {
-                        ...w,
-                        exercises: w.exercises.map((e) => ({
-                          ...e,
-                          isDone: true,
-                        })),
-                      },
-                ),
-              },
-        ),
-        isLoading: false,
-      }));
+      await api.put(`/routines/markDone/${workoutId}`, { 
+        routineId, 
+        doneExerciseIds,
+        completedAt: selectedDateString 
+      });
+
+      set((state) => ({ isLoading: false }));
       return true;
     } catch (err) {
       console.error("markWorkoutDone error:", err);
@@ -249,6 +241,34 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
+  syncWorkoutProgress: async (routineId, workoutId, dateStr) => {
+    try {
+      const res = await api.get(`/workouts/completed-exercises/${workoutId}?date=${dateStr}`);
+      const completedIds = new Set(res.data);
+      set((state) => ({
+        routines: state.routines.map((routine) =>
+          routine.id !== routineId
+            ? routine
+            : {
+                ...routine,
+                workouts: routine.workouts.map((workout) =>
+                  workout.id !== workoutId
+                    ? workout
+                    : {
+                        ...workout,
+                        exercises: workout.exercises.map((exercise) => ({
+                          ...exercise,
+                          isDone: exercise.workoutExerciseId ? completedIds.has(exercise.workoutExerciseId) : false,
+                        })),
+                      },
+                ),
+              },
+        ),
+      }));
+    } catch (err) {
+      console.error("syncWorkoutProgress error:", err);
+    }
+  },
   resetWorkoutProgress: (routineId, workoutId) =>
     set((state) => ({
       routines: state.routines.map((routine) =>
@@ -277,6 +297,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     workoutExerciseId,
     exerciseId,
     isDone,
+    selectedDateString,
   ) => {
     const applyIsDone = (value: boolean) =>
       set((state) => ({

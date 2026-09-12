@@ -5,11 +5,13 @@ import WorkoutThumbnail from "./workout-thumbnail/workout-thumbnail";
 interface Props {
   activeRoutine?: WorkoutRoutine;
   selectedWeekdayID: number;
+  selectedDate: Date;
 }
 
 export default function WorkoutList({
   activeRoutine,
   selectedWeekdayID,
+  selectedDate,
 }: Props) {
   // functions to map out thumbnails based on workouts in the routine
 
@@ -29,12 +31,18 @@ export default function WorkoutList({
           (d) => normalizeWeekday(d) === normalizedSelectedDay,
         );
 
+        const d = new Date();
+        const diff = selectedWeekdayID - d.getDay();
+        d.setDate(d.getDate() + diff);
+        const selectedDateString = d.toISOString();
+
         return (
           <WorkoutThumbnail
             workout={workout}
             visible={isVisible}
             key={`${workout.id ?? "workout"}-${index}`}
             routineID={activeRoutine?.id ?? ""}
+            selectedDateString={selectedDateString}
           />
         );
       })}

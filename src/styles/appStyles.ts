@@ -1,7 +1,7 @@
 export const COLORS = {
   bg: "#141518",
   text: "#F5F6F7",
-  textFaint: "#565A60",
+  textFaint: "#8A8F98",
   textMuted: "rgba(255,255,255,0.5)",
   accent: "#ffd61f",
   surface: "rgba(255,255,255,0.045)",

@@ -7,7 +7,7 @@ import PrebuiltWorkoutList from "./prebuilt-workout-list";
 const COLORS = {
   bg: "#141518",
   text: "#F5F6F7",
-  textFaint: "#565A60",
+  textFaint: "#8A8F98",
   accent: "#ffd61f",
   surfaceBorder: "rgba(255,255,255,0.09)",
 };
@@ -20,7 +20,7 @@ export default function AddWorkoutNAV() {
     <>
       <Stack.Screen
         options={{
-          headerTitle: "",
+          headerTitle: "Routines",
           headerBackButtonDisplayMode: "minimal",
           headerStyle: {
             backgroundColor: COLORS.bg,
@@ -40,7 +40,7 @@ export default function AddWorkoutNAV() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.sectionLabel}>Prebuilt Routines</Text>
+          
           <PrebuiltWorkoutList />
         </ScrollView>
 

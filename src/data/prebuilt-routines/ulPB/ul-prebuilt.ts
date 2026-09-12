@@ -5,5 +5,5 @@ import { UpperDay } from "./upper";
 export const UpperLower: WorkoutRoutine = {
   id: "upper-lower",
   name: "Upper / Lower",
-  workoutRoutine: [UpperDay, LowerDay],
+  workouts: [UpperDay, LowerDay],
 };
