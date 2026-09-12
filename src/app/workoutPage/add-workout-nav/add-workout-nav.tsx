@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddCustomButton from "./add-custom-button";
@@ -8,11 +8,13 @@ const COLORS = {
   bg: "#141518",
   text: "#F5F6F7",
   textFaint: "#565A60",
+  accent: "#ffd61f",
   surfaceBorder: "rgba(255,255,255,0.09)",
 };
 
 export default function AddWorkoutNAV() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <>
@@ -38,7 +40,7 @@ export default function AddWorkoutNAV() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.sectionLabel}>PREBUILT ROUTINES</Text>
+          <Text style={styles.sectionLabel}>Prebuilt Routines</Text>
           <PrebuiltWorkoutList />
         </ScrollView>
 
@@ -63,7 +65,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 12,
     fontWeight: "800",
-    letterSpacing: 3,
     marginBottom: 12,
     marginHorizontal: 16,
   },

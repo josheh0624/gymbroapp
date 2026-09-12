@@ -30,6 +30,12 @@ interface AvailableExercise {
   muscle_group_name?: string;
 }
 
+interface MuscleGroup {
+  id: number;
+  name: string;
+  body_region: string;
+}
+
 interface WorkoutExerciseInput {
   exerciseId: string;
   name: string;
@@ -44,23 +50,34 @@ export default function CreateWorkout() {
 
   const [workoutName, setWorkoutName] = useState("");
   const [exercises, setExercises] = useState<AvailableExercise[]>([]);
+  const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>([]);
   const [addedExercises, setAddedExercises] = useState<WorkoutExerciseInput[]>(
     [],
   );
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState<
+    number | null
+  >(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingExercise, setIsCreatingExercise] = useState(false);
 
   useEffect(() => {
-    async function fetchExercises() {
+    async function fetchData() {
       try {
-        const res = await api.get<AvailableExercise[]>("/exercises/getAll");
-        setExercises(res.data);
+        const [exRes, mgRes] = await Promise.all([
+          api.get<AvailableExercise[]>("/exercises/getAll"),
+          api.get<MuscleGroup[]>("/exercises/muscleGroups").catch(() => ({
+            data: [],
+          })),
+        ]);
+        setExercises(exRes.data);
+        if (mgRes?.data) setMuscleGroups(mgRes.data);
       } catch (err) {
-        console.error("Failed to fetch exercises", err);
+        console.error("Failed to fetch data", err);
       }
     }
-    fetchExercises();
+    fetchData();
   }, []);
 
   const handleAddExercise = (ex: AvailableExercise) => {
@@ -69,13 +86,24 @@ export default function CreateWorkout() {
       { exerciseId: ex.id, name: ex.name, sets: 3, reps: 10, weight: 0 },
     ]);
     setSearchQuery("");
+    setIsCreatingExercise(false);
+    setSelectedMuscleGroupId(null);
   };
 
   const handleCreateNewExercise = async () => {
     const name = searchQuery.trim();
     if (!name) return;
+
+    if (!isCreatingExercise) {
+      setIsCreatingExercise(true);
+      return;
+    }
+
     try {
-      const res = await api.post("/exercises/create", { name });
+      const res = await api.post("/exercises/create", {
+        name,
+        muscleGroupId: selectedMuscleGroupId,
+      });
       const newEx = { id: res.data.id, name: res.data.name };
       setExercises((prev) => [...prev, newEx]);
       handleAddExercise(newEx);
@@ -171,7 +199,7 @@ export default function CreateWorkout() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.widget}>
-            <Text style={styles.label}>WORKOUT NAME</Text>
+            <Text style={styles.label}>Workout Name</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. Push Day"
@@ -184,7 +212,7 @@ export default function CreateWorkout() {
 
           {addedExercises.length > 0 && (
             <View style={styles.widget}>
-              <Text style={styles.label}>EXERCISES</Text>
+              <Text style={styles.label}>Exercises</Text>
               <View style={styles.list}>
                 {addedExercises.map((ex, index) => (
                   <View
@@ -249,7 +277,7 @@ export default function CreateWorkout() {
           )}
 
           <View style={styles.widget}>
-            <Text style={styles.label}>ADD EXERCISE</Text>
+            <Text style={styles.label}>Add Exercise</Text>
             <TextInput
               style={[styles.input, { marginBottom: 16 }]}
               placeholder="Search or create new..."
@@ -261,15 +289,66 @@ export default function CreateWorkout() {
 
             <View style={styles.list}>
               {showCreateOption && (
-                <Pressable
-                  style={styles.workoutRow}
-                  onPress={handleCreateNewExercise}
-                >
-                  <Ionicons name="add-circle" size={20} color={COLORS.accent} />
-                  <Text style={[styles.workoutName, { color: COLORS.accent }]}>
-                    Create "{searchQuery.trim()}"
-                  </Text>
-                </Pressable>
+                <View>
+                  <Pressable
+                    style={styles.workoutRow}
+                    onPress={handleCreateNewExercise}
+                  >
+                    <Ionicons
+                      name={
+                        isCreatingExercise ? "checkmark-circle" : "add-circle"
+                      }
+                      size={20}
+                      color={COLORS.accent}
+                    />
+                    <Text
+                      style={[styles.workoutName, { color: COLORS.accent }]}
+                    >
+                      {isCreatingExercise
+                        ? `Save "${searchQuery.trim()}"`
+                        : `Create "${searchQuery.trim()}"`}
+                    </Text>
+                  </Pressable>
+
+                  {isCreatingExercise && (
+                    <View style={styles.muscleGroupContainer}>
+                      <Text style={styles.metricLabel}>
+                        Select Muscle Group (optional)
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.mgScroll}
+                      >
+                        {muscleGroups.map((mg) => (
+                          <Pressable
+                            key={mg.id}
+                            style={[
+                              styles.mgPill,
+                              selectedMuscleGroupId === mg.id &&
+                                styles.mgPillActive,
+                            ]}
+                            onPress={() =>
+                              setSelectedMuscleGroupId(
+                                mg.id === selectedMuscleGroupId ? null : mg.id,
+                              )
+                            }
+                          >
+                            <Text
+                              style={[
+                                styles.mgText,
+                                selectedMuscleGroupId === mg.id &&
+                                  styles.mgTextActive,
+                              ]}
+                            >
+                              {mg.name}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
               )}
               {filteredExercises.slice(0, 10).map((ex, index) => (
                 <Pressable
@@ -331,7 +410,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 2,
     marginBottom: 16,
   },
   input: {
@@ -385,7 +463,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 10,
     fontWeight: "800",
-    textTransform: "uppercase",
     marginBottom: 6,
   },
   metricInput: {
@@ -417,5 +494,34 @@ const styles = StyleSheet.create({
     color: "#141518",
     fontSize: 16,
     fontWeight: "800",
+  },
+  muscleGroupContainer: {
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.surfaceBorder,
+  },
+  mgScroll: {
+    gap: 8,
+    paddingTop: 8,
+  },
+  mgPill: {
+    backgroundColor: COLORS.bg,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+  },
+  mgPillActive: {
+    backgroundColor: "rgba(255,214,31,0.12)",
+    borderColor: COLORS.accent,
+  },
+  mgText: {
+    color: COLORS.textFaint,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  mgTextActive: {
+    color: COLORS.accent,
   },
 });

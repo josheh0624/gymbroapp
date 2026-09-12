@@ -131,5 +131,18 @@ router.delete("/deleteExercise/:id", async (req: Request, res: Response) => {
   }
 });
 
+// get all muscle groups
+router.get("/muscleGroups", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, body_region FROM muscle_groups ORDER BY name",
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("error muscleGroups:", err);
+    res.status(500).json({ error: "Failed to fetch muscle groups" });
+  }
+});
+
 export default router;
 export { router as exerciseRouter };

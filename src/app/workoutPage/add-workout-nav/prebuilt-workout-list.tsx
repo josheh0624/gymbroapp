@@ -16,19 +16,32 @@ export default function PrebuiltWorkoutList() {
     fetchRoutineList();
   }, []);
 
-  if (routineList.length === 0) {
-    return (
-      <View style={styles.emptyCard}>
-        <Text style={styles.emptyText}>No prebuilt routines available.</Text>
-      </View>
-    );
-  }
+  const prebuiltRoutines = routineList.filter((r) => r.is_prebuilt);
+  const customRoutines = routineList.filter((r) => !r.is_prebuilt);
 
   return (
     <View style={styles.container}>
-      {routineList.map((routine) => (
-        <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
-      ))}
+      <Text style={styles.sectionTitle}>Custom Routines</Text>
+      {customRoutines.length > 0 ? (
+        customRoutines.map((routine) => (
+          <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
+        ))
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>No custom routines yet.</Text>
+        </View>
+      )}
+
+      <Text style={styles.sectionTitle}>Prebuilt Routines</Text>
+      {prebuiltRoutines.length > 0 ? (
+        prebuiltRoutines.map((routine) => (
+          <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
+        ))
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>No prebuilt routines found.</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -38,6 +51,14 @@ const styles = StyleSheet.create({
     alignContent: "center",
     width: "100%",
   },
+  sectionTitle: {
+    color: "#F5F6F7",
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 20,
+    marginBottom: 12,
+    marginTop: 16,
+  },
   emptyCard: {
     marginHorizontal: 16,
     borderRadius: 24,
@@ -45,6 +66,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
     paddingHorizontal: 20,
     alignItems: "center",
+    marginBottom: 20,
   },
   emptyText: {
     color: COLORS.textMuted,

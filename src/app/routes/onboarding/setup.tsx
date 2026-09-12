@@ -205,7 +205,7 @@ export default function SetupScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.brandRow}>
-              <Text style={styles.brandText}>GYMBRO</Text>
+              <Text style={styles.brandText}>Gymbro</Text>
             </View>
 
             <BlurView intensity={35} tint="dark" style={styles.card}>
@@ -239,7 +239,7 @@ export default function SetupScreen() {
 
                 {step === 0 && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>AGE</Text>
+                    <Text style={styles.label}>Age</Text>
                     <View style={styles.inputShell}>
                       <TextInput
                         placeholder="24"
@@ -257,7 +257,7 @@ export default function SetupScreen() {
 
                 {step === 1 && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>HEIGHT</Text>
+                    <Text style={styles.label}>Height</Text>
                     <View style={styles.row}>
                       <View style={styles.halfField}>
                         <View style={styles.inputShell}>
@@ -272,7 +272,7 @@ export default function SetupScreen() {
                             autoFocus
                           />
                         </View>
-                        <Text style={styles.unitCaption}>FEET</Text>
+                        <Text style={styles.unitCaption}>Feet</Text>
                       </View>
                       <View style={styles.halfField}>
                         <View style={styles.inputShell}>
@@ -286,7 +286,7 @@ export default function SetupScreen() {
                             onChangeText={setInches}
                           />
                         </View>
-                        <Text style={styles.unitCaption}>INCHES</Text>
+                        <Text style={styles.unitCaption}>Inches</Text>
                       </View>
                     </View>
                   </View>
@@ -294,7 +294,7 @@ export default function SetupScreen() {
 
                 {step === 2 && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>WEIGHT (LBS)</Text>
+                    <Text style={styles.label}>Weight (lbs)</Text>
                     <View style={styles.inputShell}>
                       <TextInput
                         placeholder="175"
@@ -312,7 +312,7 @@ export default function SetupScreen() {
 
                 {step === 3 && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>SEX</Text>
+                    <Text style={styles.label}>Sex</Text>
                     <View style={styles.pillRow}>
                       {SEX_OPTIONS.map((opt) => {
                         const selected = sex === opt.value;
@@ -388,7 +388,6 @@ const styles = StyleSheet.create({
     color: "#EDEDEF",
     fontSize: 15,
     fontWeight: "800",
-    letterSpacing: 6,
   },
   card: {
     width: "100%",
@@ -435,14 +434,12 @@ const styles = StyleSheet.create({
     color: "#84878E",
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 3,
     marginBottom: 10,
   },
   headline: {
     color: "#EDEDEF",
     fontSize: 30,
     fontWeight: "800",
-    letterSpacing: 0.2,
     lineHeight: 34,
   },
   headlineBar: {
@@ -458,7 +455,6 @@ const styles = StyleSheet.create({
     color: "#6A6D74",
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 2,
     marginBottom: 8,
   },
   inputShell: {
@@ -479,7 +475,6 @@ const styles = StyleSheet.create({
     color: "#54575D",
     fontSize: 10,
     fontWeight: "700",
-    letterSpacing: 1.5,
     marginTop: 6,
     textAlign: "center",
   },
@@ -502,7 +497,6 @@ const styles = StyleSheet.create({
     color: "#84878E",
     fontSize: 13,
     fontWeight: "700",
-    letterSpacing: 0.5,
   },
   pillTextSelected: {
     color: "#141518",
@@ -524,7 +518,6 @@ const styles = StyleSheet.create({
     color: "#F5F5F6",
     fontSize: 14,
     fontWeight: "800",
-    letterSpacing: 2,
   },
   skipLink: {
     alignItems: "center",
@@ -535,13 +528,11 @@ const styles = StyleSheet.create({
     color: "#6A6D74",
     fontSize: 13,
     fontWeight: "600",
-    letterSpacing: 0.3,
   },
   footer: {
     color: "#46484D",
     fontSize: 12,
     fontWeight: "600",
-    letterSpacing: 1,
     marginTop: 24,
   },
   errorText: {

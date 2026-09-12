@@ -1,8 +1,13 @@
 import { api } from "@/api/api";
 import { useRoutineStore } from "@/store/routineStore";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Stack, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import {
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -33,6 +38,7 @@ interface AvailableWorkout {
 export default function CustomWorkout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams<{ id?: string }>();
 
   const [routineName, setRoutineName] = useState("");
   const [workouts, setWorkouts] = useState<AvailableWorkout[]>([]);
@@ -40,8 +46,12 @@ export default function CustomWorkout() {
     new Set(),
   );
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(true);
+  const [isInitializingEdit, setIsInitializingEdit] = useState(!!id);
 
   const createRoutine = useRoutineStore((s) => s.createRoutine);
+  const updateRoutine = useRoutineStore((s) => s.updateRoutine);
+  const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
+  const routines = useRoutineStore((s) => s.routines);
   const isCreating = useRoutineStore((s) => s.isLoading);
 
   useFocusEffect(
@@ -60,12 +70,32 @@ export default function CustomWorkout() {
     }, []),
   );
 
-  const toggleWorkout = (id: string) => {
+  useEffect(() => {
+    if (id) {
+      const initializeEdit = async () => {
+        await fetchRoutineById(id);
+        setIsInitializingEdit(false);
+      };
+      initializeEdit();
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id && !isInitializingEdit) {
+      const routine = routines.find((r) => r.id === id);
+      if (routine) {
+        setRoutineName(routine.name);
+        setSelectedWorkoutIds(new Set(routine.workouts.map((w) => w.id)));
+      }
+    }
+  }, [id, isInitializingEdit, routines]);
+
+  const toggleWorkout = (w_id: string) => {
     const next = new Set(selectedWorkoutIds);
-    if (next.has(id)) {
-      next.delete(id);
+    if (next.has(w_id)) {
+      next.delete(w_id);
     } else {
-      next.add(id);
+      next.add(w_id);
     }
     setSelectedWorkoutIds(next);
   };
@@ -80,12 +110,19 @@ export default function CustomWorkout() {
       return;
     }
 
-    const newId = await createRoutine(
-      routineName.trim(),
-      Array.from(selectedWorkoutIds),
-    );
-    if (newId) {
-      router.back();
+    if (id) {
+      const success = await updateRoutine(
+        id,
+        routineName.trim(),
+        Array.from(selectedWorkoutIds),
+      );
+      if (success) router.back();
+    } else {
+      const newId = await createRoutine(
+        routineName.trim(),
+        Array.from(selectedWorkoutIds),
+      );
+      if (newId) router.back();
     }
   };
 
@@ -93,14 +130,16 @@ export default function CustomWorkout() {
     <>
       <Stack.Screen
         options={{
-          headerTitle: "Create Routine",
+          headerTitle: id ? "Edit Routine" : "Create Routine",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: COLORS.bg },
+          headerStyle: {
+            backgroundColor: COLORS.bg,
+          },
           headerShadowVisible: false,
           headerTintColor: COLORS.text,
           headerTitleStyle: {
-            fontSize: 20,
-            fontWeight: "700",
+            fontSize: 22,
+            fontWeight: "800",
             color: COLORS.text,
           },
         }}
@@ -109,7 +148,7 @@ export default function CustomWorkout() {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.widget}>
-            <Text style={styles.label}>ROUTINE NAME</Text>
+            <Text style={styles.label}>Routine Name</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. Bro Split"
@@ -122,75 +161,66 @@ export default function CustomWorkout() {
           </View>
 
           <View style={styles.widget}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <Text style={[styles.label, { marginBottom: 0 }]}>
-                SELECT WORKOUTS
-              </Text>
-              <Pressable
-                onPress={() =>
-                  router.push("/workoutPage/add-workout-nav/create-workout")
-                }
-                hitSlop={8}
-              >
-                <Text
-                  style={{
-                    color: COLORS.accent,
-                    fontSize: 13,
-                    fontWeight: "700",
-                  }}
-                >
-                  + Create New
-                </Text>
-              </Pressable>
-            </View>
+            <Text style={styles.label}>Select Workouts</Text>
 
             {isLoadingWorkouts ? (
               <ActivityIndicator
                 color={COLORS.accent}
                 style={{ marginTop: 20, marginBottom: 10 }}
               />
-            ) : workouts.length === 0 ? (
-              <Text style={styles.emptyText}>
-                No available workouts found. Create one above!
-              </Text>
             ) : (
               <View style={styles.list}>
-                {workouts.map((workout, index) => {
-                  const isSelected = selectedWorkoutIds.has(workout.id);
-                  return (
-                    <Pressable
-                      key={workout.id}
-                      onPress={() => toggleWorkout(workout.id)}
-                      style={[
-                        styles.workoutRow,
-                        index !== workouts.length - 1 && styles.rowDivider,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.checkbox,
-                          isSelected && styles.checkboxSelected,
-                        ]}
+                {workouts.length === 0 ? (
+                  <Text style={[styles.emptyText, { paddingVertical: 14 }]}>
+                    No available workouts found.
+                  </Text>
+                ) : (
+                  workouts.map((workout, index) => {
+                    const isSelected = selectedWorkoutIds.has(workout.id);
+                    return (
+                      <Pressable
+                        key={workout.id}
+                        onPress={() => toggleWorkout(workout.id)}
+                        style={[styles.workoutRow, styles.rowDivider]}
                       >
-                        {isSelected && (
-                          <Ionicons
-                            name="checkmark"
-                            size={16}
-                            color="#141518"
-                          />
-                        )}
-                      </View>
-                      <Text style={styles.workoutName}>{workout.name}</Text>
-                    </Pressable>
-                  );
-                })}
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isSelected && styles.checkboxSelected,
+                          ]}
+                        >
+                          {isSelected && (
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color="#141518"
+                            />
+                          )}
+                        </View>
+                        <Text style={styles.workoutName}>{workout.name}</Text>
+                      </Pressable>
+                    );
+                  })
+                )}
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.workoutRow,
+                    {
+                      justifyContent: "center",
+                      paddingTop: 20,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                  onPress={() =>
+                    router.push("/workoutPage/add-workout-nav/create-workout")
+                  }
+                >
+                  <Ionicons name="add-circle" size={20} color={COLORS.accent} />
+                  <Text style={[styles.workoutName, { color: COLORS.accent }]}>
+                    Create Custom Workout
+                  </Text>
+                </Pressable>
               </View>
             )}
           </View>
@@ -238,7 +268,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 2,
     marginBottom: 16,
   },
   input: {

@@ -10,6 +10,7 @@ import { api } from "../api/api"; // adjust to your actual config location
 interface RoutineListItem {
   id: string;
   name: string;
+  is_prebuilt: boolean;
   workout_count: number;
 }
 
@@ -23,11 +24,16 @@ interface RoutineState {
   error: string | null;
 
   fetchRoutineList: () => Promise<void>; //GET /routines/getAll
-  fetchRoutineById: (id: string) => Promise<void>; //GET /routines/fetchRoutine/:id
-  createRoutine: (name: string, workoutIds: string[]) => Promise<string | null>; //POST /routines/create
-
-  addRoutine: (routine: WorkoutRoutine) => void; //local add (kept for optimistic updates)
-  setActiveRoutine: (id: string) => void; //set the single routine
+  fetchRoutineById: (id: string) => Promise<void>;
+  createRoutine: (name: string, workoutIds: string[]) => Promise<string | null>;
+  updateRoutine: (
+    id: string,
+    name: string,
+    workoutIds: string[],
+  ) => Promise<boolean>;
+  deleteRoutine: (id: string) => Promise<boolean>;
+  addRoutine: (routine: WorkoutRoutine) => void;
+  setActiveRoutine: (id: string | null) => void;
   getActiveRoutine: () => WorkoutRoutine | undefined; //get the single active routine
   getExerciseById: (routineId: string, workoutId: string) => Promise<void>;
 
@@ -128,6 +134,46 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         isLoading: false,
       });
       return null;
+    }
+  },
+
+  updateRoutine: async (id, name, workoutIds) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.put(`/routines/update/${id}`, { name, workoutIds });
+      await get().fetchRoutineList();
+      set({ isLoading: false });
+      return true;
+    } catch (err: any) {
+      console.error("updateRoutine error:", err);
+      set({
+        error:
+          err?.response?.data?.error ||
+          err.message ||
+          "Failed to update routine",
+        isLoading: false,
+      });
+      return false;
+    }
+  },
+
+  deleteRoutine: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.delete(`/routines/delete/${id}`);
+      await get().fetchRoutineList();
+      set({ isLoading: false });
+      return true;
+    } catch (err: any) {
+      console.error("deleteRoutine error:", err);
+      set({
+        error:
+          err?.response?.data?.error ||
+          err.message ||
+          "Failed to delete routine",
+        isLoading: false,
+      });
+      return false;
     }
   },
 

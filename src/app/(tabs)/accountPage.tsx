@@ -46,44 +46,44 @@ export default function AccountScreen() {
 
           {/* 4 Stat Widgets (2x2 Grid) */}
           <StatWidget
-            label="AGE"
+            label="Age"
             value={user?.age ? `${user.age}` : "—"}
             icon="calendar"
           />
           <StatWidget
-            label="WEIGHT"
+            label="Weight"
             value={user?.weight_lbs ? `${user.weight_lbs}` : "—"}
             icon="barbell"
           />
           <StatWidget
-            label="HEIGHT"
+            label="Height"
             value={user?.height_ft ? `${user.height_ft}'` : "—"}
             icon="body"
           />
           <StatWidget
-            label="SEX"
+            label="Sex"
             value={user?.sex ? user.sex.toUpperCase() : "—"}
             icon="male-female"
           />
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PREFERENCES</Text>
+            <Text style={styles.sectionTitle}>Preferences</Text>
           </View>
 
           {/* Action Widgets */}
-          <ActionWidget label="Units" subLabel="LBS" icon="swap-horizontal" />
-          <ActionWidget label="Theme" subLabel="DARK" icon="moon" />
-          <ActionWidget label="Rest Timer" subLabel="OFF" icon="timer" />
+          <ActionWidget label="Units" subLabel="Lbs" icon="swap-horizontal" />
+          <ActionWidget label="Theme" subLabel="Dark" icon="moon" />
+          <ActionWidget label="Rest Timer" subLabel="Off" icon="timer" />
           <ActionWidget
             label="Notifications"
-            subLabel="ON"
+            subLabel="On"
             icon="notifications"
           />
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>SETTINGS</Text>
+            <Text style={styles.sectionTitle}>Settings</Text>
           </View>
 
           <ActionWidget label="Edit Profile" icon="person" />
@@ -94,7 +94,7 @@ export default function AccountScreen() {
           {/* Danger Zone */}
           <Pressable style={styles.logoutWidget} onPress={logout}>
             <Ionicons name="log-out" size={24} color={COLORS.bg} />
-            <Text style={styles.logoutText}>LOG OUT</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
 
           <Pressable style={styles.deleteAccountBtn}>
@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 28,
     fontWeight: "900",
-    letterSpacing: 1,
   },
 
   grid: {
@@ -220,15 +219,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 24,
     fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: -0.5,
   },
   memberSince: {
     color: COLORS.accent,
     fontSize: 11,
     fontWeight: "900",
     marginTop: 4,
-    letterSpacing: 1,
   },
 
   statWidget: {
@@ -257,7 +253,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 1.5,
     marginTop: 4,
   },
 
@@ -271,7 +266,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 12,
     fontWeight: "900",
-    letterSpacing: 2,
   },
 
   actionWidget: {
@@ -296,7 +290,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     marginTop: 6,
-    letterSpacing: 1,
   },
 
   logoutWidget: {
@@ -317,7 +310,6 @@ const styles = StyleSheet.create({
     color: COLORS.bg,
     fontSize: 16,
     fontWeight: "900",
-    letterSpacing: 2,
     marginLeft: 10,
   },
   deleteAccountBtn: {

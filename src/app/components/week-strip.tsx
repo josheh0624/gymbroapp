@@ -114,7 +114,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: "800",
-    letterSpacing: 0.8,
   },
   selectedDayLabel: {
     color: COLORS.accent,

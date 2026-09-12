@@ -757,7 +757,7 @@ export default function MuscleMapScreen() {
                   icon="analytics"
                 />
                 <DashboardStat
-                  label="PRS"
+                  label="PRs"
                   value={stats.personalRecords ?? 0}
                   icon="trophy"
                 />
@@ -838,7 +838,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 28,
     fontWeight: "900",
-    letterSpacing: 1,
   },
 
   header: { paddingTop: 16, marginBottom: 24, paddingHorizontal: 4 },
@@ -921,7 +920,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 10,
     fontWeight: "700",
-    textTransform: "uppercase",
   },
   navIcon: {
     width: 28,
@@ -997,7 +995,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 9,
     fontWeight: "800",
-    letterSpacing: 1.2,
   },
   heroFooterValue: {
     color: COLORS.text,
@@ -1027,7 +1024,6 @@ const styles = StyleSheet.create({
     color: COLORS.textFaint,
     fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 1.5,
     marginTop: 4,
   },
 
@@ -1044,8 +1040,6 @@ const styles = StyleSheet.create({
   groupsCaption: {
     color: COLORS.textFaint,
     fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: 1,
   },
   groupsList: {
     borderTopWidth: StyleSheet.hairlineWidth,

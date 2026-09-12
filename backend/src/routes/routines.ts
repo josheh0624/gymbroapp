@@ -16,10 +16,11 @@ router.get("/getAll", async (req: Request, res: Response) => {
     SELECT 
       r.id,
       r.name,
+      r.is_prebuilt,
       COUNT(wrd.workout_id) AS workout_count
     FROM workout_routines r
     LEFT JOIN workout_routine_days wrd ON wrd.routine_id = r.id
-    GROUP BY r.id, r.name
+    GROUP BY r.id, r.name, r.is_prebuilt
     ORDER BY r.name;
   `;
 
@@ -279,6 +280,79 @@ router.post("/create", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to create routine" });
   } finally {
     client.release();
+  }
+});
+
+router.put("/update/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, workoutIds } = req.body;
+
+  if (!name || !Array.isArray(workoutIds) || workoutIds.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "name and workoutIds[] are required" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Check if exists
+    const check = await client.query(
+      "SELECT id FROM workout_routines WHERE id = $1",
+      [id],
+    );
+    if (check.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Routine not found" });
+    }
+
+    // Update name
+    await client.query("UPDATE workout_routines SET name = $1 WHERE id = $2", [
+      name,
+      id,
+    ]);
+
+    // Replace workouts
+    await client.query(
+      "DELETE FROM workout_routine_days WHERE routine_id = $1",
+      [id],
+    );
+    for (let i = 0; i < workoutIds.length; i++) {
+      await client.query(
+        "INSERT INTO workout_routine_days (routine_id, workout_id, order_index) VALUES ($1, $2, $3)",
+        [id, workoutIds[i], i],
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json({ id, name, updated: true });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("error update routine:", err);
+    res.status(500).json({ error: "Failed to update routine" });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/delete/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM workout_routines WHERE id = $1 RETURNING id",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Routine not found" });
+    }
+
+    res.json({ deleted: true, id: result.rows[0].id });
+  } catch (err) {
+    console.error("error delete routine:", err);
+    res.status(500).json({ error: "Failed to delete routine" });
   }
 });
 

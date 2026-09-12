@@ -113,17 +113,17 @@ export default function RegisterScreen() {
         <View style={styles.safe}>
           <View style={styles.content}>
             <View style={styles.brandRow}>
-              <Text style={styles.brandText}>GYMBRO</Text>
+              <Text style={styles.brandText}>Gymbro</Text>
             </View>
 
             <BlurView intensity={35} tint="dark" style={styles.card}>
               <View style={styles.cardInner}>
-                <Text style={styles.eyebrow}>NEW HERE</Text>
+                <Text style={styles.eyebrow}>New Here</Text>
                 <Text style={styles.headline}>Create your{"\n"}account.</Text>
                 <View style={styles.headlineBar} />
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>USERNAME</Text>
+                  <Text style={styles.label}>Username</Text>
                   <View style={styles.inputShell}>
                     <TextInput
                       placeholder="gymbro"
@@ -137,7 +137,7 @@ export default function RegisterScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>EMAIL</Text>
+                  <Text style={styles.label}>Email</Text>
                   <View style={styles.inputShell}>
                     <TextInput
                       placeholder="you@example.com"
@@ -152,7 +152,7 @@ export default function RegisterScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>PASSWORD</Text>
+                  <Text style={styles.label}>Password</Text>
                   <View style={styles.inputShell}>
                     <TextInput
                       placeholder="••••••••"
@@ -166,7 +166,7 @@ export default function RegisterScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>CONFIRM PASSWORD</Text>
+                  <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.inputShell}>
                     <TextInput
                       placeholder="••••••••"
@@ -194,7 +194,7 @@ export default function RegisterScreen() {
 
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>ALREADY A MEMBER</Text>
+                  <Text style={styles.dividerText}>Already a Member</Text>
                   <View style={styles.dividerLine} />
                 </View>
 
@@ -233,7 +233,6 @@ const styles = StyleSheet.create({
     color: "#EDEDEF",
     fontSize: 15,
     fontWeight: "800",
-    letterSpacing: 6,
   },
   card: {
     width: "100%",
@@ -254,14 +253,12 @@ const styles = StyleSheet.create({
     color: "#84878E",
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 3,
     marginBottom: 10,
   },
   headline: {
     color: "#EDEDEF",
     fontSize: 30,
     fontWeight: "800",
-    letterSpacing: 0.2,
     lineHeight: 34,
   },
   headlineBar: {
@@ -277,7 +274,6 @@ const styles = StyleSheet.create({
     color: "#6A6D74",
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 2,
     marginBottom: 8,
   },
   inputShell: {
@@ -309,7 +305,6 @@ const styles = StyleSheet.create({
     color: "#F5F5F6",
     fontSize: 14,
     fontWeight: "800",
-    letterSpacing: 2,
   },
   dividerRow: {
     flexDirection: "row",
@@ -322,7 +317,6 @@ const styles = StyleSheet.create({
     color: "#54575D",
     fontSize: 10,
     fontWeight: "700",
-    letterSpacing: 2,
     marginHorizontal: 12,
   },
   secondaryCta: {
@@ -338,7 +332,6 @@ const styles = StyleSheet.create({
     color: "#46484D",
     fontSize: 12,
     fontWeight: "600",
-    letterSpacing: 1,
     marginTop: 24,
   },
   errorText: {

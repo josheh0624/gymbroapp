@@ -310,14 +310,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 28,
     fontWeight: "900",
-    letterSpacing: 1,
     marginBottom: 4,
   },
   dateText: {
     color: COLORS.accent,
     fontSize: 16,
     fontWeight: "800",
-    letterSpacing: 0.5,
   },
   settingsButton: {
     width: 38,
