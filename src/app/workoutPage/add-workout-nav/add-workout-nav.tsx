@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: COLORS.textFaint,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "normal",
     marginBottom: 12,
     marginHorizontal: 16,
   },

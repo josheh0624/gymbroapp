@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   statLabel: {
     color: COLORS.textFaint,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "normal",
     marginTop: 4,
   },
 
@@ -282,13 +282,13 @@ const styles = StyleSheet.create({
   actionLabel: {
     color: COLORS.text,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "normal",
     textAlign: "center",
   },
   actionSubLabel: {
     color: COLORS.accent,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "normal",
     marginTop: 6,
   },
 

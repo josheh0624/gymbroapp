@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   label: {
     color: COLORS.textFaint,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "normal",
     marginBottom: 16,
   },
   input: {

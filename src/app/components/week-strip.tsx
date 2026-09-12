@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     color: COLORS.textMuted,
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "normal",
   },
   selectedDayLabel: {
     color: COLORS.accent,

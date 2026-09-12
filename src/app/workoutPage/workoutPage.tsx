@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: COLORS.text,
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: "normal",
   },
   sectionCount: {
     color: COLORS.textMuted,
@@ -423,12 +423,12 @@ const styles = StyleSheet.create({
   dockLabel: {
     color: COLORS.text,
     fontSize: 15,
-    fontWeight: "500",
+    fontWeight: "normal",
   },
   startLabel: {
     color: COLORS.accent,
     fontSize: 17,
-    fontWeight: "800",
+    fontWeight: "normal",
   },
   changeRoutineButton: {
     backgroundColor: "#1C1D22",

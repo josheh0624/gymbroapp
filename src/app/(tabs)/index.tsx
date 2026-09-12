@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   weekWidgetLabel: {
     color: COLORS.textFaint,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "normal",
   },
   weekPagerText: { color: COLORS.text, fontSize: 13, fontWeight: "800" },
   weekStripInner: {
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   weekDotLabel: {
     color: COLORS.textFaint,
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "normal",
   },
   navIcon: {
     width: 28,
@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
   heroFooterLabel: {
     color: COLORS.textFaint,
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "normal",
   },
   heroFooterValue: {
     color: COLORS.text,
@@ -1023,7 +1023,7 @@ const styles = StyleSheet.create({
   statLabel: {
     color: COLORS.textFaint,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "normal",
     marginTop: 4,
   },
 

@@ -61,6 +61,7 @@ export default function CreateWorkout() {
   >(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingExercise, setIsCreatingExercise] = useState(false);
+  const [showMgDropdown, setShowMgDropdown] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -92,10 +93,12 @@ export default function CreateWorkout() {
 
   const handleCreateNewExercise = async () => {
     const name = searchQuery.trim();
-    if (!name) return;
-
-    if (!isCreatingExercise) {
-      setIsCreatingExercise(true);
+    if (!name) {
+      Alert.alert("Error", "Please enter an exercise name");
+      return;
+    }
+    if (!selectedMuscleGroupId) {
+      Alert.alert("Error", "Please select a muscle group");
       return;
     }
 
@@ -278,93 +281,148 @@ export default function CreateWorkout() {
 
           <View style={styles.widget}>
             <Text style={styles.label}>Add Exercise</Text>
-            <TextInput
-              style={[styles.input, { marginBottom: 16 }]}
-              placeholder="Search or create new..."
-              placeholderTextColor={COLORS.textFaint}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              returnKeyType="search"
-            />
 
-            <View style={styles.list}>
-              {showCreateOption && (
-                <View>
+            {!isCreatingExercise && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.workoutRow,
+                  {
+                    justifyContent: "center",
+                    paddingTop: 0,
+                    paddingBottom: 20,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={() => setIsCreatingExercise(true)}
+              >
+                <Ionicons
+                  name="add-circle"
+                  size={20}
+                  color={COLORS.accent}
+                />
+                <Text
+                  style={[styles.workoutName, { color: COLORS.accent }]}
+                >
+                  Create Custom Exercise
+                </Text>
+              </Pressable>
+            )}
+
+            {isCreatingExercise ? (
+              <View style={styles.customExerciseForm}>
+                <TextInput
+                  style={[styles.input, { marginBottom: 16 }]}
+                  placeholder="Exercise Name"
+                  placeholderTextColor={COLORS.textFaint}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus
+                />
+                <View style={styles.muscleGroupContainer}>
+                  <Text style={styles.metricLabel}>Select Muscle Group</Text>
                   <Pressable
-                    style={styles.workoutRow}
-                    onPress={handleCreateNewExercise}
+                    style={styles.dropdownToggle}
+                    onPress={() => setShowMgDropdown(!showMgDropdown)}
                   >
-                    <Ionicons
-                      name={
-                        isCreatingExercise ? "checkmark-circle" : "add-circle"
-                      }
-                      size={20}
-                      color={COLORS.accent}
-                    />
                     <Text
-                      style={[styles.workoutName, { color: COLORS.accent }]}
+                      style={[
+                        styles.dropdownToggleText,
+                        !selectedMuscleGroupId && { color: COLORS.textFaint },
+                      ]}
                     >
-                      {isCreatingExercise
-                        ? `Save "${searchQuery.trim()}"`
-                        : `Create "${searchQuery.trim()}"`}
+                      {selectedMuscleGroupId
+                        ? muscleGroups.find(
+                            (m) => m.id === selectedMuscleGroupId,
+                          )?.name
+                        : "Select..."}
                     </Text>
+                    <Ionicons
+                      name={showMgDropdown ? "chevron-up" : "chevron-down"}
+                      size={16}
+                      color={COLORS.textFaint}
+                    />
                   </Pressable>
 
-                  {isCreatingExercise && (
-                    <View style={styles.muscleGroupContainer}>
-                      <Text style={styles.metricLabel}>
-                        Select Muscle Group (optional)
-                      </Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.mgScroll}
-                      >
-                        {muscleGroups.map((mg) => (
-                          <Pressable
-                            key={mg.id}
+                  {showMgDropdown && (
+                    <ScrollView
+                      style={styles.dropdownList}
+                      nestedScrollEnabled={true}
+                    >
+                      {muscleGroups.map((mg) => (
+                        <Pressable
+                          key={mg.id}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setSelectedMuscleGroupId(mg.id);
+                            setShowMgDropdown(false);
+                          }}
+                        >
+                          <Text
                             style={[
-                              styles.mgPill,
+                              styles.dropdownItemText,
                               selectedMuscleGroupId === mg.id &&
-                                styles.mgPillActive,
+                                styles.dropdownItemTextActive,
                             ]}
-                            onPress={() =>
-                              setSelectedMuscleGroupId(
-                                mg.id === selectedMuscleGroupId ? null : mg.id,
-                              )
-                            }
                           >
-                            <Text
-                              style={[
-                                styles.mgText,
-                                selectedMuscleGroupId === mg.id &&
-                                  styles.mgTextActive,
-                              ]}
-                            >
-                              {mg.name}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </ScrollView>
-                    </View>
+                            {mg.name}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
                   )}
                 </View>
-              )}
-              {filteredExercises.slice(0, 10).map((ex, index) => (
-                <Pressable
-                  key={ex.id}
-                  style={[
-                    styles.workoutRow,
-                    index !== Math.min(filteredExercises.length, 10) - 1 &&
-                      styles.rowDivider,
-                  ]}
-                  onPress={() => handleAddExercise(ex)}
-                >
-                  <Ionicons name="add" size={20} color={COLORS.textFaint} />
-                  <Text style={styles.workoutName}>{ex.name}</Text>
-                </Pressable>
-              ))}
-            </View>
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                  <Pressable
+                    style={[styles.formBtn, { backgroundColor: COLORS.bg }]}
+                    onPress={() => {
+                      setIsCreatingExercise(false);
+                      setSearchQuery("");
+                      setSelectedMuscleGroupId(null);
+                    }}
+                  >
+                    <Text style={{ color: COLORS.text, fontWeight: "700" }}>
+                      Cancel
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.formBtn, { backgroundColor: COLORS.accent }]}
+                    onPress={handleCreateNewExercise}
+                  >
+                    <Text style={{ color: "#141518", fontWeight: "700" }}>
+                      Create
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  style={[styles.input, { marginBottom: 16 }]}
+                  placeholder="Search exercises..."
+                  placeholderTextColor={COLORS.textFaint}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  returnKeyType="search"
+                />
+
+                <View style={styles.list}>
+                  {filteredExercises.slice(0, 10).map((ex, index) => (
+                    <Pressable
+                      key={ex.id}
+                      style={[
+                        styles.workoutRow,
+                        index !== Math.min(filteredExercises.length, 10) - 1 &&
+                          styles.rowDivider,
+                      ]}
+                      onPress={() => handleAddExercise(ex)}
+                    >
+                      <Ionicons name="add" size={20} color={COLORS.textFaint} />
+                      <Text style={styles.workoutName}>{ex.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
           </View>
         </ScrollView>
 
@@ -409,7 +467,7 @@ const styles = StyleSheet.create({
   label: {
     color: COLORS.textFaint,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "normal",
     marginBottom: 16,
   },
   input: {
@@ -462,7 +520,7 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: COLORS.textFaint,
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "normal",
     marginBottom: 6,
   },
   metricInput: {
@@ -522,6 +580,57 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   mgTextActive: {
+    color: COLORS.accent,
+  },
+  customExerciseForm: {
+    marginTop: 8,
+  },
+  formBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  dropdownToggle: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: COLORS.bg,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    marginTop: 8,
+  },
+  dropdownToggleText: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  dropdownList: {
+    backgroundColor: COLORS.bg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceBorder,
+    marginTop: 8,
+    maxHeight: 200,
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.surfaceBorder,
+  },
+  dropdownItemText: {
+    color: COLORS.textFaint,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  dropdownItemTextActive: {
     color: COLORS.accent,
   },
 });
