@@ -1,4 +1,3 @@
-import { BASE_URL } from "@/api/api";
 import { uploadProfilePhoto } from "@/api/user";
 import { useAuthStore } from "@/store/authStore";
 import { COLORS } from "@/styles/appStyles";
@@ -50,14 +49,7 @@ export function PickProfilePhoto() {
     }
   };
 
-  const getFullImageUrl = (url: string) => {
-    let finalUrl = url;
-    if (finalUrl.startsWith("http")) return finalUrl;
-
-    const base = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
-    const path = finalUrl.startsWith("/") ? finalUrl : `/${finalUrl}`;
-    return `${base}${path}`;
-  };
+  const getFullImageUrl = (url: string) => url;
 
   return (
     <Pressable onPress={pickImage} disabled={uploading}>
@@ -95,17 +87,7 @@ export function ProfilePhoto({
     ? user.username.slice(0, 2).toUpperCase()
     : "??";
 
-  const getFullImageUrl = (url: string) => {
-    let finalUrl = url;
-    if (finalUrl.startsWith("http://localhost:3000")) {
-      finalUrl = finalUrl.replace("http://localhost:3000", "");
-    }
-    if (finalUrl.startsWith("http")) return finalUrl;
-
-    const base = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
-    const path = finalUrl.startsWith("/") ? finalUrl : `/${finalUrl}`;
-    return `${base}${path}`;
-  };
+  const getFullImageUrl = (url: string) => url;
 
   return (
     <View

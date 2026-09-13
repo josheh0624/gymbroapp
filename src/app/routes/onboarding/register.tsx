@@ -1,4 +1,4 @@
-import { api } from "@/api/api";
+import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,7 +20,7 @@ const { width } = Dimensions.get("window");
 export default function RegisterScreen() {
   const router = useRouter();
 
-  const register = useAuthStore((state) => state.register);
+
   const user = useAuthStore((s) => s.user);
 
   const [username, setUsername] = useState("");
@@ -56,23 +56,20 @@ export default function RegisterScreen() {
 
     setSubmitting(true);
     try {
-      const res = await api.post("/auth/register", {
-        username: trimmedUsername,
+      const { error: authError } = await supabase.auth.signUp({
         email: trimmedEmail,
         password,
+        options: {
+          data: {
+            username: trimmedUsername,
+          }
+        }
       });
-
-      const { user, token } = res.data;
-      await register(user, token);
+      if (authError) throw authError;
       // Stack.Protected in RootLayout swaps to (tabs) automatically
     } catch (err: any) {
-      if (err.response?.status === 400) {
-        setError(err.response.data?.message ?? "Unable to create account.");
-      } else if (err.response?.status === 409) {
-        setError("That email is already registered.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      console.error("Register error:", err);
+      setError(err.message || "Unable to create account.");
     } finally {
       setSubmitting(false);
     }

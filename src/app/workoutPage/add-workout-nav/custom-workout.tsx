@@ -1,12 +1,8 @@
-import { api } from "@/api/api";
+import { supabase } from "@/api/supabase";
 import { useRoutineStore } from "@/store/routineStore";
+import { COLORS } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import {
-  Stack,
-  useFocusEffect,
-  useLocalSearchParams,
-  useRouter,
-} from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,21 +15,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 
-const COLORS = {
-  bg: "#111214",
-  text: "#F5F6F7",
-  textFaint: "#8A8F98",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
-  widgetBg: "#1C1D22",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
-
-interface AvailableWorkout {
-  id: string;
-  name: string;
-}
+type AvailableWorkout = { id: string; name: string; days?: number[]; user_id?: string | null };
 
 export default function CustomWorkout() {
   const router = useRouter();
@@ -45,6 +29,7 @@ export default function CustomWorkout() {
   const [selectedWorkoutIds, setSelectedWorkoutIds] = useState<Set<string>>(
     new Set(),
   );
+  const [workoutDays, setWorkoutDays] = useState<Record<string, number[]>>({});
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(true);
   const [isInitializingEdit, setIsInitializingEdit] = useState(!!id);
 
@@ -58,8 +43,19 @@ export default function CustomWorkout() {
     useCallback(() => {
       async function fetchWorkouts() {
         try {
-          const res = await api.get<AvailableWorkout[]>("/workouts/getAll");
-          setWorkouts(res.data);
+          const { data: userData } = await supabase.auth.getUser();
+          if (!userData.user) return;
+          const { data, error } = await supabase
+            .from('workouts')
+            .select('id, name, days, user_id')
+            .or(`user_id.eq.${userData.user.id},user_id.is.null`)
+            .order('name');
+          if (error) throw error;
+          
+          setWorkouts(data as AvailableWorkout[]);
+          const wDays: Record<string, number[]> = {};
+          (data as AvailableWorkout[]).forEach((w) => { wDays[w.id] = w.days || []; });
+          setWorkoutDays(wDays);
         } catch (err) {
           console.error("Failed to fetch workouts", err);
         } finally {
@@ -90,6 +86,14 @@ export default function CustomWorkout() {
     }
   }, [id, isInitializingEdit, routines]);
 
+  const toggleWorkoutDay = (w_id: string, day: number) => {
+    setWorkoutDays(prev => {
+      const current = prev[w_id] || [];
+      const next = current.includes(day) ? current.filter(d => d !== day) : [...current, day].sort((a,b) => a-b);
+      return { ...prev, [w_id]: next };
+    });
+  };
+
   const toggleWorkout = (w_id: string) => {
     const next = new Set(selectedWorkoutIds);
     if (next.has(w_id)) {
@@ -108,6 +112,20 @@ export default function CustomWorkout() {
     if (selectedWorkoutIds.size === 0) {
       Alert.alert("Error", "Please select at least one workout");
       return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        for (const wId of Array.from(selectedWorkoutIds)) {
+          const w = workouts.find(x => x.id === wId);
+          if (w && w.user_id !== null) {
+            await supabase.from('workouts').update({ days: workoutDays[wId] || [] }).eq('id', wId);
+          }
+        }
+      }
+    } catch(err) {
+      console.error(err);
     }
 
     if (id) {
@@ -178,27 +196,46 @@ export default function CustomWorkout() {
                   workouts.map((workout, index) => {
                     const isSelected = selectedWorkoutIds.has(workout.id);
                     return (
-                      <Pressable
-                        key={workout.id}
-                        onPress={() => toggleWorkout(workout.id)}
-                        style={[styles.workoutRow, styles.rowDivider]}
-                      >
-                        <View
-                          style={[
-                            styles.checkbox,
-                            isSelected && styles.checkboxSelected,
-                          ]}
+                      <View key={workout.id} style={styles.rowDivider}>
+                        <Pressable
+                          onPress={() => toggleWorkout(workout.id)}
+                          style={[styles.workoutRow]}
                         >
-                          {isSelected && (
-                            <Ionicons
-                              name="checkmark"
-                              size={16}
-                              color="#141518"
-                            />
-                          )}
-                        </View>
-                        <Text style={styles.workoutName}>{workout.name}</Text>
-                      </Pressable>
+                          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                            {isSelected && <Ionicons name="checkmark" size={16} color="#141518" />}
+                          </View>
+                          <Text style={styles.workoutName}>{workout.name}</Text>
+                        </Pressable>
+                        
+                        {isSelected && (
+                          <View style={{ paddingLeft: 40, paddingBottom: 16, flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                            {workout.user_id === null ? (
+                              <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>Prebuilt workouts have fixed days.</Text>
+                            ) : (
+                              [1,2,3,4,5,6,7].map(day => {
+                                const dayNames = ["M","T","W","T","F","S","S"];
+                                const isDaySelected = (workoutDays[workout.id] || []).includes(day);
+                                return (
+                                  <Pressable
+                                    key={day}
+                                    onPress={() => toggleWorkoutDay(workout.id, day)}
+                                    style={{
+                                      width: 32, height: 32, borderRadius: 16, 
+                                      backgroundColor: isDaySelected ? COLORS.accent : 'rgba(255,255,255,0.05)',
+                                      alignItems: 'center', justifyContent: 'center',
+                                      borderWidth: 1, borderColor: isDaySelected ? COLORS.accent : 'rgba(255,255,255,0.1)'
+                                    }}
+                                  >
+                                    <Text style={{ color: isDaySelected ? '#141518' : COLORS.textMuted, fontWeight: '700', fontSize: 13 }}>
+                                      {dayNames[day-1]}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })
+                            )}
+                          </View>
+                        )}
+                      </View>
                     );
                   })
                 )}
@@ -259,7 +296,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   widget: {
-    backgroundColor: COLORS.widgetBg,
+    backgroundColor: COLORS.surface,
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,

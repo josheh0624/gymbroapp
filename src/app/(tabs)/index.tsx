@@ -1,11 +1,11 @@
-import { api } from "@/api/api";
+import { supabase } from "@/api/supabase";
 import { ProfilePhoto } from "@/app/components/profile-photo"; // adjust to your actual alias
 import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
 import { COLORS } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
 import { Stack, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -141,20 +141,23 @@ function useWeeklyMuscleHits(weekOffset: number) {
       setError(null);
 
       const { start, end } = getWeekBounds(weekOffset);
-      const res = await api.get<WeeklySummaryResponse>(
-        "/workouts/muscle-summary",
-        {
-          params: {
-            start: start.format("YYYY-MM-DD"),
-            end: end.format("YYYY-MM-DD"),
-          },
-        },
-      );
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("Not logged in");
 
-      setData(res.data.muscleHits ?? []);
-      setStats(res.data.stats ?? null);
-      setDailyActivity(res.data.dailyActivity ?? []);
-    } catch (err) {
+      const { data, error } = await supabase.rpc("get_muscle_summary", {
+        p_user_id: userId,
+        p_start_date: start.format("YYYY-MM-DD"),
+        p_end_date: end.format("YYYY-MM-DD"),
+      });
+
+      if (error) throw error;
+
+      setData(data.muscleHits ?? []);
+      setStats(data.stats ?? null);
+      setDailyActivity(data.dailyActivity ?? []);
+    } catch (err: any) {
+      console.error("RPC Error:", err);
       setError(
         err instanceof Error ? err.message : "Couldn't load this week's data",
       );
@@ -166,7 +169,7 @@ function useWeeklyMuscleHits(weekOffset: number) {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [fetchData])
+    }, [fetchData]),
   );
 
   return { data, stats, dailyActivity, loading, error, refetch: fetchData };
@@ -402,18 +405,34 @@ const BACK_MUSCLES: MuscleRegion[] = [
 function normalizeGroup(name: string) {
   const value = name.trim().toLowerCase();
 
-  if (["chest", "pecs", "pectorals"].includes(value)) return "Chest";
-  if (["back", "upper back"].includes(value)) return "Back";
+  if (
+    [
+      "chest",
+      "pecs",
+      "pectorals",
+      "mid chest",
+      "upper chest",
+      "lower chest",
+    ].includes(value)
+  )
+    return "Chest";
+  if (["back", "upper back", "rhomboids"].includes(value)) return "Back";
   if (value === "lats") return "Lats";
   if (value === "lower back") return "Lower Back";
   if (value === "traps") return "Traps";
-  if (["shoulders", "delts", "rear delts"].includes(value)) return "Shoulders";
+  if (
+    ["shoulders", "delts", "rear delts", "front delts", "side delts"].includes(
+      value,
+    )
+  )
+    return "Shoulders";
   if (value === "biceps") return "Biceps";
   if (value === "triceps") return "Triceps";
   if (value === "forearms") return "Forearms";
   if (["abs", "core"].includes(value)) return "Abs";
   if (value === "obliques") return "Obliques";
-  if (["quads", "quadriceps"].includes(value)) return "Quads";
+  if (["quads", "quadriceps", "abductors", "adductors"].includes(value))
+    return "Quads"; // Note: mapped abductors/adductors to Quads for highlighting legs
   if (value === "hamstrings") return "Hamstrings";
   if (value === "glutes") return "Glutes";
   if (value === "calves") return "Calves";

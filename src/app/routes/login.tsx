@@ -1,4 +1,4 @@
-import { api } from "@/api/api";
+import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,7 +20,7 @@ const { width } = Dimensions.get("window");
 export default function LoginScreen() {
   const router = useRouter();
 
-  const login = useAuthStore((state) => state.login);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -44,20 +44,15 @@ export default function LoginScreen() {
 
     setSubmitting(true);
     try {
-      const res = await api.post("/auth/login", {
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
       });
-
-      const { user, token } = res.data;
-      await login(user, token);
+      if (authError) throw authError;
       // Stack.Protected in RootLayout swaps to (tabs) automatically
     } catch (err: any) {
-      if (err.response?.status === 400) {
-        setError(err.response.data?.message ?? "Invalid credentials.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      console.error("Login error:", err);
+      setError(err.message || "Invalid credentials.");
     } finally {
       setSubmitting(false);
     }

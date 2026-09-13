@@ -1,43 +1,79 @@
-import { api } from "@/api/api";
-import { useAuthStore } from "@/store/authStore";
-import { Stack } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import { supabase } from "@/api/supabase";
+import { useAuthStore, SafeUser } from "@/store/authStore";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 export default function RootLayout() {
   const { user, loading, setUser, setLoading } = useAuthStore();
+  const segments = useSegments();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = await SecureStore.getItemAsync("token");
-        if (!token) {
-          setUser(null);
-          return;
-        }
-        const res = await api.get("/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(res.data);
-      } catch (err) {
+    let isMounted = true;
+
+    async function getProfile(userId: string) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && data) {
+        setUser(data as SafeUser);
+      } else {
         setUser(null);
-      } finally {
+      }
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && isMounted) {
+        getProfile(session.user.id).finally(() => setLoading(false));
+      } else if (isMounted) {
+        setUser(null);
         setLoading(false);
       }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!isMounted) return;
+        if (session?.user) {
+          getProfile(session.user.id);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
     };
-    fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const inProtectedGroup = segments[0] === '(tabs)' || segments[0] === 'workoutPage';
+    
+    if (!user && inProtectedGroup) {
+      // Redirect to login if not authenticated
+      router.replace('/routes/login');
+    }
+    // Note: We let the individual auth screens (login, register, setup) handle their own redirects 
+    // when the user state changes, so we don't accidentally interrupt the onboarding flow!
+  }, [user, loading, segments]);
 
   if (loading) {
     return (
       <React.Fragment>
         <StatusBar style="auto" />
         <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          style={{ flex: 1, backgroundColor: "#141518", justifyContent: "center", alignItems: "center" }}
         >
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color="#ffd61f" />
         </View>
       </React.Fragment>
     );
@@ -47,11 +83,10 @@ export default function RootLayout() {
     <React.Fragment>
       <StatusBar style="auto" />
       <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="register" options={{ headerShown: false }} />
-        <Stack.Protected guard={user !== null}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack.Protected>
+        <Stack.Screen name="routes/login" options={{ headerShown: false }} />
+        <Stack.Screen name="routes/onboarding/register" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="workoutPage/workoutPage" options={{ headerShown: false }} />
       </Stack>
     </React.Fragment>
   );

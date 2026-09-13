@@ -1,17 +1,15 @@
-import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
-
-//zustand store to house code relating to a user (basically a class kinda)
+import { supabase } from "@/api/supabase";
 
 export type SafeUser = {
-  id: number;
+  id: string; // uuid
   username: string;
   email: string;
   created_at: string;
-  age: number;
-  height_ft: number;
-  weight_lbs: number;
-  sex: string;
+  age: number | null;
+  height_ft: number | null;
+  weight_lbs: number | null;
+  sex: string | null;
   image_url: string | null;
 };
 
@@ -20,9 +18,7 @@ type AuthState = {
   loading: boolean;
   setUser: (user: SafeUser | null) => void;
   setLoading: (loading: boolean) => void;
-  login: (user: SafeUser, token: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (user: SafeUser, token: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -30,16 +26,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
   setUser: (user) => set({ user }),
   setLoading: (loading) => set({ loading }),
-  login: async (user, token) => {
-    await SecureStore.setItemAsync("token", token);
-    set({ user });
-  },
   logout: async () => {
-    await SecureStore.deleteItemAsync("token");
+    await supabase.auth.signOut();
     set({ user: null });
-  },
-  register: async (user, token) => {
-    await SecureStore.setItemAsync("token", token);
-    set({ user });
   },
 }));

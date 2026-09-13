@@ -1,4 +1,4 @@
-import { api } from "@/api/api";
+import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -153,15 +153,17 @@ export default function SetupScreen() {
       if (weightLbs) payload.weight_lbs = parseInt(weightLbs, 10);
       if (sex) payload.sex = sex;
 
-      const { data } = await api.patch("/users/setup", payload);
-      setUser(data); // sync the store with what's actually persisted
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data, error } = await supabase.from('users').update(payload).eq('id', authUser.id).select().single();
+        if (error) throw error;
+        setUser(data as any);
+      } // sync the store with what's actually persisted
 
       router.replace("/(tabs)");
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ??
-          "Something went wrong. Please try again.",
-      );
+      console.error(err);
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
