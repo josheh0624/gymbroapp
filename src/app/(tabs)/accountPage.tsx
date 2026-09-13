@@ -1,9 +1,9 @@
 import { useAuthStore } from "@/store/authStore";
 import { COLORS } from "@/styles/appStyles";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PickProfilePhoto } from "../components/profile-photo";
 
@@ -31,12 +31,16 @@ export default function AccountScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerCentered}>
-          <Text style={styles.accountTitleCentered}>ACCOUNT</Text>
+          <Text style={styles.accountTitleCentered}>Account</Text>
         </View>
 
         <View style={styles.grid}>
           {/* Full Width Profile Widget */}
-          <BlurView intensity={20} tint="dark" style={[styles.widget, styles.widgetFull]}>
+          <BlurView
+            intensity={20}
+            tint="dark"
+            style={[styles.widget, styles.widgetFull]}
+          >
             <View style={styles.profileTop}>
               <View style={styles.avatarRing}>
                 <PickProfilePhoto />
@@ -124,7 +128,11 @@ function StatWidget({
   icon: keyof typeof Ionicons.glyphMap;
 }) {
   return (
-    <BlurView intensity={20} tint="dark" style={[styles.widget, styles.widgetHalf, styles.statWidget]}>
+    <BlurView
+      intensity={20}
+      tint="dark"
+      style={[styles.widget, styles.widgetHalf, styles.statWidget]}
+    >
       <View style={styles.statIconContainer}>
         <Ionicons name={icon} size={20} color={COLORS.accent} />
       </View>
@@ -155,7 +163,11 @@ function ActionWidget({
         pressed && styles.widgetPressed,
       ]}
     >
-      <BlurView intensity={20} tint="dark" style={[styles.widget, styles.actionWidget]}>
+      <BlurView
+        intensity={20}
+        tint="dark"
+        style={[styles.widget, styles.actionWidget]}
+      >
         <Ionicons
           name={icon}
           size={28}
@@ -182,7 +194,7 @@ const styles = StyleSheet.create({
   accountTitleCentered: {
     color: "#FFF",
     fontSize: 34,
-    fontWeight: "900",
+    fontWeight: "700",
     letterSpacing: -0.5,
     lineHeight: 34,
   },

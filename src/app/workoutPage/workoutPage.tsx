@@ -183,7 +183,7 @@ export default function WorkoutScreen() {
               </View>
 
               <View style={styles.headerCentered}>
-                <Text style={styles.workoutTitleCentered}>WORKOUT</Text>
+                <Text style={styles.workoutTitleCentered}>Workout</Text>
               </View>
 
               <View style={styles.weekCalendarContainer}>
@@ -257,11 +257,11 @@ export default function WorkoutScreen() {
                 size={72}
                 style={styles.playButton}
                 onPress={() => {
-                  if (!startWorkout) return; // guard: no workout scheduled today
-                  router.push({
-                    pathname: "/workoutPage/live-workout/live-workout" as any,
-                    params: { workout: JSON.stringify(startWorkout) },
-                  });
+                  if (!startWorkout || !routine) return; // guard: no workout scheduled today
+                  const selectedDateString = selectedDate.toISOString().split("T")[0];
+                  router.push(
+                    `/workoutPage/workout-list/workout-thumbnail/${startWorkout.id}?routineID=${routine.id}&selectedDateString=${selectedDateString}` as any
+                  );
                 }}
               >
                 <Ionicons
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   workoutTitleCentered: {
     color: "#FFF",
     fontSize: 34,
-    fontWeight: "900",
+    fontWeight: "700",
     letterSpacing: -0.5,
     lineHeight: 34,
   },

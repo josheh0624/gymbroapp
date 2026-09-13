@@ -1,3 +1,5 @@
+import { LinearGradient } from "expo-linear-gradient";
+
 import { supabase } from "@/api/supabase";
 import { useRoutineStore } from "@/store/routineStore";
 import { COLORS } from "@/styles/appStyles";
@@ -150,9 +152,7 @@ export default function CustomWorkout() {
         options={{
           headerTitle: id ? "Edit Routine" : "Create Routine",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: {
-            backgroundColor: COLORS.bg,
-          },
+          headerStyle: { backgroundColor: "#25262E" },
           headerShadowVisible: false,
           headerTintColor: COLORS.text,
           headerTitleStyle: {
@@ -164,6 +164,12 @@ export default function CustomWorkout() {
       />
 
       <View style={styles.container}>
+        <LinearGradient
+          colors={["#25262E", "#141518"]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.widget}>
             <Text style={styles.label}>Routine Name</Text>
@@ -288,7 +294,7 @@ export default function CustomWorkout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -296,7 +302,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   widget: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,
@@ -356,9 +364,9 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    borderTopWidth: 1.5,
-    borderTopColor: "#25262E",
-    backgroundColor: COLORS.bg,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "transparent",
   },
   createButton: {
     backgroundColor: COLORS.accent,

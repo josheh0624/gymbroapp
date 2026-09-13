@@ -1,3 +1,6 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+
 import NotFoundScreen from "@/app/+not-found";
 import { useRoutineStore } from "@/store/routineStore";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -77,7 +80,7 @@ export default function WorkoutTodo() {
         options={{
           headerTitle: "Workout",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: "#111214" },
+          headerStyle: { backgroundColor: "#25262E" },
           headerShadowVisible: false,
           headerTintColor: "#F5F6F7",
           headerTitleStyle: {
@@ -87,7 +90,13 @@ export default function WorkoutTodo() {
           },
         }}
       />
-      <View style={{ flex: 1, backgroundColor: "#111214" }}>
+      <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={["#25262E", "#141518"]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
         <ScrollView style={styles.container}>
           <Text style={styles.title}>{workout.name}</Text>
 
@@ -281,7 +290,7 @@ function DoneButton({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111214",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
     paddingTop: 24,
   },
@@ -290,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#111214",
+    backgroundColor: "#141518",
   },
   loadingText: {
     color: "rgba(255,255,255,0.6)",
@@ -306,7 +315,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: "#1C1D22",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   cardPressable: { padding: 20 },
   cardCompleted: {

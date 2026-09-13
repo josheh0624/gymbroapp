@@ -3,6 +3,7 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { BlurView } from "expo-blur";
 import AddToRoutine from "./add-to-routine-button";
 
 interface RoutineListItem {
@@ -44,8 +45,9 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.workoutCard, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.workoutCardWrapper, pressed && styles.pressed]}
     >
+      <BlurView intensity={20} tint="dark" style={styles.workoutCard}>
       <View style={styles.infoSection}>
         <Text style={styles.text} numberOfLines={1}>
           {routine.name}
@@ -82,23 +84,27 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
         )}
         <AddToRoutine routineId={routine.id} />
       </View>
+      </BlurView>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  workoutCard: {
+  workoutCardWrapper: {
     marginHorizontal: 16,
     marginBottom: 12,
+  },
+  workoutCard: {
     borderRadius: 24,
-    backgroundColor: "#1C1D22",
+    backgroundColor: "rgba(255,255,255,0.06)",
     paddingVertical: 16,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderWidth: 1.5,
-    borderColor: "#25262E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    overflow: "hidden",
   },
   pressed: {
     transform: [{ scale: 0.98 }],

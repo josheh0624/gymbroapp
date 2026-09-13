@@ -1,3 +1,5 @@
+import { LinearGradient } from "expo-linear-gradient";
+
 import { supabase } from "@/api/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useRouter } from "expo-router";
@@ -246,7 +248,7 @@ export default function CreateWorkout() {
         options={{
           headerTitle: "New Workout",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: COLORS.bg },
+          headerStyle: { backgroundColor: "#25262E" },
           headerShadowVisible: false,
           headerTintColor: COLORS.text,
           headerTitleStyle: {
@@ -258,6 +260,12 @@ export default function CreateWorkout() {
       />
 
       <View style={styles.container}>
+        <LinearGradient
+          colors={["#25262E", "#141518"]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -558,7 +566,7 @@ export default function CreateWorkout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -566,7 +574,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   widget: {
-    backgroundColor: COLORS.widgetBg,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,
@@ -619,7 +629,7 @@ const styles = StyleSheet.create({
   },
   metricInputGroup: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
     borderRadius: 12,
     padding: 10,
     alignItems: "center",
@@ -640,9 +650,9 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    borderTopWidth: 1.5,
-    borderTopColor: "#25262E",
-    backgroundColor: COLORS.bg,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "transparent",
   },
   createButton: {
     backgroundColor: COLORS.accent,
@@ -670,7 +680,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   mgPill: {
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
@@ -704,7 +714,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
@@ -718,7 +728,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   dropdownList: {
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.surfaceBorder,

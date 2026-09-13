@@ -1,3 +1,4 @@
+import { BlurView } from "expo-blur";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useRoutineStore } from "../../../store/routineStore";
@@ -27,9 +28,9 @@ export default function PrebuiltWorkoutList() {
           <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
         ))
       ) : (
-        <View style={styles.emptyCard}>
+        <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
           <Text style={styles.emptyText}>No custom routines yet.</Text>
-        </View>
+        </BlurView>
       )}
 
       <Text style={styles.sectionTitle}>Prebuilt Routines</Text>
@@ -38,9 +39,9 @@ export default function PrebuiltWorkoutList() {
           <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
         ))
       ) : (
-        <View style={styles.emptyCard}>
+        <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
           <Text style={styles.emptyText}>No prebuilt routines found.</Text>
-        </View>
+        </BlurView>
       )}
     </View>
   );
@@ -52,9 +53,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   sectionTitle: {
-    color: "#F5F6F7",
-    fontSize: 18,
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
     fontWeight: "700",
+    letterSpacing: 1,
     marginLeft: 20,
     marginBottom: 12,
     marginTop: 16,
@@ -62,11 +64,14 @@ const styles = StyleSheet.create({
   emptyCard: {
     marginHorizontal: 16,
     borderRadius: 24,
-    backgroundColor: "#1C1D22",
+    backgroundColor: "rgba(255,255,255,0.04)",
     paddingVertical: 40,
     paddingHorizontal: 20,
     alignItems: "center",
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
   },
   emptyText: {
     color: COLORS.textMuted,

@@ -1,5 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddCustomButton from "./add-custom-button";
 import PrebuiltWorkoutList from "./prebuilt-workout-list";
@@ -22,9 +23,7 @@ export default function AddWorkoutNAV() {
         options={{
           headerTitle: "Routines",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: {
-            backgroundColor: COLORS.bg,
-          },
+          headerStyle: { backgroundColor: "#25262E" },
           headerShadowVisible: false,
           headerTintColor: COLORS.text,
           headerTitleStyle: {
@@ -36,6 +35,12 @@ export default function AddWorkoutNAV() {
       />
 
       <View style={styles.container}>
+        <LinearGradient
+          colors={["#25262E", "#141518"]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -55,7 +60,7 @@ export default function AddWorkoutNAV() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent",
   },
   scrollContent: {
     paddingTop: 16,
@@ -71,7 +76,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    borderTopWidth: 1.5,
-    borderTopColor: "#25262E",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
   },
 });
