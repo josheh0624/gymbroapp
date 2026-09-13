@@ -2,6 +2,8 @@ import { useAuthStore } from "@/store/authStore";
 import { COLORS } from "@/styles/appStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PickProfilePhoto } from "../components/profile-photo";
 
@@ -18,17 +20,23 @@ export default function AccountScreen() {
 
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={["#25262E", "#141518"]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <Text style={styles.eyebrow}>Account</Text>
+        <View style={styles.headerCentered}>
+          <Text style={styles.accountTitleCentered}>ACCOUNT</Text>
         </View>
 
         <View style={styles.grid}>
           {/* Full Width Profile Widget */}
-          <View style={[styles.widget, styles.widgetFull]}>
+          <BlurView intensity={20} tint="dark" style={[styles.widget, styles.widgetFull]}>
             <View style={styles.profileTop}>
               <View style={styles.avatarRing}>
                 <PickProfilePhoto />
@@ -42,7 +50,7 @@ export default function AccountScreen() {
                 </Text>
               </View>
             </View>
-          </View>
+          </BlurView>
 
           {/* 4 Stat Widgets (2x2 Grid) */}
           <StatWidget
@@ -68,7 +76,7 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
+            <Text style={styles.sectionTitle}>PREFERENCES</Text>
           </View>
 
           {/* Action Widgets */}
@@ -83,7 +91,7 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Settings</Text>
+            <Text style={styles.sectionTitle}>SETTINGS</Text>
           </View>
 
           <ActionWidget label="Edit Profile" icon="person" />
@@ -116,7 +124,7 @@ function StatWidget({
   icon: keyof typeof Ionicons.glyphMap;
 }) {
   return (
-    <View style={[styles.widget, styles.widgetHalf, styles.statWidget]}>
+    <BlurView intensity={20} tint="dark" style={[styles.widget, styles.widgetHalf, styles.statWidget]}>
       <View style={styles.statIconContainer}>
         <Ionicons name={icon} size={20} color={COLORS.accent} />
       </View>
@@ -126,7 +134,7 @@ function StatWidget({
         </Text>
         <Text style={styles.statLabel}>{label}</Text>
       </View>
-    </View>
+    </BlurView>
   );
 }
 
@@ -142,20 +150,21 @@ function ActionWidget({
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.widget,
         styles.widgetHalf,
-        styles.actionWidget,
+        styles.actionWidgetPressable,
         pressed && styles.widgetPressed,
       ]}
     >
-      <Ionicons
-        name={icon}
-        size={28}
-        color={COLORS.text}
-        style={styles.actionIcon}
-      />
-      <Text style={styles.actionLabel}>{label}</Text>
-      {subLabel && <Text style={styles.actionSubLabel}>{subLabel}</Text>}
+      <BlurView intensity={20} tint="dark" style={[styles.widget, styles.actionWidget]}>
+        <Ionicons
+          name={icon}
+          size={28}
+          color="#FFF"
+          style={styles.actionIcon}
+        />
+        <Text style={styles.actionLabel}>{label}</Text>
+        {subLabel && <Text style={styles.actionSubLabel}>{subLabel}</Text>}
+      </BlurView>
     </Pressable>
   );
 }
@@ -164,15 +173,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { paddingHorizontal: 16, paddingBottom: 64 },
 
-  headerRow: {
-    marginTop: 16,
-    marginBottom: 24,
-    paddingHorizontal: 4,
+  headerCentered: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 24,
+    marginBottom: 32,
   },
-  eyebrow: {
-    color: COLORS.text,
-    fontSize: 28,
+  accountTitleCentered: {
+    color: "#FFF",
+    fontSize: 34,
     fontWeight: "900",
+    letterSpacing: -0.5,
+    lineHeight: 34,
   },
 
   grid: {
@@ -182,10 +194,13 @@ const styles = StyleSheet.create({
   },
 
   widget: {
-    backgroundColor: "#1C1D22",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    overflow: "hidden",
   },
   widgetFull: {
     width: "100%",
@@ -194,8 +209,11 @@ const styles = StyleSheet.create({
     width: "48%",
   },
   widgetPressed: {
-    backgroundColor: "#25262E",
+    opacity: 0.8,
     transform: [{ scale: 0.98 }],
+  },
+  actionWidgetPressable: {
+    marginBottom: 12,
   },
 
   profileTop: {
@@ -263,18 +281,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sectionTitle: {
-    color: COLORS.textFaint,
-    fontSize: 12,
-    fontWeight: "900",
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
 
   actionWidget: {
     alignItems: "center",
     justifyContent: "center",
     minHeight: 120,
-    backgroundColor: "#16171B", // Slightly darker for actions
-    borderWidth: 1,
-    borderColor: "#25262E",
+    marginBottom: 0,
   },
   actionIcon: {
     marginBottom: 12,

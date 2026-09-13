@@ -1,10 +1,12 @@
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+
+import { ProfilePhoto } from "@/app/components/profile-photo";
 import { useRoutineStore } from "@/store/routineStore";
 import { COLORS } from "@/styles/appStyles";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ProfilePhoto } from "@/app/components/profile-photo";
 import moment from "moment";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import {
@@ -144,107 +146,109 @@ export default function WorkoutScreen() {
       />
       <View style={styles.container}>
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          bounces={false}
         >
-          <View style={styles.topBar}>
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={8}
-              android_ripple={{
-                color: "rgba(255,255,255,0.15)",
-                borderless: true,
-                radius: 19,
-              }}
-              style={({ pressed }) => [
-                styles.closeButton,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}
-            >
-              <Ionicons name="chevron-down" size={20} color={COLORS.text} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/(tabs)/accountPage")}>
-              <ProfilePhoto size={38} color={COLORS.text} />
-            </Pressable>
-          </View>
-
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.eyebrow}>Workout</Text>
-              <Text style={styles.dateText}>{currentDate}</Text>
-            </View>
-
-            <Pressable
-              style={styles.settingsButton}
-              hitSlop={8}
-              onPress={() => {
-                // TODO: route to routine settings / switch active routine
-              }}
-            >
-              <Ionicons name="settings-outline" size={18} color={COLORS.text} />
-            </Pressable>
-          </View>
-
-          <View style={styles.weekCalendarContainer}>
-            <WeekStrip
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
+          {/* Full-Page Dark Gradient */}
+          <View style={styles.gradientContainer}>
+            <LinearGradient
+              colors={["#25262E", "#141518"]}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 1, y: 1 }}
             />
-          </View>
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>{sectionLabel}</Text>
-            {hasWorkoutToday && (
-              <Text style={styles.sectionCount}>
-                {visibleWorkouts.length} scheduled
-              </Text>
-            )}
-          </View>
+            <View style={{ paddingTop: insets.top, paddingBottom: 120 }}>
+              <View style={styles.topBar}>
+                <Pressable
+                  onPress={() => router.back()}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.iconBtn,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <Ionicons name="chevron-down" size={24} color="#FFF" />
+                </Pressable>
 
-          <View style={styles.listContainer}>
-            {hasWorkoutToday ? (
-              <WorkoutList
-                activeRoutine={routine}
-                selectedWeekdayID={selectedWeekdayID}
-                selectedDate={selectedDate}
-              />
-            ) : (
-              <View style={styles.emptyCard}>
-                <Ionicons
-                  name={hasRoutine ? "moon-outline" : "barbell-outline"}
-                  size={26}
-                  color={COLORS.textMuted}
-                />
-                <Text style={styles.emptyTitle}>
-                  {hasRoutine ? "Rest day" : "No active routine"}
-                </Text>
-                <Text style={styles.emptyBody}>
-                  {hasRoutine
-                    ? "Nothing scheduled for this day. Tap + to add one."
-                    : "Create or select a routine to start filling out your week."}
-                </Text>
+                <Text style={styles.dateTextInline}>{currentDate}</Text>
+
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => router.push("/(tabs)/accountPage" as any)}
+                >
+                  <ProfilePhoto size={38} color="#FFF" />
+                </Pressable>
               </View>
-            )}
+
+              <View style={styles.headerCentered}>
+                <Text style={styles.workoutTitleCentered}>WORKOUT</Text>
+              </View>
+
+              <View style={styles.weekCalendarContainer}>
+                <WeekStrip
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+              </View>
+
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>{sectionLabel}</Text>
+                {hasWorkoutToday && (
+                  <Text style={styles.sectionCount}>
+                    {visibleWorkouts.length} scheduled
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.listContainer}>
+                {hasWorkoutToday ? (
+                  <WorkoutList
+                    activeRoutine={routine}
+                    selectedWeekdayID={selectedWeekdayID}
+                    selectedDate={selectedDate}
+                  />
+                ) : (
+                  <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
+                    <Ionicons
+                      name={hasRoutine ? "moon-outline" : "barbell-outline"}
+                      size={26}
+                      color="rgba(255,255,255,0.4)"
+                    />
+                    <Text style={styles.emptyTitle}>
+                      {hasRoutine ? "Rest day" : "No active routine"}
+                    </Text>
+                    <Text style={styles.emptyBody}>
+                      {hasRoutine
+                        ? "Nothing scheduled for this day. Tap + to add one."
+                        : "Create or select a routine to start filling out your week."}
+                    </Text>
+                  </BlurView>
+                )}
+              </View>
+            </View>
           </View>
         </ScrollView>
 
-        {/* bottom dock */}
-        <View style={[styles.bottomDock, { paddingBottom: insets.bottom + 6 }]}>
+        {/* Floating Bottom Dock (Frosted Glass) */}
+        <BlurView
+          intensity={25}
+          tint="dark"
+          style={[styles.bottomDock, { paddingBottom: insets.bottom + 12 }]}
+        >
           <View style={styles.dockRow}>
             <View style={styles.dockItem}>
               <DockButton
                 size={56}
                 style={styles.changeRoutineButton}
                 onPress={() =>
-                  //change router location
-                  router.push("/workoutPage/add-workout-nav/add-workout-nav")
+                  router.push(
+                    "/workoutPage/add-workout-nav/add-workout-nav" as any,
+                  )
                 }
               >
-                <Ionicons
-                  name="swap-horizontal"
-                  size={20}
-                  color={COLORS.text}
-                />
+                <Ionicons name="swap-horizontal" size={20} color="#FFF" />
               </DockButton>
               <Text style={styles.dockLabel}>Swap Routine</Text>
             </View>
@@ -254,185 +258,182 @@ export default function WorkoutScreen() {
                 style={styles.playButton}
                 onPress={() => {
                   if (!startWorkout) return; // guard: no workout scheduled today
-                  console.log("Navigating with:", {
-                    workoutId: startWorkout.id,
-                    routineID: routine?.id,
+                  router.push({
+                    pathname: "/workoutPage/live-workout/live-workout" as any,
+                    params: { workout: JSON.stringify(startWorkout) },
                   });
-                  router.push(
-                    `/workoutPage/workout-list/workout-thumbnail/${startWorkout.id}?routineID=${routine?.id}`,
-                  );
                 }}
               >
                 <Ionicons
                   name="play"
-                  size={30}
-                  color={COLORS.bg}
-                  style={{ marginLeft: 3 }}
+                  size={32}
+                  color={startWorkout ? COLORS.bg : COLORS.textMuted}
                 />
               </DockButton>
-              <Text style={styles.startLabel}>Start</Text>
+              <Text style={styles.dockLabel}>Play</Text>
             </View>
             <View style={styles.dockItem}>
               <DockButton
                 size={56}
                 style={styles.addWorkoutButton}
-                onPress={() =>
-                  router.push("/workoutPage/add-workout-nav/add-workout-nav")
-                }
+                onPress={() => {
+                  router.push({
+                    pathname:
+                      "/workoutPage/add-workout-nav/add-workout-nav" as any,
+                    params: { activeRoutineId: routine?.id },
+                  });
+                }}
               >
-                <FontAwesome6 name="plus" size={20} color={COLORS.text} />
+                <Ionicons name="add" size={24} color="#FFF" />
               </DockButton>
               <Text style={styles.dockLabel}>Add Workout</Text>
             </View>
           </View>
-        </View>
+        </BlurView>
       </View>
     </>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
   },
   scrollContent: {
-    paddingBottom: 140,
+    flexGrow: 1,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  eyebrow: {
-    color: COLORS.text,
-    fontSize: 28,
-    fontWeight: "900",
-    marginBottom: 4,
-  },
-  dateText: {
-    color: COLORS.accent,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  settingsButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#1C1D22",
-  },
-  weekCalendarContainer: {
-    width: "100%",
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  sectionLabel: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: "normal",
-  },
-  sectionCount: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  listContainer: {
+  gradientContainer: {
     flex: 1,
-    width: "100%",
-  },
-  emptyCard: {
-    marginHorizontal: 16,
-    borderRadius: 24,
-    backgroundColor: "#1C1D22",
-    overflow: "hidden",
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    gap: 8,
-  },
-  emptyTitle: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  emptyBody: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: "500",
-    textAlign: "center",
-    lineHeight: 18,
+    minHeight: "100%",
   },
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 4,
+    height: 56,
   },
-  closeButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: "center",
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
-    backgroundColor: "#1C1D22",
+    justifyContent: "center",
+  },
+  dateTextInline: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  headerCentered: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -16, // Eliminates the gap between the Date and WORKOUT
+    marginBottom: 8,
+  },
+  workoutTitleCentered: {
+    color: "#FFF",
+    fontSize: 34,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+    lineHeight: 34,
+  },
+  weekCalendarContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  sectionLabel: {
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  sectionCount: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  listContainer: {
+    gap: 16,
+    paddingHorizontal: 16,
+  },
+  emptyCard: {
+    borderRadius: 24,
+    backgroundColor: "rgba(20,21,24,0.3)",
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
+  },
+  emptyTitle: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyBody: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
+    paddingHorizontal: 16,
   },
   bottomDock: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: 28,
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    backgroundColor: "#16171B",
-    borderTopWidth: 1.5,
-    borderLeftWidth: 1.5,
-    borderRightWidth: 1.5,
-    borderColor: "#34363D",
+    left: 4,
+    right: 4,
+    bottom: 4,
+    paddingTop: 20,
+    borderRadius: 48,
+    backgroundColor: "rgba(20,21,24,0.3)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    overflow: "hidden",
   },
   dockRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 36,
+    justifyContent: "space-around",
+    alignItems: "flex-end",
+    paddingHorizontal: 16,
   },
   dockItem: {
     alignItems: "center",
-    gap: 12,
-  },
-  playButton: {
-    backgroundColor: COLORS.accent,
-    shadowColor: COLORS.accent,
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-  addWorkoutButton: {
-    backgroundColor: "#1C1D22",
+    gap: 8,
   },
   dockLabel: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: "normal",
-  },
-  startLabel: {
-    color: COLORS.accent,
-    fontSize: 17,
-    fontWeight: "normal",
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 11,
+    fontWeight: "600",
   },
   changeRoutineButton: {
-    backgroundColor: "#1C1D22",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  addWorkoutButton: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  playButton: {
+    backgroundColor: "#ffd33d",
+    shadowColor: "#ffd33d",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
 });

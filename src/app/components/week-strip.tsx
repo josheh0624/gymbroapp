@@ -3,9 +3,9 @@ import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const COLORS = {
-  text: "#F5F6F7",
+  text: "#FFFFFF",
   textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
+  accent: "#ffd33d",
   accentText: "#141518",
 };
 
@@ -93,14 +93,12 @@ export default function WeekStrip({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginHorizontal: 16,
-    borderRadius: 24,
-    backgroundColor: "#1C1D22",
+    marginHorizontal: 8,
   },
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 18,
   },
   dayColumn: {
@@ -116,11 +114,12 @@ const styles = StyleSheet.create({
   },
   selectedDayLabel: {
     color: COLORS.accent,
+    fontWeight: "bold",
   },
   dayNumberBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -129,7 +128,7 @@ const styles = StyleSheet.create({
   },
   dayNumber: {
     color: COLORS.text,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },

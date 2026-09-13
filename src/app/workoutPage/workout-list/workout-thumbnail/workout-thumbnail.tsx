@@ -2,6 +2,7 @@ import WorkoutModel from "@/models/workout-model";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { BlurView } from "expo-blur";
 
 const COLORS = {
   bg: "#141518",
@@ -32,7 +33,6 @@ export default function WorkoutThumbnail({
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.workoutCard,
         !visible && styles.hidden,
         pressed && styles.pressed,
       ]}
@@ -40,53 +40,57 @@ export default function WorkoutThumbnail({
       onPress={() => {
         console.log("Navigating with:", { workoutId: workout.id, routineID });
         router.push(
-          `/workoutPage/workout-list/workout-thumbnail/${workout.id}?routineID=${routineID}&selectedDateString=${selectedDateString || ''}`,
+          `/workoutPage/workout-list/workout-thumbnail/${workout.id}?routineID=${routineID}&selectedDateString=${selectedDateString || ''}` as any,
         );
       }}
     >
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title} numberOfLines={1}>
-            {workout.name}
-          </Text>
-          <Text style={styles.subtitle}>
-            {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
-      </View>
-
-      <View style={styles.exerciseList}>
-        {workout.exercises.map((exercise, index) => (
-          <View
-            key={`${exercise.name}-${index}`}
-            style={[
-              styles.exerciseRow,
-              index !== exerciseCount - 1 && styles.exerciseRowDivider,
-            ]}
-          >
-            <Text style={styles.exerciseName} numberOfLines={1}>
-              {exercise.name}
+      <BlurView intensity={25} tint="dark" style={styles.workoutCard}>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.title} numberOfLines={1}>
+              {workout.name}
             </Text>
-            <Text style={styles.exerciseMeta}>
-              {exercise.sets} × {exercise.reps}
+            <Text style={styles.subtitle}>
+              {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
             </Text>
           </View>
-        ))}
-      </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
+        </View>
+
+        <View style={styles.exerciseList}>
+          {workout.exercises.map((exercise, index) => (
+            <View
+              key={`${exercise.name}-${index}`}
+              style={[
+                styles.exerciseRow,
+                index !== exerciseCount - 1 && styles.exerciseRowDivider,
+              ]}
+            >
+              <Text style={styles.exerciseName} numberOfLines={1}>
+                {exercise.name}
+              </Text>
+              <Text style={styles.exerciseMeta}>
+                {exercise.sets} × {exercise.reps}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </BlurView>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   workoutCard: {
-    marginHorizontal: 16,
-    minHeight: 180,
-    marginBottom: 12,
+    marginHorizontal: 0,
+    minHeight: 140,
+    marginBottom: 0, // removed bottom gap because list container has gap 16
     borderRadius: 24,
-    backgroundColor: "#1C1D22",
+    backgroundColor: "rgba(20,21,24,0.3)",
     overflow: "hidden",
     padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   pressed: {
     opacity: 0.85,
