@@ -132,9 +132,12 @@ function computeTrailingStreak(days: DailyActivity[]) {
 function useWeeklyMuscleHits(weekOffset: number) {
   const [data, setData] = useState<WeeklyMuscleHit[]>([]);
   const [stats, setStats] = useState<WeeklyStats | null>(null);
+  const [prevStats, setPrevStats] = useState<WeeklyStats | null>(null);
   const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [monthlyStats, setMonthlyStats] = useState<WeeklyStats[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -142,21 +145,39 @@ function useWeeklyMuscleHits(weekOffset: number) {
       setError(null);
 
       const { start, end } = getWeekBounds(weekOffset);
+      const { start: prevStart, end: prevEnd } = getWeekBounds(weekOffset - 1);
+      const { start: w2Start, end: w2End } = getWeekBounds(weekOffset - 2);
+      const { start: w3Start, end: w3End } = getWeekBounds(weekOffset - 3);
+
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("Not logged in");
 
-      const { data, error } = await supabase.rpc("get_muscle_summary", {
-        p_user_id: userId,
-        p_start_date: start.format("YYYY-MM-DD"),
-        p_end_date: end.format("YYYY-MM-DD"),
-      });
+      const [currRes, prevRes, w2Res, w3Res] = await Promise.all([
+        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: start.format("YYYY-MM-DD"), p_end_date: end.format("YYYY-MM-DD") }),
+        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: prevStart.format("YYYY-MM-DD"), p_end_date: prevEnd.format("YYYY-MM-DD") }),
+        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: w2Start.format("YYYY-MM-DD"), p_end_date: w2End.format("YYYY-MM-DD") }),
+        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: w3Start.format("YYYY-MM-DD"), p_end_date: w3End.format("YYYY-MM-DD") })
+      ]);
 
-      if (error) throw error;
+      if (currRes.error) throw currRes.error;
 
-      setData(data.muscleHits ?? []);
-      setStats(data.stats ?? null);
-      setDailyActivity(data.dailyActivity ?? []);
+      setData(currRes.data.muscleHits ?? []);
+      setStats(currRes.data.stats ?? null);
+      setDailyActivity(currRes.data.dailyActivity ?? []);
+
+      if (!prevRes.error && prevRes.data?.stats) setPrevStats(prevRes.data.stats);
+      else setPrevStats(null);
+
+      const mStats = [
+        w3Res.data?.stats ?? { daysTrained: 0 },
+        w2Res.data?.stats ?? { daysTrained: 0 },
+        prevRes.data?.stats ?? { daysTrained: 0 },
+        currRes.data?.stats ?? { daysTrained: 0 }
+      ] as WeeklyStats[];
+      
+      setMonthlyStats(mStats);
+
     } catch (err: any) {
       console.error("RPC Error:", err);
       setError(
@@ -173,7 +194,7 @@ function useWeeklyMuscleHits(weekOffset: number) {
     }, [fetchData]),
   );
 
-  return { data, stats, dailyActivity, loading, error, refetch: fetchData };
+  return { data, stats, prevStats, monthlyStats, dailyActivity, loading, error, refetch: fetchData };
 }
 
 /**
@@ -588,8 +609,7 @@ export default function MuscleMapScreen() {
   );
   const [weekOffset, setWeekOffset] = useState(0);
   const [mapSide, setMapSide] = useState<MuscleSide>("front");
-  const { data, stats, dailyActivity, loading, error, refetch } =
-    useWeeklyMuscleHits(weekOffset);
+  const { data, stats, prevStats, monthlyStats, dailyActivity, loading, error, refetch } = useWeeklyMuscleHits(weekOffset);
 
   const isCurrentWeek = weekOffset === 0;
   const weekBounds = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
@@ -662,11 +682,11 @@ export default function MuscleMapScreen() {
               </View>
 
               {/* Floating Pill (Streak & Prompt) */}
-              <View style={styles.floatingPill}>
+              <View style={[styles.floatingPill, !showStartWorkoutPrompt && styles.floatingPillSmall]}>
                 <View style={styles.pillIconContainer}>
                   <Ionicons name="flame" size={16} color="#ffd33d" />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={showStartWorkoutPrompt ? { flex: 1 } : {}}>
                   <Text style={styles.pillText}>
                     {hasActiveStreak ? `${streak} day streak` : "No streak"}
                   </Text>
@@ -871,51 +891,84 @@ export default function MuscleMapScreen() {
             <Text style={styles.sectionTitle}>Weekly Stats</Text>
 
             <View style={styles.servicesGrid}>
-              <View style={styles.servicePill}>
-                <View style={styles.serviceIconWrap}>
-                  <Ionicons name="barbell" size={16} color="#ffd33d" />
-                </View>
-                <View>
-                  <Text style={styles.serviceValue}>
-                    {stats?.totalWorkouts || 0}
-                  </Text>
-                  <Text style={styles.serviceLabel}>Workouts</Text>
-                </View>
-              </View>
+              {(() => {
+                const renderStat = (icon: string, label: string, value: number, prevValue: number | undefined | null, unit: string = "") => {
+                  const diff = (prevValue !== undefined && prevValue !== null) ? (value - prevValue) : 0;
+                  // For stats like 'Workouts', a positive diff is good. 
+                  const isPositive = diff > 0;
+                  const isNegative = diff < 0;
+                  const color = isPositive ? "#30D158" : "#FF453A";
+                  const bgColor = isPositive ? "rgba(48,209,88,0.15)" : "rgba(255,69,58,0.15)";
+                  
+                  return (
+                    <View style={styles.servicePill}>
+                      <View style={styles.serviceIconWrap}>
+                        <Ionicons name={icon as any} size={16} color="#ffd33d" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text style={styles.serviceValue} numberOfLines={1} adjustsFontSizeToFit>{value}{unit}</Text>
+                          {diff !== 0 && (
+                            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: bgColor, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 6 }}>
+                              <Ionicons name={isPositive ? "trending-up" : "trending-down"} size={10} color={color} style={{ marginRight: 2 }} />
+                              <Text style={{ fontSize: 10, fontWeight: "800", color: color }}>
+                                {Math.abs(diff)}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.serviceLabel} numberOfLines={1}>{label}</Text>
+                      </View>
+                    </View>
+                  );
+                };
 
-              <View style={styles.servicePill}>
-                <View style={styles.serviceIconWrap}>
-                  <Ionicons name="time" size={16} color="#ffd33d" />
-                </View>
-                <View>
-                  <Text style={styles.serviceValue}>
-                    {stats ? stats.daysTrained : 0}
-                  </Text>
-                  <Text style={styles.serviceLabel}>Days Trained</Text>
-                </View>
-              </View>
+                const current = stats || { totalWorkouts: 0, daysTrained: 0, totalSets: 0, totalExercises: 0, totalVolume: 0 };
+                const prev = prevStats || { totalWorkouts: 0, daysTrained: 0, totalSets: 0, totalExercises: 0, totalVolume: 0 };
+                
+                // Calculate averages safely
+                const avgSets = current.totalWorkouts > 0 ? Math.round(current.totalSets / current.totalWorkouts) : 0;
+                const prevAvgSets = prev.totalWorkouts > 0 ? Math.round(prev.totalSets / prev.totalWorkouts) : 0;
 
-              <View style={styles.servicePill}>
-                <View style={styles.serviceIconWrap}>
-                  <Ionicons name="calculator" size={16} color="#ffd33d" />
-                </View>
-                <View>
-                  <Text style={styles.serviceValue}>{avgSets}</Text>
-                  <Text style={styles.serviceLabel}>Avg Sets/Workout</Text>
-                </View>
-              </View>
-
-              <View style={styles.servicePill}>
-                <View style={styles.serviceIconWrap}>
-                  <Ionicons name="body" size={16} color="#ffd33d" />
-                </View>
-                <View>
-                  <Text style={styles.serviceValue}>{muscleCount}</Text>
-                  <Text style={styles.serviceLabel}>Muscles Targeted</Text>
-                </View>
-              </View>
+                return (
+                  <>
+                    {renderStat("barbell", "Workouts", current.totalWorkouts, prev.totalWorkouts)}
+                    {renderStat("time", "Days Trained", current.daysTrained, prev.daysTrained)}
+                    {renderStat("layers", "Total Sets", current.totalSets, prev.totalSets)}
+                    {renderStat("calculator", "Avg Sets/WO", avgSets, prevAvgSets)}
+                    {renderStat("fitness", "Total Exercises", current.totalExercises, prev.totalExercises)}
+                    {renderStat("analytics", "Total Volume", current.totalVolume || 0, prev.totalVolume || 0, " lb")}
+                  </>
+                );
+              })()}
+            </View>
+          
+          {/* Monthly Consistency Chart */}
+          <View style={[styles.servicesSection, { marginTop: 0, paddingTop: 16 }]}>
+            <Text style={styles.sectionTitle}>Days Trained (Past Month)</Text>
+            <View style={styles.chartContainer}>
+              {monthlyStats.map((weekStat, idx) => {
+                const days = weekStat?.daysTrained || 0;
+                const heightPercentage = Math.max((days / 7) * 100, 5);
+                const isCurrent = idx === 3;
+                const labels = ["3 Wks Ago", "2 Wks Ago", "Last Wk", "This Wk"];
+                
+                return (
+                  <View key={idx} style={styles.chartCol}>
+                    <View style={styles.barBackground}>
+                      <View style={[
+                        styles.barFill, 
+                        { height: `${heightPercentage}%`, backgroundColor: isCurrent ? "#ffd33d" : "rgba(255, 211, 61, 0.4)" }
+                      ]} />
+                    </View>
+                    <Text style={styles.chartLabel}>{labels[idx]}</Text>
+                    <Text style={styles.chartValue}>{days}</Text>
+                  </View>
+                )
+              })}
             </View>
           </View>
+</View>
         </ScrollView>
       </View>
     </>
@@ -925,14 +978,11 @@ export default function MuscleMapScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.bg },
   gradientContainer: {
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 60,
     borderBottomLeftRadius: 60,
     borderBottomRightRadius: 60,
     overflow: "hidden",
-    //paddingBottom: 4,
-    marginHorizontal: 4,
-    marginTop: 4,
+    marginHorizontal: 0,
+    marginTop: 0,
   },
   headerTop: {
     alignItems: "center",
@@ -943,16 +993,18 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: { alignItems: "center" },
   welcomeBack: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 20,
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 16,
     fontWeight: "600",
-    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   userName: {
     color: "#FFFFFF",
-    fontSize: 36,
-    fontWeight: "800",
-    letterSpacing: -0.5,
+    fontSize: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.35,
   },
   floatingPill: {
     flexDirection: "row",
@@ -965,6 +1017,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginHorizontal: 16,
   },
+  floatingPillSmall: {
+    alignSelf: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginHorizontal: 0,
+  },
   pillIconContainer: {
     backgroundColor: "rgba(255, 211, 61, 0.15)",
     width: 32,
@@ -974,7 +1032,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
-  pillText: { flex: 1, color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+  pillText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
   glassCard: {
     marginHorizontal: 8,
     borderRadius: 48,
@@ -1071,24 +1129,17 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   servicesSection: {
-    marginHorizontal: 4,
-    marginTop: 4,
-    marginBottom: 4,
-    backgroundColor: "#1C1D22",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    borderBottomLeftRadius: 60,
-    borderBottomRightRadius: 60,
-    padding: 20,
+    paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 40,
+    marginTop: 16,
   },
   sectionTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: "700",
+    color: "#FFF",
+    fontSize: 22,
+    fontWeight: "600",
+    letterSpacing: 0.35,
     marginBottom: 16,
-    paddingHorizontal: 8,
   },
   servicesGrid: {
     flexDirection: "row",
@@ -1121,5 +1172,43 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "500",
     marginTop: 2,
+  },
+  chartContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  chartCol: {
+    alignItems: "center",
+    width: "22%",
+  },
+  barBackground: {
+    width: 20,
+    height: 100,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 10,
+    justifyContent: "flex-end",
+    marginBottom: 10,
+  },
+  barFill: {
+    width: "100%",
+    borderRadius: 10,
+  },
+  chartLabel: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 9,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  chartValue: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "800",
+    marginTop: 4,
   },
 });

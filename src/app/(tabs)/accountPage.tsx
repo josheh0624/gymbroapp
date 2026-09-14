@@ -80,7 +80,7 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PREFERENCES</Text>
+            <Text style={styles.sectionTitle}>Preferences</Text>
           </View>
 
           {/* Action Widgets */}
@@ -95,7 +95,7 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>SETTINGS</Text>
+            <Text style={styles.sectionTitle}>Settings</Text>
           </View>
 
           <ActionWidget label="Edit Profile" icon="person" />
@@ -194,9 +194,9 @@ const styles = StyleSheet.create({
   accountTitleCentered: {
     color: "#FFF",
     fontSize: 34,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-    lineHeight: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.35,
+    lineHeight: 41,
   },
 
   grid: {
@@ -293,11 +293,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sectionTitle: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 13,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "600",
+    letterSpacing: 0.35,
   },
 
   actionWidget: {

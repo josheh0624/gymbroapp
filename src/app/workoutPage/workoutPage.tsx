@@ -159,7 +159,7 @@ export default function WorkoutScreen() {
               end={{ x: 1, y: 1 }}
             />
 
-            <View style={{ paddingTop: insets.top, paddingBottom: 120 }}>
+            <View style={{ paddingTop: insets.top, paddingBottom: 180 }}>
               <View style={styles.topBar}>
                 <Pressable
                   onPress={() => router.back()}
@@ -338,9 +338,9 @@ const styles = StyleSheet.create({
   workoutTitleCentered: {
     color: "#FFF",
     fontSize: 34,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-    lineHeight: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.35,
+    lineHeight: 41,
   },
   weekCalendarContainer: {
     marginTop: 8,
@@ -356,7 +356,8 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: "#FFF",
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "600",
+    letterSpacing: 0.35,
   },
   sectionCount: {
     color: "rgba(255,255,255,0.8)",
@@ -369,12 +370,12 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderRadius: 24,
-    backgroundColor: "rgba(20,21,24,0.3)",
+    backgroundColor: "rgba(255,255,255,0.06)",
     padding: 32,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.15)",
     overflow: "hidden",
   },
   emptyTitle: {
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
     bottom: 4,
     paddingTop: 20,
     borderRadius: 48,
-    backgroundColor: "rgba(20,21,24,0.3)",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
     overflow: "hidden",
