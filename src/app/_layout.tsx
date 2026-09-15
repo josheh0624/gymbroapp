@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore, SafeUser } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
@@ -7,6 +8,11 @@ import { ActivityIndicator, View } from "react-native";
 
 export default function RootLayout() {
   const { user, loading, setUser, setLoading } = useAuthStore();
+  const { theme, loadTheme } = useThemeStore();
+
+  useEffect(() => {
+    loadTheme();
+  }, []);
   const segments = useSegments();
   const router = useRouter();
 
@@ -69,9 +75,9 @@ export default function RootLayout() {
   if (loading) {
     return (
       <React.Fragment>
-        <StatusBar style="auto" />
+        <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <View
-          style={{ flex: 1, backgroundColor: "#141518", justifyContent: "center", alignItems: "center" }}
+          style={{ flex: 1, backgroundColor: theme === "dark" ? "#141518" : "#F2F2F7", justifyContent: "center", alignItems: "center" }}
         >
           <ActivityIndicator size="large" color="#ffd61f" />
         </View>
@@ -81,7 +87,7 @@ export default function RootLayout() {
 
   return (
     <React.Fragment>
-      <StatusBar style="auto" />
+      <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <Stack>
         <Stack.Screen name="routes/login" options={{ headerShown: false }} />
         <Stack.Screen name="routes/onboarding/register" options={{ headerShown: false }} />

@@ -1,16 +1,16 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useRoutineStore } from "../../../store/routineStore";
 import PrebuiltWorkoutThumbnail from "./prebuilt-thumbnail/prebuilt-workout-thumbnail";
 
-const COLORS = {
-  textMuted: "rgba(255,255,255,0.5)",
-  surface: "rgba(255,255,255,0.045)",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
 
 export default function PrebuiltWorkoutList() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const { routineList, fetchRoutineList } = useRoutineStore();
 
   useEffect(() => {
@@ -47,13 +47,13 @@ export default function PrebuiltWorkoutList() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     alignContent: "center",
     width: "100%",
   },
   sectionTitle: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 20,
     fontWeight: "600",
     letterSpacing: 0.35,
@@ -64,17 +64,17 @@ const styles = StyleSheet.create({
   emptyCard: {
     marginHorizontal: 16,
     borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: colors.surface,
     paddingVertical: 40,
     paddingHorizontal: 20,
     alignItems: "center",
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: colors.surfaceBorder,
     overflow: "hidden",
   },
   emptyText: {
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "500",
     textAlign: "center",

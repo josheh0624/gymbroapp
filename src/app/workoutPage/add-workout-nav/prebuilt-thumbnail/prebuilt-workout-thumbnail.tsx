@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { useRoutineStore } from "@/store/routineStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -18,6 +20,9 @@ interface Props {
 }
 
 export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const router = useRouter();
   const deleteRoutine = useRoutineStore((s) => s.deleteRoutine);
 
@@ -89,21 +94,21 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   workoutCardWrapper: {
     marginHorizontal: 16,
     marginBottom: 12,
   },
   workoutCard: {
     borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.glassStrong,
     paddingVertical: 16,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.glassStrongBorder,
     overflow: "hidden",
   },
   pressed: {
@@ -128,7 +133,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(255,214,31,0.12)",
+    backgroundColor: colors.accentMuted,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -147,11 +152,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.glassStrong,
     justifyContent: "center",
     alignItems: "center",
   },
   deleteBtn: {
-    backgroundColor: "rgba(255,69,58,0.15)",
+    backgroundColor: colors.errorBg,
   },
 });

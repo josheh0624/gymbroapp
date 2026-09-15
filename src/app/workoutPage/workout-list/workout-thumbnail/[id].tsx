@@ -1,3 +1,6 @@
+import { useThemeStore } from "@/store/themeStore";
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 
@@ -17,6 +20,11 @@ import {
 } from "react-native";
 
 export default function WorkoutTodo() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
+
+
   const { id, routineID, selectedDateString } = useLocalSearchParams<{
     id: string;
     routineID: string;
@@ -80,7 +88,7 @@ export default function WorkoutTodo() {
         options={{
           headerTitle: "Workout",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: "#25262E" },
+          headerStyle: { backgroundColor: colors.gradientTop },
           headerShadowVisible: false,
           headerTintColor: "#F5F6F7",
           headerTitleStyle: {
@@ -92,7 +100,7 @@ export default function WorkoutTodo() {
       />
       <View style={{ flex: 1 }}>
         <LinearGradient
-          colors={["#25262E", "#141518"]}
+          colors={[colors.gradientTop, colors.bg]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0.2, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -143,6 +151,7 @@ export default function WorkoutTodo() {
 }
 
 function ExerciseCard({
+
   exercise,
   onToggleDone,
   onSave,
@@ -162,6 +171,8 @@ function ExerciseCard({
     sets?: number;
   }) => Promise<void> | void;
 }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [weight, setWeight] = useState(
     exercise.weight === null || exercise.weight === undefined
       ? ""
@@ -198,7 +209,12 @@ function ExerciseCard({
       <View style={styles.exerciseHeader}>
         <Text style={styles.exerciseName}>{exercise.name}</Text>
         <Pressable
-          onPress={onToggleDone}
+          onPress={() => {
+            saveWeight();
+            saveReps();
+            saveSets();
+            onToggleDone();
+          }}
           style={styles.exerciseDoneButton}
           hitSlop={6}
         >
@@ -256,6 +272,7 @@ function ExerciseCard({
 }
 
 function DoneButton({
+
   routineID,
   workoutID,
   selectedDateString,
@@ -264,6 +281,11 @@ function DoneButton({
   workoutID: string;
   selectedDateString?: string;
 }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+
   const router = useRouter();
   const markWorkoutDone = useRoutineStore((s) => s.markWorkoutDone);
 
@@ -280,14 +302,14 @@ function DoneButton({
         alignItems: "center",
       }}
     >
-      <Text style={{ color: "#141518", fontWeight: "700", fontSize: 16 }}>
+      <Text style={{ color: colors.bg, fontWeight: "700", fontSize: 16 }}>
         Finish Workout
       </Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -299,14 +321,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#141518",
+    backgroundColor: colors.bg,
   },
   loadingText: {
-    color: "rgba(255,255,255,0.6)",
+    color: colors.textMuted,
     fontSize: 14,
   },
   title: {
-    color: "#ffffff",
+    color: colors.text,
     fontSize: 24,
     fontWeight: "800",
     marginBottom: 20,
@@ -315,9 +337,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.glassStrong,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.glassStrongBorder,
   },
   cardPressable: { padding: 20 },
   cardCompleted: {
@@ -326,7 +348,7 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     flex: 1,
-    color: "#ffffff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
@@ -342,7 +364,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffd61f",
   },
   exerciseDoneText: {
-    color: "#141518",
+    color: colors.bg,
     fontSize: 12,
     fontWeight: "800",
   },
@@ -354,7 +376,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: { flex: 1 },
   inputLabel: {
-    color: "rgba(255,255,255,0.5)",
+    color: colors.textMuted,
     fontSize: 11,
     marginBottom: 5,
   },
@@ -364,9 +386,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+    borderColor: colors.glassStrongBorder,
     backgroundColor: "rgba(0,0,0,0.2)",
-    color: "#ffffff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -374,7 +396,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 10,
     bottom: 11,
-    color: "rgba(255,255,255,0.45)",
+    color: colors.textMuted,
     fontSize: 11,
   },
 });

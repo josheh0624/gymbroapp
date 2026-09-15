@@ -303,11 +303,15 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       // Upsert the done ones (if they exist today, unique constraint will update/fail, wait! Supabase upsert requires primary key or unique index)
       // Since we have a unique index on user_id, workout_exercise_id, date, we can upsert.
       if (doneExerciseIds.length > 0) {
-        const insertData = doneExerciseIds.map(id => ({
-          user_id: userId,
-          workout_exercise_id: id as string,
-          completed_at: new Date(dateStr).toISOString()
-        }));
+        const insertData = doneExerciseIds.map(id => {
+          const exercise = workout?.exercises.find(e => e.workoutExerciseId === id);
+          return {
+            user_id: userId,
+            workout_exercise_id: id as string,
+            completed_at: new Date(dateStr).toISOString(),
+            weight: exercise?.weight || null
+          };
+        });
         const { error } = await supabase
           .from('workout_log')
           .upsert(insertData, { onConflict: 'user_id, workout_exercise_id, completed_at' }); // wait, upsert only supports primary keys directly unless we do something else. 
@@ -425,11 +429,18 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       const dateStr = selectedDateString || new Date().toISOString();
 
       if (isDone) {
+        // Find the weight of this exercise from state
+        const routine = get().routines.find(r => r.id === routineId);
+        const workout = routine?.workouts.find(w => w.id === workoutId);
+        const exercise = workout?.exercises.find(e => e.workoutExerciseId === workoutExerciseId);
+        const weight = exercise?.weight || null;
+
         // Insert log. Using standard insert. If it errors due to unique constraint, that's fine.
         await supabase.from('workout_log').insert({
           user_id: userId,
           workout_exercise_id: workoutExerciseId,
-          completed_at: dateStr
+          completed_at: dateStr,
+          weight: weight
         });
       } else {
         await supabase
@@ -451,6 +462,34 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     workoutExerciseId,
     updates,
   ) => {
+    // Optimistic update
+    set((state) => ({
+      routines: state.routines.map((routine) =>
+        routine.id !== routineId
+          ? routine
+          : {
+              ...routine,
+              workouts: routine.workouts.map((workout) =>
+                workout.id !== workoutId
+                  ? workout
+                  : {
+                      ...workout,
+                      exercises: workout.exercises.map((exercise) =>
+                        exercise.workoutExerciseId !== workoutExerciseId
+                          ? exercise
+                          : {
+                              ...exercise,
+                              weight: updates.weight !== undefined ? updates.weight : exercise.weight,
+                              reps: updates.reps !== undefined ? updates.reps : exercise.reps,
+                              sets: updates.sets !== undefined ? updates.sets : exercise.sets,
+                            },
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+
     try {
       const { data, error } = await supabase
         .from('workout_exercises')
@@ -460,35 +499,9 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         .single();
         
       if (error) throw error;
-
-      set((state) => ({
-        routines: state.routines.map((routine) =>
-          routine.id !== routineId
-            ? routine
-            : {
-                ...routine,
-                workouts: routine.workouts.map((workout) =>
-                  workout.id !== workoutId
-                    ? workout
-                    : {
-                        ...workout,
-                        exercises: workout.exercises.map((exercise) =>
-                          exercise.workoutExerciseId !== workoutExerciseId
-                            ? exercise
-                            : {
-                                ...exercise,
-                                weight: data.weight,
-                                reps: data.reps,
-                                sets: data.sets,
-                              },
-                        ),
-                      },
-                ),
-              },
-        ),
-      }));
     } catch (err: any) {
       set({ error: err.message });
+      // In a real app we'd roll back here, but for now just show error
     }
   },
 }));

@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { supabase } from "@/api/supabase";
@@ -16,15 +18,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const COLORS = {
-  bg: "#111214",
-  text: "#F5F6F7",
-  textFaint: "#8A8F98",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
-  widgetBg: "#1C1D22",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
 
 interface AvailableExercise {
   id: string;
@@ -47,6 +40,9 @@ interface WorkoutExerciseInput {
 }
 
 export default function CreateWorkout() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -248,20 +244,20 @@ export default function CreateWorkout() {
         options={{
           headerTitle: "New Workout",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: "#25262E" },
+          headerStyle: { backgroundColor: colors.gradientTop },
           headerShadowVisible: false,
-          headerTintColor: COLORS.text,
+          headerTintColor: colors.text,
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "700",
-            color: COLORS.text,
+            color: colors.text,
           },
         }}
       />
 
       <View style={styles.container}>
         <LinearGradient
-          colors={["#25262E", "#141518"]}
+          colors={[colors.gradientTop, colors.bg]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0.2, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -275,7 +271,7 @@ export default function CreateWorkout() {
             <TextInput
               style={styles.input}
               placeholder="e.g. Push Day"
-              placeholderTextColor={COLORS.textFaint}
+              placeholderTextColor={colors.textFaint}
               value={workoutName}
               onChangeText={setWorkoutName}
               returnKeyType="done"
@@ -289,7 +285,7 @@ export default function CreateWorkout() {
               <Text
                 style={[
                   styles.dropdownToggleText,
-                  selectedDays.length === 0 && { color: COLORS.textFaint },
+                  selectedDays.length === 0 && { color: colors.textFaint },
                 ]}
               >
                 {selectedDays.length > 0
@@ -299,7 +295,7 @@ export default function CreateWorkout() {
               <Ionicons
                 name={showDaysDropdown ? "chevron-up" : "chevron-down"}
                 size={16}
-                color={COLORS.textFaint}
+                color={colors.textFaint}
               />
             </Pressable>
 
@@ -320,7 +316,7 @@ export default function CreateWorkout() {
                       {day.name}
                     </Text>
                     {selectedDays.includes(day.id) && (
-                      <Ionicons name="checkmark" size={18} color={COLORS.accent} style={{ position: 'absolute', right: 16, top: 14 }} />
+                      <Ionicons name="checkmark" size={18} color={colors.accent} style={{ position: 'absolute', right: 16, top: 14 }} />
                     )}
                   </Pressable>
                 ))}
@@ -413,10 +409,10 @@ export default function CreateWorkout() {
                 <Ionicons
                   name="add-circle"
                   size={20}
-                  color={COLORS.accent}
+                  color={colors.accent}
                 />
                 <Text
-                  style={[styles.workoutName, { color: COLORS.accent }]}
+                  style={[styles.workoutName, { color: colors.accent }]}
                 >
                   Create Custom Exercise
                 </Text>
@@ -428,7 +424,7 @@ export default function CreateWorkout() {
                 <TextInput
                   style={[styles.input, { marginBottom: 16 }]}
                   placeholder="Exercise Name"
-                  placeholderTextColor={COLORS.textFaint}
+                  placeholderTextColor={colors.textFaint}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   autoFocus
@@ -442,7 +438,7 @@ export default function CreateWorkout() {
                     <Text
                       style={[
                         styles.dropdownToggleText,
-                        !selectedMuscleGroupId && { color: COLORS.textFaint },
+                        !selectedMuscleGroupId && { color: colors.textFaint },
                       ]}
                     >
                       {selectedMuscleGroupId
@@ -454,7 +450,7 @@ export default function CreateWorkout() {
                     <Ionicons
                       name={showMgDropdown ? "chevron-up" : "chevron-down"}
                       size={16}
-                      color={COLORS.textFaint}
+                      color={colors.textFaint}
                     />
                   </Pressable>
 
@@ -488,22 +484,22 @@ export default function CreateWorkout() {
                 </View>
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                   <Pressable
-                    style={[styles.formBtn, { backgroundColor: COLORS.bg }]}
+                    style={[styles.formBtn, { backgroundColor: colors.bg }]}
                     onPress={() => {
                       setIsCreatingExercise(false);
                       setSearchQuery("");
                       setSelectedMuscleGroupId(null);
                     }}
                   >
-                    <Text style={{ color: COLORS.text, fontWeight: "700" }}>
+                    <Text style={{ color: colors.text, fontWeight: "700" }}>
                       Cancel
                     </Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.formBtn, { backgroundColor: COLORS.accent }]}
+                    style={[styles.formBtn, { backgroundColor: colors.accent }]}
                     onPress={handleCreateNewExercise}
                   >
-                    <Text style={{ color: "#141518", fontWeight: "700" }}>
+                    <Text style={{ color: colors.bg, fontWeight: "700" }}>
                       Create
                     </Text>
                   </Pressable>
@@ -514,7 +510,7 @@ export default function CreateWorkout() {
                 <TextInput
                   style={[styles.input, { marginBottom: 16 }]}
                   placeholder="Search exercises..."
-                  placeholderTextColor={COLORS.textFaint}
+                  placeholderTextColor={colors.textFaint}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   returnKeyType="search"
@@ -531,7 +527,7 @@ export default function CreateWorkout() {
                       ]}
                       onPress={() => handleAddExercise(ex)}
                     >
-                      <Ionicons name="add" size={20} color={COLORS.textFaint} />
+                      <Ionicons name="add" size={20} color={colors.textFaint} />
                       <Text style={styles.workoutName}>{ex.name}</Text>
                     </Pressable>
                   ))}
@@ -552,7 +548,7 @@ export default function CreateWorkout() {
             disabled={isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator color="#141518" />
+              <ActivityIndicator color={colors.bg} />
             ) : (
               <Text style={styles.createButtonText}>Create Workout</Text>
             )}
@@ -563,7 +559,7 @@ export default function CreateWorkout() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -574,25 +570,25 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   widget: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.glassStrong,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.glassStrongBorder,
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,
   },
   label: {
-    color: COLORS.textFaint,
+    color: colors.textFaint,
     fontSize: 11,
     fontWeight: "normal",
     marginBottom: 16,
   },
   input: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 20,
     fontWeight: "700",
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
     paddingBottom: 8,
   },
   list: {
@@ -606,10 +602,10 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
   },
   workoutName: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 16,
     fontWeight: "600",
     flexShrink: 1,
@@ -635,13 +631,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   metricLabel: {
-    color: COLORS.textFaint,
+    color: colors.textFaint,
     fontSize: 10,
     fontWeight: "normal",
     marginBottom: 6,
   },
   metricInput: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 18,
     fontWeight: "700",
     textAlign: "center",
@@ -651,11 +647,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.05)",
+    borderTopColor: colors.surface,
     backgroundColor: "transparent",
   },
   createButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     height: 56,
     borderRadius: 28,
     justifyContent: "center",
@@ -666,14 +662,14 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   createButtonText: {
-    color: "#141518",
+    color: colors.bg,
     fontSize: 16,
     fontWeight: "800",
   },
   muscleGroupContainer: {
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
   },
   mgScroll: {
     gap: 8,
@@ -685,19 +681,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    borderColor: colors.surfaceBorder,
   },
   mgPillActive: {
-    backgroundColor: "rgba(255,214,31,0.12)",
-    borderColor: COLORS.accent,
+    backgroundColor: colors.accentMuted,
+    borderColor: colors.accent,
   },
   mgText: {
-    color: COLORS.textFaint,
+    color: colors.textFaint,
     fontSize: 13,
     fontWeight: "700",
   },
   mgTextActive: {
-    color: COLORS.accent,
+    color: colors.accent,
   },
   customExerciseForm: {
     marginTop: 8,
@@ -719,11 +715,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    borderColor: colors.surfaceBorder,
     marginTop: 8,
   },
   dropdownToggleText: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -731,7 +727,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
+    borderColor: colors.surfaceBorder,
     marginTop: 8,
     maxHeight: 200,
     overflow: "hidden",
@@ -740,14 +736,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
   },
   dropdownItemText: {
-    color: COLORS.textFaint,
+    color: colors.textFaint,
     fontSize: 15,
     fontWeight: "600",
   },
   dropdownItemTextActive: {
-    color: COLORS.accent,
+    color: colors.accent,
   },
 });

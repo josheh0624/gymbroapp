@@ -1,8 +1,9 @@
+import { useMemo } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { supabase } from "@/api/supabase";
 import { useRoutineStore } from "@/store/routineStore";
-import { COLORS } from "@/styles/appStyles";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -22,6 +23,9 @@ import { useFocusEffect } from "expo-router";
 type AvailableWorkout = { id: string; name: string; days?: number[]; user_id?: string | null };
 
 export default function CustomWorkout() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -152,20 +156,20 @@ export default function CustomWorkout() {
         options={{
           headerTitle: id ? "Edit Routine" : "Create Routine",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: "#25262E" },
+          headerStyle: { backgroundColor: colors.gradientTop },
           headerShadowVisible: false,
-          headerTintColor: COLORS.text,
+          headerTintColor: colors.text,
           headerTitleStyle: {
             fontSize: 22,
             fontWeight: "800",
-            color: COLORS.text,
+            color: colors.text,
           },
         }}
       />
 
       <View style={styles.container}>
         <LinearGradient
-          colors={["#25262E", "#141518"]}
+          colors={[colors.gradientTop, colors.bg]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0.2, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -176,7 +180,7 @@ export default function CustomWorkout() {
             <TextInput
               style={styles.input}
               placeholder="e.g. Bro Split"
-              placeholderTextColor={COLORS.textFaint}
+              placeholderTextColor={colors.textFaint}
               value={routineName}
               onChangeText={setRoutineName}
               autoFocus
@@ -189,7 +193,7 @@ export default function CustomWorkout() {
 
             {isLoadingWorkouts ? (
               <ActivityIndicator
-                color={COLORS.accent}
+                color={colors.accent}
                 style={{ marginTop: 20, marginBottom: 10 }}
               />
             ) : (
@@ -208,7 +212,7 @@ export default function CustomWorkout() {
                           style={[styles.workoutRow]}
                         >
                           <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                            {isSelected && <Ionicons name="checkmark" size={16} color="#141518" />}
+                            {isSelected && <Ionicons name="checkmark" size={16} color={colors.bg} />}
                           </View>
                           <Text style={styles.workoutName}>{workout.name}</Text>
                         </Pressable>
@@ -216,7 +220,7 @@ export default function CustomWorkout() {
                         {isSelected && (
                           <View style={{ paddingLeft: 40, paddingBottom: 16, flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
                             {workout.user_id === null ? (
-                              <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>Prebuilt workouts have fixed days.</Text>
+                              <Text style={{ color: colors.textMuted, fontSize: 12 }}>Prebuilt workouts have fixed days.</Text>
                             ) : (
                               [1,2,3,4,5,6,7].map(day => {
                                 const dayNames = ["M","T","W","T","F","S","S"];
@@ -227,12 +231,12 @@ export default function CustomWorkout() {
                                     onPress={() => toggleWorkoutDay(workout.id, day)}
                                     style={{
                                       width: 32, height: 32, borderRadius: 16, 
-                                      backgroundColor: isDaySelected ? COLORS.accent : 'rgba(255,255,255,0.05)',
+                                      backgroundColor: isDaySelected ? colors.accent : 'rgba(255,255,255,0.05)',
                                       alignItems: 'center', justifyContent: 'center',
-                                      borderWidth: 1, borderColor: isDaySelected ? COLORS.accent : 'rgba(255,255,255,0.1)'
+                                      borderWidth: 1, borderColor: isDaySelected ? colors.accent : 'rgba(255,255,255,0.1)'
                                     }}
                                   >
-                                    <Text style={{ color: isDaySelected ? '#141518' : COLORS.textMuted, fontWeight: '700', fontSize: 13 }}>
+                                    <Text style={{ color: isDaySelected ? '#141518' : colors.textMuted, fontWeight: '700', fontSize: 13 }}>
                                       {dayNames[day-1]}
                                     </Text>
                                   </Pressable>
@@ -259,8 +263,8 @@ export default function CustomWorkout() {
                     router.push("/workoutPage/add-workout-nav/create-workout")
                   }
                 >
-                  <Ionicons name="add-circle" size={20} color={COLORS.accent} />
-                  <Text style={[styles.workoutName, { color: COLORS.accent }]}>
+                  <Ionicons name="add-circle" size={20} color={colors.accent} />
+                  <Text style={[styles.workoutName, { color: colors.accent }]}>
                     Create Custom Workout
                   </Text>
                 </Pressable>
@@ -280,7 +284,7 @@ export default function CustomWorkout() {
             disabled={isCreating}
           >
             {isCreating ? (
-              <ActivityIndicator color="#141518" />
+              <ActivityIndicator color={colors.bg} />
             ) : (
               <Text style={styles.createButtonText}>Save Routine</Text>
             )}
@@ -291,7 +295,7 @@ export default function CustomWorkout() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -302,29 +306,29 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   widget: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.glassStrong,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.glassStrongBorder,
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,
   },
   label: {
-    color: COLORS.textFaint,
+    color: colors.textFaint,
     fontSize: 11,
     fontWeight: "normal",
     marginBottom: 16,
   },
   input: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 20,
     fontWeight: "700",
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
     paddingBottom: 8,
   },
   emptyText: {
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "500",
     marginTop: 8,
@@ -340,23 +344,23 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: COLORS.textFaint,
+    borderColor: colors.textFaint,
     alignItems: "center",
     justifyContent: "center",
   },
   checkboxSelected: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   workoutName: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 16,
     fontWeight: "600",
     flexShrink: 1,
@@ -365,11 +369,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.05)",
+    borderTopColor: colors.surface,
     backgroundColor: "transparent",
   },
   createButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     height: 56,
     borderRadius: 28,
     justifyContent: "center",
@@ -380,7 +384,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   createButtonText: {
-    color: "#141518",
+    color: colors.bg,
     fontSize: 16,
     fontWeight: "800",
   },

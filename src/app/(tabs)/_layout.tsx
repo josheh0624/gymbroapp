@@ -1,3 +1,4 @@
+import { useThemeColors } from "@/styles/appStyles";
 import { ProfilePhoto } from "@/app/components/profile-photo";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -5,16 +6,16 @@ import { BlurView } from "expo-blur";
 import { router, Tabs, usePathname } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
-const ACTIVE_COLOR = "#ffd61f";
-const INACTIVE_COLOR = "#fff";
 
 function GlassTabBar(props: BottomTabBarProps) {
+  const colors = useThemeColors();
+
   const { state, descriptors, navigation } = props;
 
   const renderTab = (route: (typeof state.routes)[number], index: number) => {
     const { options } = descriptors[route.key];
     const isFocused = state.index === index;
-    const color = isFocused ? ACTIVE_COLOR : INACTIVE_COLOR;
+    const color = isFocused ? colors.accent : colors.textFaint;
 
     const onPress = () => {
       const event = navigation.emit({
@@ -45,7 +46,7 @@ function GlassTabBar(props: BottomTabBarProps) {
           onPress={() => router.push("/workoutPage/workoutPage")}
           style={styles.tabItem}
         >
-          <Ionicons name="barbell-outline" size={24} color={INACTIVE_COLOR} />
+          <Ionicons name="barbell-outline" size={24} color={colors.textFaint} />
         </Pressable>
 
         {state.routes.map((route, index) =>
@@ -81,6 +82,8 @@ const styles = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  const colors = useThemeColors();
+
   const pathname = usePathname();
   const showAddButton = pathname === "/";
 
@@ -93,12 +96,12 @@ export default function TabLayout() {
         screenOptions={{
           animation: "none",
           tabBarActiveTintColor: "#ffd33d",
-          tabBarInactiveTintColor: "#fff",
+          tabBarInactiveTintColor: colors.textFaint,
           headerStyle: {
             backgroundColor: "#25292e",
           },
           headerShadowVisible: false,
-          headerTintColor: "#fff",
+          headerTintColor: colors.text,
           tabBarStyle: {
             backgroundColor: "#25292e",
           },

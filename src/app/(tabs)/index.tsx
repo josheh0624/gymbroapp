@@ -1,9 +1,11 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
-import { COLORS } from "@/styles/appStyles";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
+import { useThemeStore } from "@/store/themeStore";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlurView } from "expo-blur";
+import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -537,6 +539,11 @@ function AnatomicalMap({
   side: MuscleSide;
   data: WeeklyMuscleHit[];
 }) {
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
   return (
     <View style={styles.bodyCropBox}>
       <View style={{ transform: [{ translateY: -HEAD_CROP_HEIGHT }] }}>
@@ -555,6 +562,11 @@ function AnatomicalMap({
 }
 
 function WeekDots({ dailyActivity }: { dailyActivity: DailyActivity[] }) {
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
   if (dailyActivity.length === 0) return <View style={styles.weekDotsRow} />;
 
   return (
@@ -584,6 +596,11 @@ function IconButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
   return (
     <Pressable
       onPress={onPress}
@@ -601,6 +618,13 @@ function IconButton({
 }
 
 export default function MuscleMapScreen() {
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
+  
+
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const initials = useMemo(
@@ -664,7 +688,7 @@ export default function MuscleMapScreen() {
           {/* Big Background Container for everything up to the Muscle Map */}
           <View style={styles.gradientContainer}>
             <LinearGradient
-              colors={["#ffd33d", "#25292e"]}
+              colors={isLight ? ["#FFD33D", "#FFFFFF"] : ["#ffd33d", "#25262E"]}
               style={StyleSheet.absoluteFill}
               start={{ x: 0.2, y: 0 }}
               end={{ x: 1, y: 1.2 }}
@@ -725,7 +749,7 @@ export default function MuscleMapScreen() {
                       onPress={() => setWeekOffset((o) => o - 1)}
                       style={styles.navIcon}
                     >
-                      <Ionicons name="chevron-back" size={16} color="#FFF" />
+                      <Ionicons name="chevron-back" size={16} color={colors.text} />
                     </Pressable>
                     <Pressable
                       onPress={() => setWeekOffset((o) => o + 1)}
@@ -735,7 +759,7 @@ export default function MuscleMapScreen() {
                         isCurrentWeek && { opacity: 0.25 },
                       ]}
                     >
-                      <Ionicons name="chevron-forward" size={16} color="#FFF" />
+                      <Ionicons name="chevron-forward" size={16} color={colors.text} />
                     </Pressable>
                   </View>
                 </View>
@@ -794,7 +818,7 @@ export default function MuscleMapScreen() {
                       <View
                         style={[StyleSheet.absoluteFill, styles.loadingOverlay]}
                       >
-                        <ActivityIndicator size="large" color="#FFF" />
+                        <ActivityIndicator size="large" color={colors.text} />
                       </View>
                     )}
 
@@ -854,7 +878,7 @@ export default function MuscleMapScreen() {
                             hiddenParts={["head", "hair", "neck"]}
                             side="front"
                             colors={[BODY_BASE, SECONDARY_COLOR, PRIMARY_COLOR]}
-                            border="rgba(255,255,255,0.5)"
+                            border={colors.textMuted}
                             gender="male"
                             defaultFill={BODY_BASE}
                           />
@@ -873,7 +897,7 @@ export default function MuscleMapScreen() {
                             hiddenParts={["head", "hair", "neck"]}
                             side="back"
                             colors={[BODY_BASE, SECONDARY_COLOR, PRIMARY_COLOR]}
-                            border="rgba(255,255,255,0.5)"
+                            border={colors.textMuted}
                             gender="male"
                             defaultFill={BODY_BASE}
                           />
@@ -898,7 +922,7 @@ export default function MuscleMapScreen() {
                   const isPositive = diff > 0;
                   const isNegative = diff < 0;
                   const color = isPositive ? "#30D158" : "#FF453A";
-                  const bgColor = isPositive ? "rgba(48,209,88,0.15)" : "rgba(255,69,58,0.15)";
+                  const bgColor = isPositive ? colors.successBg : colors.errorBg;
                   
                   return (
                     <View style={styles.servicePill}>
@@ -958,7 +982,7 @@ export default function MuscleMapScreen() {
                     <View style={styles.barBackground}>
                       <View style={[
                         styles.barFill, 
-                        { height: `${heightPercentage}%`, backgroundColor: isCurrent ? "#ffd33d" : "rgba(255, 211, 61, 0.4)" }
+                        { height: `${heightPercentage}%`, backgroundColor: isCurrent ? "#ffd33d" : colors.accentTranslucent }
                       ]} />
                     </View>
                     <Text style={styles.chartLabel}>{labels[idx]}</Text>
@@ -968,6 +992,7 @@ export default function MuscleMapScreen() {
               })}
             </View>
           </View>
+          <ExerciseProgressionChart />
 </View>
         </ScrollView>
       </View>
@@ -975,8 +1000,8 @@ export default function MuscleMapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: COLORS.bg },
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.bg },
   gradientContainer: {
     borderBottomLeftRadius: 60,
     borderBottomRightRadius: 60,
@@ -993,7 +1018,7 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: { alignItems: "center" },
   welcomeBack: {
-    color: "rgba(255,255,255,0.7)",
+    color: colors.textMuted,
     fontSize: 16,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -1001,7 +1026,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   userName: {
-    color: "#FFFFFF",
+    color: colors.text,
     fontSize: 34,
     fontWeight: "bold",
     letterSpacing: 0.35,
@@ -1009,11 +1034,11 @@ const styles = StyleSheet.create({
   floatingPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#141518",
+    backgroundColor: colors.bgElevated,
     padding: 16,
     borderRadius: 60,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: colors.surfaceBorder,
     marginBottom: 24,
     marginHorizontal: 16,
   },
@@ -1024,7 +1049,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   pillIconContainer: {
-    backgroundColor: "rgba(255, 211, 61, 0.15)",
+    backgroundColor: colors.accentMuted,
     width: 32,
     height: 32,
     borderRadius: 60,
@@ -1032,15 +1057,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
-  pillText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+  pillText: { color: colors.text, fontSize: 15, fontWeight: "600" },
   glassCard: {
     marginHorizontal: 8,
     borderRadius: 48,
     padding: 20,
     marginBottom: 8,
-    backgroundColor: "rgba(20,21,24,0.3)", // Smoked glass base
+    backgroundColor: colors.surface, // Smoked glass base
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: colors.surfaceBorder,
     overflow: "hidden",
   },
   weekStripMinimal: {
@@ -1054,7 +1079,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  weekPagerText: { color: "#FFF", fontSize: 18, fontWeight: "800" },
+  weekPagerText: { color: colors.text, fontSize: 18, fontWeight: "800" },
   weekStripInner: { flexDirection: "row", alignItems: "center" },
   navIcon: {
     width: 28,
@@ -1063,7 +1088,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 8,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.surfaceBorder,
   },
   navIconPressed: { opacity: 0.5 },
   navIconDisabled: { opacity: 0.25 },
@@ -1080,12 +1105,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: colors.surfaceBorder,
     backgroundColor: "rgba(0,0,0,0.1)",
   },
-  weekDotFilled: { backgroundColor: "#FFF", borderColor: "#FFF" },
+  weekDotFilled: { backgroundColor: colors.text, borderColor: colors.text },
   weekDotLabel: {
-    color: "rgba(255,255,255,0.9)",
+    color: colors.text,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -1099,12 +1124,12 @@ const styles = StyleSheet.create({
   errorState: { padding: 40, alignItems: "center" },
   errorText: { color: "#ff6b6b", marginBottom: 12, textAlign: "center" },
   retryBtn: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.surfaceBorder,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
   },
-  retryText: { color: "#FFF", fontSize: 13, fontWeight: "bold" },
+  retryText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
   mapToggle: {
     flexDirection: "row",
     alignSelf: "center",
@@ -1120,7 +1145,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   mapToggleButtonActive: { backgroundColor: "#ffd33d" },
-  mapToggleText: { color: "#FFF", fontSize: 13, fontWeight: "bold" },
+  mapToggleText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
   mapToggleTextActive: { color: "#141518" },
   bodyCropBox: {
     height: 500, // INCREASED TO AVOID CLIPPING LEGS
@@ -1135,7 +1160,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   sectionTitle: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 22,
     fontWeight: "600",
     letterSpacing: 0.35,
@@ -1149,16 +1174,16 @@ const styles = StyleSheet.create({
   },
   servicePill: {
     width: "48%",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: colors.surfaceBorder,
   },
   serviceIconWrap: {
-    backgroundColor: "rgba(255, 211, 61, 0.1)",
+    backgroundColor: colors.accentMuted,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -1166,9 +1191,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 10,
   },
-  serviceValue: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
+  serviceValue: { color: colors.text, fontSize: 15, fontWeight: "700" },
   serviceLabel: {
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "500",
     marginTop: 2,
@@ -1177,11 +1202,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: colors.surfaceBorder,
   },
   chartCol: {
     alignItems: "center",
@@ -1200,13 +1225,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   chartLabel: {
-    color: "rgba(255,255,255,0.5)",
+    color: colors.textMuted,
     fontSize: 9,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   chartValue: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 13,
     fontWeight: "800",
     marginTop: 4,

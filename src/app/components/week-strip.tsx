@@ -1,3 +1,4 @@
+import { useThemeColors } from "@/styles/appStyles";
 import moment from "moment";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -18,6 +19,9 @@ export default function WeekStrip({
   selectedDate,
   onSelectDate,
 }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const today = new Date();
   const startOfWeek = useMemo(() => {
     const date = new Date(today);
@@ -91,7 +95,7 @@ export default function WeekStrip({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   wrapper: {
     marginHorizontal: 8,
   },
@@ -108,12 +112,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dayLabel: {
-    color: COLORS.textMuted,
+    color: "rgba(255,255,255,0.5)",
     fontSize: 11,
     fontWeight: "normal",
   },
   selectedDayLabel: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontWeight: "bold",
   },
   dayNumberBox: {
@@ -124,23 +128,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   selectedDayNumberBox: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
   },
   dayNumber: {
-    color: COLORS.text,
+    color: "rgba(255,255,255,0.9)",
     fontSize: 18,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   selectedDayNumber: {
-    color: COLORS.accentText,
+    color: colors.accentText,
     fontWeight: "900",
   },
   todayDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
   },
   dotHidden: {
     opacity: 0,

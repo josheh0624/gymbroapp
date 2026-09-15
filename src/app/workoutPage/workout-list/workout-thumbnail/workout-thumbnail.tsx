@@ -1,17 +1,11 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import WorkoutModel from "@/models/workout-model";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BlurView } from "expo-blur";
 
-const COLORS = {
-  bg: "#141518",
-  text: "#F5F6F7",
-  textFaint: "#8A8F98",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd61f",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
 
 interface Props {
   workout: WorkoutModel;
@@ -26,6 +20,9 @@ export default function WorkoutThumbnail({
   routineID,
   selectedDateString,
 }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const router = useRouter();
 
   const exerciseCount = workout.exercises.length;
@@ -54,7 +51,7 @@ export default function WorkoutThumbnail({
               {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
+          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
         </View>
 
         <View style={styles.exerciseList}>
@@ -80,7 +77,7 @@ export default function WorkoutThumbnail({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   workoutCard: {
     marginHorizontal: 0,
     minHeight: 140,
@@ -90,7 +87,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     padding: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: colors.surfaceBorder,
   },
   pressed: {
     opacity: 0.85,
@@ -109,12 +106,12 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   title: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 20,
     fontWeight: "800",
   },
   subtitle: {
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "600",
     marginTop: 2,
@@ -130,17 +127,17 @@ const styles = StyleSheet.create({
   },
   exerciseRowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.surfaceBorder,
+    borderBottomColor: colors.surfaceBorder,
   },
   exerciseName: {
-    color: COLORS.text,
+    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
     flexShrink: 1,
     paddingRight: 12,
   },
   exerciseMeta: {
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "600",
   },

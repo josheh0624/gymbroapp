@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { useRoutineStore } from "@/store/routineStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { router } from "expo-router";
@@ -8,6 +10,9 @@ interface Props {
 }
 
 export default function AddToRoutine({ routineId }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const setActiveRoutine = useRoutineStore((s) => s.setActiveRoutine);
   const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
 
@@ -23,12 +28,12 @@ export default function AddToRoutine({ routineId }: Props) {
       onPress={handleAddWorkout}
       hitSlop={8}
     >
-      <FontAwesome6 name="plus" size={18} color="#141518" />
+      <FontAwesome6 name="plus" size={18} color={colors.bg} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   button: {
     width: 44,
     height: 44,

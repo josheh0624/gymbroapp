@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { Stack, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -5,15 +7,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddCustomButton from "./add-custom-button";
 import PrebuiltWorkoutList from "./prebuilt-workout-list";
 
-const COLORS = {
-  bg: "#141518",
-  text: "#F5F6F7",
-  textFaint: "#8A8F98",
-  accent: "#ffd61f",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
 
 export default function AddWorkoutNAV() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -23,20 +21,20 @@ export default function AddWorkoutNAV() {
         options={{
           headerTitle: "Routines",
           headerBackButtonDisplayMode: "minimal",
-          headerStyle: { backgroundColor: "#25262E" },
+          headerStyle: { backgroundColor: colors.gradientTop },
           headerShadowVisible: false,
-          headerTintColor: COLORS.text,
+          headerTintColor: colors.text,
           headerTitleStyle: {
             fontSize: 22,
             fontWeight: "800",
-            color: COLORS.text,
+            color: colors.text,
           },
         }}
       />
 
       <View style={styles.container}>
         <LinearGradient
-          colors={["#25262E", "#141518"]}
+          colors={[colors.gradientTop, colors.bg]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0.2, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -57,7 +55,7 @@ export default function AddWorkoutNAV() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -67,7 +65,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   sectionLabel: {
-    color: COLORS.textFaint,
+    color: colors.textFaint,
     fontSize: 12,
     fontWeight: "normal",
     marginBottom: 12,
@@ -77,6 +75,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.05)",
+    borderTopColor: colors.surface,
   },
 });

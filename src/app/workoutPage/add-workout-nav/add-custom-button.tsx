@@ -1,13 +1,14 @@
+import { useMemo } from "react";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
 
-const COLORS = {
-  accent: "#ffd61f",
-  surfaceBorder: "rgba(255,255,255,0.09)",
-};
 
 export default function AddCustomButton() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const router = useRouter();
 
   return (
@@ -17,13 +18,13 @@ export default function AddCustomButton() {
         router.push("/workoutPage/add-workout-nav/custom-workout");
       }}
     >
-      <FontAwesome6 name="plus" size={16} color="#141518" />
+      <FontAwesome6 name="plus" size={16} color={colors.bg} />
       <Text style={styles.text}>Create Custom Routine</Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: "row",
     width: "100%",
@@ -32,7 +33,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 10,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
   },
   pressed: {
     opacity: 0.85,
@@ -41,6 +42,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#141518",
+    color: colors.bg,
   },
 });

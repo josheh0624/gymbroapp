@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { COLORS } from "@/styles/appStyles";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
+import { useThemeStore } from "@/store/themeStore";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,6 +10,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PickProfilePhoto } from "../components/profile-photo";
 
 export default function AccountScreen() {
+  const colors = useThemeColors();
+  const { theme, toggleTheme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
+  
+
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -21,7 +30,7 @@ export default function AccountScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#25262E", "#141518"]}
+        colors={[colors.gradientTop, colors.gradientBottom]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -80,7 +89,26 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
+            
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Appearance</Text>
+            <View style={styles.listCard}>
+              <Pressable style={styles.listItem} onPress={toggleTheme}>
+                <View style={styles.itemLeft}>
+                  <View style={styles.itemIcon}>
+                    <Ionicons name={isLight ? "moon" : "sunny"} size={18} color={colors.textFaint} />
+                  </View>
+                  <Text style={styles.itemText}>Toggle Theme</Text>
+                </View>
+                <View style={styles.itemRight}>
+                  <Text style={styles.itemValue}>{theme === 'light' ? 'Light Mode' : 'Dark Mode'}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Preferences</Text>
           </View>
 
           {/* Action Widgets */}
@@ -127,6 +155,11 @@ function StatWidget({
   value: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) {
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
   return (
     <BlurView
       intensity={20}
@@ -155,6 +188,11 @@ function ActionWidget({
   subLabel?: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) {
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -171,7 +209,7 @@ function ActionWidget({
         <Ionicons
           name={icon}
           size={28}
-          color="#FFF"
+          color={colors.text}
           style={styles.actionIcon}
         />
         <Text style={styles.actionLabel}>{label}</Text>
@@ -181,8 +219,8 @@ function ActionWidget({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingHorizontal: 16, paddingBottom: 64 },
 
   headerCentered: {
@@ -192,7 +230,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   accountTitleCentered: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 34,
     fontWeight: "bold",
     letterSpacing: 0.35,
@@ -206,12 +244,12 @@ const styles = StyleSheet.create({
   },
 
   widget: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 20,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.surfaceBorder,
     overflow: "hidden",
   },
   widgetFull: {
@@ -266,7 +304,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255, 214, 31, 0.1)",
+    backgroundColor: colors.accentMuted,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -293,7 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sectionTitle: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 20,
     fontWeight: "600",
     letterSpacing: 0.35,
@@ -346,6 +384,51 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
   },
+  
+  section: {
+    marginBottom: 24,
+  },
+  listCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+  },
+  itemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  itemIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceBorder,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  itemText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  itemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  itemValue: {
+    color: colors.textMuted,
+    fontSize: 16,
+    marginRight: 8,
+  },
+
   deleteText: {
     color: COLORS.textFaint,
     fontSize: 13,

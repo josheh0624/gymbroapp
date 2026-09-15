@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { ProfilePhoto } from "@/app/components/profile-photo";
 import { useRoutineStore } from "@/store/routineStore";
-import { COLORS } from "@/styles/appStyles";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
+import { useThemeStore } from "@/store/themeStore";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -83,7 +85,13 @@ function DockButton({
 }
 
 export default function WorkoutScreen() {
+  const colors = useThemeColors();
+  const { theme, toggleTheme } = useThemeStore();
+  const isLight = theme === 'light';
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+
   const router = useRouter();
+
   const addRoutine = useRoutineStore((state) => state.addRoutine);
   const setActiveRoutine = useRoutineStore((state) => state.setActiveRoutine);
   const activeRoutineId = useRoutineStore((state) => state.activeRoutineId);
@@ -153,7 +161,7 @@ export default function WorkoutScreen() {
           {/* Full-Page Dark Gradient */}
           <View style={styles.gradientContainer}>
             <LinearGradient
-              colors={["#25262E", "#141518"]}
+              colors={[colors.gradientTop, colors.gradientBottom]}
               style={StyleSheet.absoluteFill}
               start={{ x: 0.2, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -169,7 +177,7 @@ export default function WorkoutScreen() {
                     { opacity: pressed ? 0.6 : 1 },
                   ]}
                 >
-                  <Ionicons name="chevron-down" size={24} color="#FFF" />
+                  <Ionicons name="chevron-down" size={24} color={colors.text} />
                 </Pressable>
 
                 <Text style={styles.dateTextInline}>{currentDate}</Text>
@@ -178,7 +186,7 @@ export default function WorkoutScreen() {
                   hitSlop={8}
                   onPress={() => router.push("/(tabs)/accountPage" as any)}
                 >
-                  <ProfilePhoto size={38} color="#FFF" />
+                  <ProfilePhoto size={38} color={colors.text} />
                 </Pressable>
               </View>
 
@@ -214,7 +222,7 @@ export default function WorkoutScreen() {
                     <Ionicons
                       name={hasRoutine ? "moon-outline" : "barbell-outline"}
                       size={26}
-                      color="rgba(255,255,255,0.4)"
+                      color={colors.textMuted}
                     />
                     <Text style={styles.emptyTitle}>
                       {hasRoutine ? "Rest day" : "No active routine"}
@@ -248,7 +256,7 @@ export default function WorkoutScreen() {
                   )
                 }
               >
-                <Ionicons name="swap-horizontal" size={20} color="#FFF" />
+                <Ionicons name="swap-horizontal" size={20} color={colors.text} />
               </DockButton>
               <Text style={styles.dockLabel}>Swap Routine</Text>
             </View>
@@ -284,7 +292,7 @@ export default function WorkoutScreen() {
                   });
                 }}
               >
-                <Ionicons name="add" size={24} color="#FFF" />
+                <Ionicons name="add" size={24} color={colors.text} />
               </DockButton>
               <Text style={styles.dockLabel}>Add Workout</Text>
             </View>
@@ -295,10 +303,10 @@ export default function WorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: colors.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -318,12 +326,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.surfaceBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   dateTextInline: {
-    color: "rgba(255,255,255,0.8)",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -336,7 +344,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   workoutTitleCentered: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 34,
     fontWeight: "bold",
     letterSpacing: 0.35,
@@ -354,13 +362,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionLabel: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 20,
     fontWeight: "600",
     letterSpacing: 0.35,
   },
   sectionCount: {
-    color: "rgba(255,255,255,0.8)",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -370,23 +378,23 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface,
     padding: 32,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.surfaceBorder,
     overflow: "hidden",
   },
   emptyTitle: {
-    color: "#FFF",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
     marginTop: 12,
     marginBottom: 4,
   },
   emptyBody: {
-    color: "rgba(255,255,255,0.7)",
+    color: colors.textMuted,
     fontSize: 13,
     textAlign: "center",
     lineHeight: 18,
@@ -399,9 +407,9 @@ const styles = StyleSheet.create({
     bottom: 4,
     paddingTop: 20,
     borderRadius: 48,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: colors.surfaceBorder,
     overflow: "hidden",
   },
   dockRow: {
@@ -415,19 +423,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dockLabel: {
-    color: "rgba(255,255,255,0.7)",
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "600",
   },
   changeRoutineButton: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.surfaceBorder,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: colors.surface,
   },
   addWorkoutButton: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.surfaceBorder,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: colors.surface,
   },
   playButton: {
     backgroundColor: "#ffd33d",
