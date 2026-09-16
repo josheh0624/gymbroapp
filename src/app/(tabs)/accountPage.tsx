@@ -95,33 +95,6 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Appearance</Text>
-              <View style={styles.listCard}>
-                <Pressable style={styles.listItem} onPress={toggleTheme}>
-                  <View style={styles.itemLeft}>
-                    <View style={styles.itemIcon}>
-                      <Ionicons
-                        name={isLight ? "moon" : "sunny"}
-                        size={18}
-                        color={colors.textFaint}
-                      />
-                    </View>
-                    <Text style={styles.itemText}>Toggle Theme</Text>
-                  </View>
-                  <View style={styles.itemRight}>
-                    <Text style={styles.itemValue}>
-                      {theme === "light" ? "Light Mode" : "Dark Mode"}
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.textFaint}
-                    />
-                  </View>
-                </Pressable>
-              </View>
-            </View>
 
             <Text style={styles.sectionTitle}>Preferences</Text>
           </View>
@@ -131,8 +104,8 @@ export default function AccountScreen() {
           <ActionWidget
             onPress={toggleTheme}
             label="Theme"
-            subLabel="Dark"
-            icon="moon"
+            subLabel={isLight ? "Light" : "Dark"}
+            icon={isLight ? "sunny" : "moon"}
           />
           <ActionWidget label="Rest Timer" subLabel="Off" icon="timer" />
           <ActionWidget
@@ -153,7 +126,7 @@ export default function AccountScreen() {
 
           {/* Danger Zone */}
           <Pressable style={styles.logoutWidget} onPress={logout}>
-            <Ionicons name="log-out" size={24} color={COLORS.bg} />
+            <Ionicons name="log-out" size={24} color={colors.bg} />
             <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
 
@@ -187,7 +160,7 @@ function StatWidget({
       style={[styles.widget, styles.widgetHalf, styles.statWidget]}
     >
       <View style={styles.statIconContainer}>
-        <Ionicons name={icon} size={20} color={COLORS.accent} />
+        <Ionicons name={icon} size={20} color={colors.accent} />
       </View>
       <View style={styles.statContent}>
         <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
@@ -203,10 +176,12 @@ function ActionWidget({
   label,
   subLabel,
   icon,
+  onPress,
 }: {
   label: string;
   subLabel?: string;
   icon: keyof typeof Ionicons.glyphMap;
+  onPress?: () => void;
 }) {
   const colors = useThemeColors();
   const { theme } = useThemeStore();
@@ -215,6 +190,7 @@ function ActionWidget({
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.widgetHalf,
         styles.actionWidgetPressable,
@@ -296,7 +272,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       height: 64,
       borderRadius: 32,
       borderWidth: 2,
-      borderColor: COLORS.accent,
+      borderColor: colors.accent,
       alignItems: "center",
       justifyContent: "center",
       marginRight: 16,
@@ -305,12 +281,12 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       flex: 1,
     },
     username: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 24,
       fontWeight: "900",
     },
     memberSince: {
-      color: COLORS.accent,
+      color: colors.accent,
       fontSize: 11,
       fontWeight: "900",
       marginTop: 4,
@@ -334,12 +310,12 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       alignItems: "flex-start",
     },
     statValue: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 26,
       fontWeight: "900",
     },
     statLabel: {
-      color: COLORS.textFaint,
+      color: colors.textFaint,
       fontSize: 11,
       fontWeight: "normal",
       marginTop: 4,
@@ -368,13 +344,13 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       marginBottom: 12,
     },
     actionLabel: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 14,
       fontWeight: "normal",
       textAlign: "center",
     },
     actionSubLabel: {
-      color: COLORS.accent,
+      color: colors.accent,
       fontSize: 11,
       fontWeight: "normal",
       marginTop: 6,
@@ -385,17 +361,17 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: COLORS.coral,
+      backgroundColor: colors.coral,
       borderRadius: 24,
       paddingVertical: 18,
       marginTop: 32,
-      shadowColor: COLORS.coral,
+      shadowColor: colors.coral,
       shadowOpacity: 0.3,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
     },
     logoutText: {
-      color: COLORS.bg,
+      color: colors.bg,
       fontSize: 16,
       fontWeight: "900",
       marginLeft: 10,
@@ -451,7 +427,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
     },
 
     deleteText: {
-      color: COLORS.textFaint,
+      color: colors.textFaint,
       fontSize: 13,
       fontWeight: "700",
     },
