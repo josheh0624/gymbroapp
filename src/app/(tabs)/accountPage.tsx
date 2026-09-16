@@ -44,8 +44,8 @@ export default function AccountScreen() {
         <View style={styles.grid}>
           {/* Full Width Profile Widget */}
           <BlurView
-            intensity={isLight ? 40 : 20}
-            tint={isLight ? "extraLight" : "dark"}
+            intensity={20}
+            tint="dark"
             style={[styles.widget, styles.widgetFull]}
           >
             <View style={styles.profileTop}>
@@ -95,12 +95,45 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Appearance</Text>
+              <View style={styles.listCard}>
+                <Pressable style={styles.listItem} onPress={toggleTheme}>
+                  <View style={styles.itemLeft}>
+                    <View style={styles.itemIcon}>
+                      <Ionicons
+                        name={isLight ? "moon" : "sunny"}
+                        size={18}
+                        color={colors.textFaint}
+                      />
+                    </View>
+                    <Text style={styles.itemText}>Toggle Theme</Text>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Text style={styles.itemValue}>
+                      {theme === "light" ? "Light Mode" : "Dark Mode"}
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.textFaint}
+                    />
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+
             <Text style={styles.sectionTitle}>Preferences</Text>
           </View>
 
           {/* Action Widgets */}
           <ActionWidget label="Units" subLabel="Lbs" icon="swap-horizontal" />
-          <ActionWidget label="Theme" subLabel={isLight ? "Light" : "Dark"} icon={isLight ? "sunny" : "moon"} onPress={toggleTheme} />
+          <ActionWidget
+            onPress={toggleTheme}
+            label="Theme"
+            subLabel="Dark"
+            icon="moon"
+          />
           <ActionWidget label="Rest Timer" subLabel="Off" icon="timer" />
           <ActionWidget
             label="Notifications"
@@ -120,7 +153,7 @@ export default function AccountScreen() {
 
           {/* Danger Zone */}
           <Pressable style={styles.logoutWidget} onPress={logout}>
-            <Ionicons name="log-out" size={24} color={colors.bg} />
+            <Ionicons name="log-out" size={24} color={COLORS.bg} />
             <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
 
@@ -149,12 +182,12 @@ function StatWidget({
 
   return (
     <BlurView
-      intensity={isLight ? 40 : 20}
-      tint={isLight ? "extraLight" : "dark"}
+      intensity={20}
+      tint="dark"
       style={[styles.widget, styles.widgetHalf, styles.statWidget]}
     >
       <View style={styles.statIconContainer}>
-        <Ionicons name={icon} size={20} color={colors.accent} />
+        <Ionicons name={icon} size={20} color={COLORS.accent} />
       </View>
       <View style={styles.statContent}>
         <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
@@ -170,12 +203,10 @@ function ActionWidget({
   label,
   subLabel,
   icon,
-  onPress,
 }: {
   label: string;
   subLabel?: string;
   icon: keyof typeof Ionicons.glyphMap;
-  onPress?: () => void;
 }) {
   const colors = useThemeColors();
   const { theme } = useThemeStore();
@@ -184,7 +215,6 @@ function ActionWidget({
 
   return (
     <Pressable
-      onPress={onPress}
       style={({ pressed }) => [
         styles.widgetHalf,
         styles.actionWidgetPressable,
@@ -192,8 +222,8 @@ function ActionWidget({
       ]}
     >
       <BlurView
-        intensity={isLight ? 40 : 20}
-        tint={isLight ? "extraLight" : "dark"}
+        intensity={20}
+        tint="dark"
         style={[styles.widget, styles.actionWidget]}
       >
         <Ionicons
@@ -266,7 +296,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       height: 64,
       borderRadius: 32,
       borderWidth: 2,
-      borderColor: colors.accent,
+      borderColor: COLORS.accent,
       alignItems: "center",
       justifyContent: "center",
       marginRight: 16,
@@ -275,12 +305,12 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       flex: 1,
     },
     username: {
-      color: colors.text,
+      color: COLORS.text,
       fontSize: 24,
       fontWeight: "900",
     },
     memberSince: {
-      color: colors.accent,
+      color: COLORS.accent,
       fontSize: 11,
       fontWeight: "900",
       marginTop: 4,
@@ -304,12 +334,12 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       alignItems: "flex-start",
     },
     statValue: {
-      color: colors.text,
+      color: COLORS.text,
       fontSize: 26,
       fontWeight: "900",
     },
     statLabel: {
-      color: colors.textFaint,
+      color: COLORS.textFaint,
       fontSize: 11,
       fontWeight: "normal",
       marginTop: 4,
@@ -338,13 +368,13 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       marginBottom: 12,
     },
     actionLabel: {
-      color: colors.text,
+      color: COLORS.text,
       fontSize: 14,
       fontWeight: "normal",
       textAlign: "center",
     },
     actionSubLabel: {
-      color: colors.accent,
+      color: COLORS.accent,
       fontSize: 11,
       fontWeight: "normal",
       marginTop: 6,
@@ -355,17 +385,17 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.coral,
+      backgroundColor: COLORS.coral,
       borderRadius: 24,
       paddingVertical: 18,
       marginTop: 32,
-      shadowColor: colors.coral,
+      shadowColor: COLORS.coral,
       shadowOpacity: 0.3,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
     },
     logoutText: {
-      color: colors.bg,
+      color: COLORS.bg,
       fontSize: 16,
       fontWeight: "900",
       marginLeft: 10,
@@ -421,7 +451,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
     },
 
     deleteText: {
-      color: colors.textFaint,
+      color: COLORS.textFaint,
       fontSize: 13,
       fontWeight: "700",
     },
