@@ -8,7 +8,7 @@ import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
+import { MeshGradientBackground } from "@/app/components/MeshGradientBackground";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -720,12 +720,7 @@ export default function MuscleMapScreen() {
         >
           {/* Big Background Container for everything up to the Muscle Map */}
           <View style={styles.gradientContainer}>
-            <LinearGradient
-              colors={isLight ? ["#4169E1", "#FFFFFF"] : ["#4169E1", "#25262E"]}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0.2, y: 0 }}
-              end={{ x: 1, y: 1.2 }}
-            />
+            <MeshGradientBackground />
 
             <View style={{ paddingTop: (activeSession ? 0 : insets.top) + 16 }}>
               {/* Brand Header */}

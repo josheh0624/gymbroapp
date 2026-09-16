@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from "react-native";
-import { ScrollView, Pressable } from "react-native";
+import { ScrollView, Pressable, Modal, TouchableOpacity } from "react-native";
 import { BlurView } from "expo-blur";
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
@@ -8,6 +8,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { useThemeColors } from "@/styles/appStyles";
 import { LineChart } from "react-native-gifted-charts";
 import dayjs from "dayjs";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 type LogEntry = {
   completed_at: string;
@@ -29,6 +30,7 @@ export default function ExerciseProgressionChart() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | number | null>(null);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
   useEffect(() => {
     async function fetchLogs() {
@@ -140,24 +142,45 @@ export default function ExerciseProgressionChart() {
       <View style={styles.innerContainer}>
       <Text style={styles.sectionTitle}>Exercise Progression</Text>
       
-      <View style={styles.chipsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-          {availableExercises.map((ex) => {
-            const isActive = ex.id === selectedExerciseId;
-            return (
-              <Pressable
-                key={ex.id}
-                style={[styles.chip, isActive && styles.chipActive]}
-                onPress={() => setSelectedExerciseId(ex.id)}
-              >
-                <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                  {ex.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+      <View style={styles.dropdownContainer}>
+        <Pressable
+          style={styles.dropdownButton}
+          onPress={() => setDropdownVisible(true)}
+        >
+          <Text style={styles.dropdownButtonText}>
+            {availableExercises.find(e => e.id === selectedExerciseId)?.name || "Select Exercise"}
+          </Text>
+          <Ionicons name="chevron-down" size={18} color={colors.text} />
+        </Pressable>
       </View>
+
+      <Modal visible={dropdownVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setDropdownVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Exercise</Text>
+            <ScrollView style={styles.modalScroll}>
+              {availableExercises.map((ex) => {
+                const isActive = ex.id === selectedExerciseId;
+                return (
+                  <TouchableOpacity
+                    key={ex.id}
+                    style={[styles.modalOption, isActive && styles.modalOptionActive]}
+                    onPress={() => {
+                      setSelectedExerciseId(ex.id);
+                      setDropdownVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.modalOptionText, isActive && styles.modalOptionTextActive]}>
+                      {ex.name}
+                    </Text>
+                    {isActive && <Ionicons name="checkmark" size={20} color={colors.text} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
 
       <View style={styles.chartWrapper}>
         {chartData.length > 0 ? (
@@ -218,34 +241,68 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 24,
   },
-  chipsContainer: {
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  chipsScroll: {
+  dropdownContainer: {
     paddingHorizontal: 24,
-    gap: 8,
+    marginBottom: 16,
   },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
   },
-  chipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  chipText: {
-    color: colors.textMuted,
-    fontSize: 14,
+  dropdownButtonText: {
+    color: colors.text,
+    fontSize: 16,
     fontWeight: "600",
   },
-  chipTextActive: {
-    color: "#000",
-    fontWeight: "700",
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "70%",
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceBorder,
+  },
+  modalScroll: {
+    paddingHorizontal: 16,
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceBorder,
+  },
+  modalOptionActive: {
+    backgroundColor: colors.surface,
+  },
+  modalOptionText: {
+    color: colors.text,
+    fontSize: 16,
+  },
+  modalOptionTextActive: {
+    fontWeight: "bold",
   },
   chartWrapper: {
     alignItems: "center",
