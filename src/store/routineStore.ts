@@ -4,6 +4,13 @@ import { create } from "zustand";
 import { supabase } from "@/api/supabase";
 import * as SecureStore from "expo-secure-store";
 
+export interface ActiveSession {
+  workoutId: string;
+  routineId: string;
+  selectedDateString: string;
+  startTime: number;
+}
+
 interface RoutineListItem {
   id: string;
   name: string;
@@ -16,6 +23,7 @@ interface RoutineState {
   exercises: Exercise[];
   routineList: RoutineListItem[];
   activeRoutineId: string | null;
+  activeSession: ActiveSession | null;
   isLoading: boolean;
   error: string | null;
 
@@ -26,11 +34,13 @@ interface RoutineState {
   deleteRoutine: (id: string) => Promise<boolean>;
   addRoutine: (routine: WorkoutRoutine) => void;
   setActiveRoutine: (id: string | null) => void;
+  startSession: (routineId: string, workoutId: string, dateStr: string) => void;
+  endSession: () => void;
   loadActiveRoutine: () => Promise<void>;
   getActiveRoutine: () => WorkoutRoutine | undefined;
   getExerciseById: (routineId: string, workoutId: string) => Promise<void>;
 
-  markWorkoutDone: (routineId: string, workoutId: string, selectedDateString?: string) => Promise<boolean>;
+  markWorkoutDone: (routineId: string, workoutId: string, selectedDateString?: string, durationSeconds?: number) => Promise<boolean>;
   resetWorkoutProgress: (routineId: string, workoutId: string) => void;
   syncWorkoutProgress: (routineId: string, workoutId: string, dateStr: string) => Promise<void>;
   markExerciseDone: (
@@ -54,6 +64,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   exercises: [],
   routineList: [],
   activeRoutineId: null,
+  activeSession: null,
   isLoading: false,
   error: null,
 
@@ -261,6 +272,14 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
+  startSession: (routineId, workoutId, dateStr) => set((state) => ({
+    activeSession: state.activeSession?.workoutId === workoutId && state.activeSession?.selectedDateString === dateStr 
+      ? state.activeSession 
+      : { workoutId, routineId, selectedDateString: dateStr, startTime: Date.now() }
+  })),
+
+  endSession: () => set({ activeSession: null }),
+
   loadActiveRoutine: async () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -309,7 +328,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
-  markWorkoutDone: async (routineId, workoutId, selectedDateString) => {
+  markWorkoutDone: async (routineId, workoutId, selectedDateString, durationSeconds) => {
     set({ isLoading: true, error: null });
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -355,7 +374,23 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
           // Safest is inserting and catching duplicates, but JS allows filtering out existing.
       }
 
-      set((state) => ({ isLoading: false }));
+      if (durationSeconds !== undefined) {
+        try {
+          // Attempt to log session duration
+          // Note: Requires a `workout_sessions` table in Supabase
+          await supabase.from('workout_sessions').insert({
+            user_id: userId,
+            routine_id: routineId,
+            workout_id: workoutId,
+            duration_seconds: durationSeconds,
+            completed_at: new Date(dateStr).toISOString()
+          });
+        } catch (e) {
+          console.warn("Could not save workout session duration. Make sure workout_sessions table exists.", e);
+        }
+      }
+
+      set((state) => ({ isLoading: false, activeSession: null }));
       return true;
     } catch (err: any) {
       set({ error: err.message, isLoading: false });

@@ -60,7 +60,7 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
           {routine.name}
         </Text>
         <View style={styles.countBadge}>
-          <FontAwesome6 name="layer-group" size={10} color="#ffd61f" />
+          <FontAwesome6 name="layer-group" size={10} color="#4169E1" />
           <Text style={styles.countText}>{routine.workout_count} Workouts</Text>
         </View>
       </View>
@@ -141,7 +141,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 8,
   },
   countText: {
-    color: "#ffd61f",
+    color: "#4169E1",
     fontSize: 11,
     fontWeight: "800",
   },

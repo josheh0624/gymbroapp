@@ -6,9 +6,9 @@ export const darkColors = {
   text: "#F5F6F7",         // Primary text
   textFaint: "#8A8F98",    // Secondary/icon text
   textMuted: "rgba(255,255,255,0.5)", // Disabled/muted text
-  accent: "#ffd33d",       // Primary gold
-  accentTranslucent: "rgba(255, 211, 61, 0.4)",
-  accentMuted: "rgba(255, 211, 61, 0.15)",
+  accent: "#4169E1",       // Primary gold
+  accentTranslucent: "rgba(65, 105, 225, 0.4)",
+  accentMuted: "rgba(65, 105, 225, 0.15)",
   surface: "rgba(255,255,255,0.045)", // Glass background
   surfaceBorder: "rgba(255,255,255,0.09)", // Glass border
   glassStrong: "rgba(255,255,255,0.06)",
@@ -26,9 +26,9 @@ export const lightColors = {
   text: "#000000",         // Primary text
   textFaint: "#8E8E93",    // Secondary/icon text
   textMuted: "rgba(0,0,0,0.5)", // Disabled/muted text
-  accent: "#FFB300",       // Primary gold
-  accentTranslucent: "rgba(255, 179, 0, 0.4)",
-  accentMuted: "rgba(255, 179, 0, 0.15)",
+  accent: "#4169E1",       // Primary gold
+  accentTranslucent: "rgba(65, 105, 225, 0.4)",
+  accentMuted: "rgba(65, 105, 225, 0.15)",
   surface: "rgba(255,255,255,0.7)", // Light glass background
   surfaceBorder: "rgba(0,0,0,0.05)", // Light glass border
   glassStrong: "rgba(255,255,255,0.9)",

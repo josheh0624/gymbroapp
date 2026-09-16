@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
+import { ProfilePhoto } from "@/app/components/profile-photo";
 import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
 import { useThemeStore } from "@/store/themeStore";
 import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
@@ -36,8 +37,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  * exercise, swap that in for `intensityForRegion` below.
  */
 
-const PRIMARY_COLOR = "#D14B42"; // red — primary tier (2+ sessions this week)
-const SECONDARY_COLOR = "#E3A93D"; // gold — secondary tier (1 session)
+const PRIMARY_COLOR = "#4169E1"; // red — primary tier (2+ sessions this week)
+const SECONDARY_COLOR = "#7CA0FF"; // gold — secondary tier (1 session)
 const BODY_BASE = "#8E9298"; // untargeted muscles / neutral figure fill
 const BODY_FACET = "#777B82";
 const GRID = "#4B4F55";
@@ -600,7 +601,11 @@ function WeekDots({ dailyActivity }: { dailyActivity: DailyActivity[] }) {
         <View key={day.date} style={styles.weekDotItem}>
           <View style={[styles.weekDot, day.trained && styles.weekDotFilled]}>
             {day.trained && (
-              <Ionicons name="checkmark" size={11} color={isLight ? "#FFF" : "#141518"} />
+              <Ionicons
+                name="checkmark"
+                size={11}
+                color={isLight ? "#FFF" : "#141518"}
+              />
             )}
           </View>
           <Text style={styles.weekDotLabel}>
@@ -672,12 +677,6 @@ export default function MuscleMapScreen() {
   const weekRange = formatWeekRange(weekBounds.start, weekBounds.end);
 
   const router = useRouter();
-  const showStartWorkoutPrompt = useMemo(() => {
-    const todayStr = dayjs().format("YYYY-MM-DD");
-    return (
-      isCurrentWeek && !dailyActivity.find((d) => d.date === todayStr)?.trained
-    );
-  }, [dailyActivity, isCurrentWeek]);
 
   const streak = useMemo(() => {
     if (isCurrentWeek) {
@@ -720,58 +719,34 @@ export default function MuscleMapScreen() {
           {/* Big Background Container for everything up to the Muscle Map */}
           <View style={styles.gradientContainer}>
             <LinearGradient
-              colors={isLight ? ["#FFD33D", "#FFFFFF"] : ["#ffd33d", "#25262E"]}
+              colors={isLight ? ["#4169E1", "#FFFFFF"] : ["#4169E1", "#25262E"]}
               style={StyleSheet.absoluteFill}
               start={{ x: 0.2, y: 0 }}
               end={{ x: 1, y: 1.2 }}
             />
 
             <View style={{ paddingTop: insets.top + 16 }}>
-              {/* Header Activity Title */}
-              <View style={styles.headerTop}>
-                <View style={styles.welcomeContainer}>
-                  <Text style={styles.welcomeBack}>Welcome Back</Text>
-                  <Text style={styles.userName}>
-                    {user?.username || "Athlete"}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Floating Pill (Streak & Prompt) */}
-              <View
-                style={[
-                  styles.floatingPill,
-                  !showStartWorkoutPrompt && styles.floatingPillSmall,
-                ]}
-              >
-                <View style={styles.pillIconContainer}>
-                  <Ionicons name="flame" size={16} color="#ffd33d" />
-                </View>
-                <View style={showStartWorkoutPrompt ? { flex: 1 } : {}}>
-                  <Text style={styles.pillText}>
-                    {hasActiveStreak ? `${streak} day streak` : "No streak"}
-                  </Text>
-                  {showStartWorkoutPrompt && (
-                    <Pressable
-                      onPress={() => router.push("/workoutPage/workoutPage")}
-                      style={{ marginTop: 4 }}
-                    >
-                      <Text
-                        style={{
-                          color: "#ffd33d",
-                          fontSize: 13,
-                          fontWeight: "600",
-                        }}
-                      >
-                        Start a workout today!{" "}
-                        <Ionicons
-                          name="arrow-forward"
-                          size={12}
-                          color="#ffd33d"
-                        />
-                      </Text>
-                    </Pressable>
-                  )}
+              {/* Brand Header */}
+              <View style={styles.brandHeader}>
+                <Text style={styles.brandTitle}>gymBro</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    zIndex: 2,
+                    gap: 12,
+                  }}
+                >
+                  <View style={styles.smallStreakPill}>
+                    <Ionicons name="flame" size={14} color="#4169E1" />
+                    <Text style={styles.smallStreakText}>{streak}</Text>
+                  </View>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => router.push("/(tabs)/accountPage" as any)}
+                  >
+                    <ProfilePhoto size={36} color={colors.text} />
+                  </Pressable>
                 </View>
               </View>
 
@@ -867,7 +842,11 @@ export default function MuscleMapScreen() {
                       </View>
                     )}
 
-                    <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.mapToggle}>
+                    <BlurView
+                      intensity={isLight ? 40 : 20}
+                      tint={isLight ? "extraLight" : "dark"}
+                      style={styles.mapToggle}
+                    >
                       <Pressable
                         style={[
                           styles.mapToggleButton,
@@ -986,7 +965,7 @@ export default function MuscleMapScreen() {
                         <Ionicons
                           name={icon as any}
                           size={16}
-                          color="#ffd33d"
+                          color="#4169E1"
                         />
                       </View>
                       <View style={{ flex: 1 }}>
@@ -1112,13 +1091,15 @@ export default function MuscleMapScreen() {
                 );
               })()}
             </View>
+          </View>
 
-            {/* Monthly Consistency Chart */}
+          {/* Monthly Consistency Chart */}
             <View
               style={[styles.servicesSection, { marginTop: 0, paddingTop: 16 }]}
             >
-              <Text style={styles.sectionTitle}>Days Trained</Text>
               <View style={styles.chartContainer}>
+                <Text style={[styles.sectionTitle, { marginBottom: 24, paddingHorizontal: 0 }]}>Days Trained</Text>
+                <View style={styles.chartBarsRow}>
                 {monthlyStats.map((weekStat, idx) => {
                   const days = weekStat?.daysTrained || 0;
                   const heightPercentage = Math.max((days / 7) * 100, 5);
@@ -1139,7 +1120,7 @@ export default function MuscleMapScreen() {
                             {
                               height: `${heightPercentage}%`,
                               backgroundColor: isCurrent
-                                ? "#ffd33d"
+                                ? "#4169E1"
                                 : colors.accentTranslucent,
                             },
                           ]}
@@ -1150,10 +1131,10 @@ export default function MuscleMapScreen() {
                     </View>
                   );
                 })}
+                </View>
               </View>
             </View>
             <ExerciseProgressionChart />
-          </View>
         </ScrollView>
       </View>
     </>
@@ -1170,14 +1151,33 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       marginHorizontal: 0,
       marginTop: 0,
     },
-    headerTop: {
+    brandHeader: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
       alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 16,
-      marginBottom: 32,
-      marginTop: 16,
+      paddingHorizontal: 20,
+      marginBottom: 16,
+      position: "relative",
     },
-    welcomeContainer: { alignItems: "center" },
+    brandTitle: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      textAlign: "center",
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "900",
+      letterSpacing: -0.5,
+      zIndex: 1,
+    },
+    headerTop: {
+      alignItems: "flex-start",
+      justifyContent: "center",
+      paddingHorizontal: 20,
+      marginBottom: 32,
+      marginTop: 8,
+    },
+    welcomeContainer: { alignItems: "flex-start" },
     welcomeBack: {
       color: colors.textMuted,
       fontSize: 16,
@@ -1192,33 +1192,20 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       fontWeight: "bold",
       letterSpacing: 0.35,
     },
-    floatingPill: {
+    smallStreakPill: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.bgElevated,
-      padding: 16,
-      borderRadius: 60,
-      borderWidth: 1,
-      borderColor: colors.surfaceBorder,
-      marginBottom: 24,
-      marginHorizontal: 16,
-    },
-    floatingPillSmall: {
-      alignSelf: "center",
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      marginHorizontal: 0,
-    },
-    pillIconContainer: {
       backgroundColor: colors.accentMuted,
-      width: 32,
-      height: 32,
-      borderRadius: 60,
-      alignItems: "center",
-      justifyContent: "center",
-      marginRight: 12,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 16,
+      gap: 4,
     },
-    pillText: { color: colors.text, fontSize: 15, fontWeight: "600" },
+    smallStreakText: {
+      color: "#4169E1",
+      fontSize: 13,
+      fontWeight: "800",
+    },
     glassCard: {
       marginHorizontal: 8,
       borderRadius: 48,
@@ -1308,7 +1295,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       paddingVertical: 6,
       borderRadius: 16,
     },
-    mapToggleButtonActive: { backgroundColor: "#ffd33d" },
+    mapToggleButtonActive: { backgroundColor: "#4169E1" },
     mapToggleText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
     mapToggleTextActive: { color: "#141518" },
     bodyCropBox: {
@@ -1363,14 +1350,16 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       marginTop: 2,
     },
     chartContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-end",
       backgroundColor: colors.surface,
       borderRadius: 24,
       padding: 20,
       borderWidth: 1,
       borderColor: colors.surfaceBorder,
+    },
+    chartBarsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
     },
     chartCol: {
       alignItems: "center",

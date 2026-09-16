@@ -38,7 +38,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#ffd61f",
+    backgroundColor: "#4169E1",
     justifyContent: "center",
     alignItems: "center",
   },

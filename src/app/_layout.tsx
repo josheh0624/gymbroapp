@@ -83,7 +83,7 @@ export default function RootLayout() {
         <View
           style={{ flex: 1, backgroundColor: theme === "dark" ? "#141518" : "#F2F2F7", justifyContent: "center", alignItems: "center" }}
         >
-          <ActivityIndicator size="large" color="#ffd61f" />
+          <ActivityIndicator size="large" color="#4169E1" />
         </View>
       </React.Fragment>
     );

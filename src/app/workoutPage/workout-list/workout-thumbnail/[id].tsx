@@ -41,7 +41,41 @@ export default function WorkoutTodo() {
   const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
   const resetKey = useRef<string | null>(null);
 
+  const activeSession = useRoutineStore((s) => s.activeSession);
+  const startSession = useRoutineStore((s) => s.startSession);
+
   const workout = routine?.workouts.find((w) => w.id === id);
+
+  useEffect(() => {
+    if (routineID && id && selectedDateString) {
+      startSession(routineID, id, selectedDateString);
+    }
+  }, [routineID, id, selectedDateString, startSession]);
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!activeSession || activeSession.workoutId !== id) return;
+    
+    // Initial sync
+    setElapsedSeconds(Math.floor((Date.now() - activeSession.startTime) / 1000));
+    
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - activeSession.startTime) / 1000));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [activeSession, id]);
+
+  const formattedTime = useMemo(() => {
+    const hrs = Math.floor(elapsedSeconds / 3600);
+    const mins = Math.floor((elapsedSeconds % 3600) / 60);
+    const secs = elapsedSeconds % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, [elapsedSeconds]);
   const needsWorkoutExerciseIds = workout?.exercises.some(
     (exercise) => !exercise.workoutExerciseId,
   );
@@ -70,7 +104,7 @@ export default function WorkoutTodo() {
   if (!workout && routineID) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color="#ffd61f" />
+        <ActivityIndicator color="#4169E1" />
         <Text style={styles.loadingText}>Loading workout...</Text>
       </View>
     );
@@ -87,7 +121,7 @@ export default function WorkoutTodo() {
     <>
       <Stack.Screen
         options={{
-          headerTitle: "Workout",
+          headerTitle: `Workout - ${formattedTime}`,
           headerBackButtonDisplayMode: "minimal",
           headerStyle: { backgroundColor: colors.gradientTop },
           headerShadowVisible: false,
@@ -144,7 +178,7 @@ export default function WorkoutTodo() {
         <View
           style={{ paddingHorizontal: 34, paddingBottom: 20, paddingTop: 20 }}
         >
-          <DoneButton routineID={routineID} workoutID={id} selectedDateString={selectedDateString} />
+          <DoneButton routineID={routineID} workoutID={id} selectedDateString={selectedDateString} durationSeconds={elapsedSeconds} />
         </View>
       </View>
     </>
@@ -274,14 +308,15 @@ function ExerciseCard({
 }
 
 function DoneButton({
-
   routineID,
   workoutID,
   selectedDateString,
+  durationSeconds,
 }: {
   routineID: string;
   workoutID: string;
   selectedDateString?: string;
+  durationSeconds?: number;
 }) {
   const colors = useThemeColors();
   const isLight = useThemeStore((s) => s.theme === "light");
@@ -293,11 +328,11 @@ function DoneButton({
   return (
     <Pressable
       onPress={async () => {
-        const completed = await markWorkoutDone(routineID, workoutID, selectedDateString);
+        const completed = await markWorkoutDone(routineID, workoutID, selectedDateString, durationSeconds);
         if (completed) router.back();
       }}
       style={{
-        backgroundColor: "#ffd61f",
+        backgroundColor: "#4169E1",
         paddingVertical: 20,
         borderRadius: 120,
         alignItems: "center",
@@ -362,7 +397,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: "#ffd61f",
+    backgroundColor: "#4169E1",
   },
   exerciseDoneText: {
     color: isLight ? "#141518" : colors.bg,

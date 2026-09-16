@@ -31,10 +31,14 @@ export default function WorkoutList({
           (d) => normalizeWeekday(d) === normalizedSelectedDay,
         );
 
-        const d = new Date();
-        const diff = selectedWeekdayID - d.getDay();
-        d.setDate(d.getDate() + diff);
-        const selectedDateString = d.toISOString();
+        const selectedDateString = selectedDate
+          ? selectedDate.toISOString().split("T")[0]
+          : (() => {
+              const d = new Date();
+              const diff = selectedWeekdayID - d.getDay();
+              d.setDate(d.getDate() + diff);
+              return d.toISOString().split("T")[0];
+            })();
 
         return (
           <WorkoutThumbnail

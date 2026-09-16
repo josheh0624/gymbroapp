@@ -88,6 +88,7 @@ export default function WorkoutScreen() {
   const colors = useThemeColors();
   const { theme, toggleTheme } = useThemeStore();
   const isLight = theme === "light";
+  const activeSession = useRoutineStore((s) => s.activeSession);
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
@@ -269,6 +270,12 @@ export default function WorkoutScreen() {
                 size={72}
                 style={styles.playButton}
                 onPress={() => {
+                  if (activeSession) {
+                    router.push(
+                      `/workoutPage/workout-list/workout-thumbnail/${activeSession.workoutId}?routineID=${activeSession.routineId}&selectedDateString=${activeSession.selectedDateString}` as any,
+                    );
+                    return;
+                  }
                   if (!startWorkout || !routine) return; // guard: no workout scheduled today
                   const selectedDateString = selectedDate
                     .toISOString()
@@ -279,12 +286,12 @@ export default function WorkoutScreen() {
                 }}
               >
                 <Ionicons
-                  name="play"
+                  name="play" 
                   size={32}
-                  color={startWorkout ? COLORS.bg : COLORS.textMuted}
+                  color={startWorkout || activeSession ? COLORS.bg : COLORS.textMuted}
                 />
               </DockButton>
-              <Text style={styles.dockLabel}>Play</Text>
+              <Text style={styles.dockLabel}>{activeSession ? "Resume" : "Play"}</Text>
             </View>
             <View style={styles.dockItem}>
               <DockButton
@@ -445,8 +452,8 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       borderColor: colors.surface,
     },
     playButton: {
-      backgroundColor: "#ffd33d",
-      shadowColor: "#ffd33d",
+      backgroundColor: "#4169E1",
+      shadowColor: "#4169E1",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.3,
       shadowRadius: 16,
