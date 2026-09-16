@@ -1,7 +1,8 @@
 import { supabase } from "@/api/supabase";
 import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
 import { ProfilePhoto } from "@/app/components/profile-photo";
-import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
+import { useAuthStore } from "@/store/authStore";
+import { useRoutineStore } from "@/store/routineStore"; // adjust to your actual path
 import { useThemeStore } from "@/store/themeStore";
 import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -655,6 +656,7 @@ export default function MuscleMapScreen() {
 
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const activeSession = useRoutineStore(s => s.activeSession);
   const initials = useMemo(
     () => user?.username?.slice(0, 2).toUpperCase() ?? "?",
     [user?.username],
@@ -725,7 +727,7 @@ export default function MuscleMapScreen() {
               end={{ x: 1, y: 1.2 }}
             />
 
-            <View style={{ paddingTop: insets.top + 16 }}>
+            <View style={{ paddingTop: (activeSession ? 0 : insets.top) + 16 }}>
               {/* Brand Header */}
               <View style={styles.brandHeader}>
                 <Text style={styles.brandTitle}>gymBro</Text>

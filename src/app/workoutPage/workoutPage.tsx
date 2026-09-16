@@ -168,7 +168,7 @@ export default function WorkoutScreen() {
               end={{ x: 1, y: 1 }}
             />
 
-            <View style={{ paddingTop: insets.top, paddingBottom: 180 }}>
+            <View style={{ paddingTop: activeSession ? 0 : insets.top, paddingBottom: 180 }}>
               <View style={styles.topBar}>
                 <Pressable
                   onPress={() => router.back()}

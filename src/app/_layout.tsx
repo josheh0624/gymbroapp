@@ -2,6 +2,7 @@ import { supabase } from "@/api/supabase";
 import { useAuthStore, SafeUser } from "@/store/authStore";
 import { useRoutineStore } from "@/store/routineStore";
 import { useThemeStore } from "@/store/themeStore";
+import ActiveWorkoutBanner from "./components/active-workout-banner";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
@@ -92,7 +93,8 @@ export default function RootLayout() {
   return (
     <React.Fragment>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <Stack>
+      <ActiveWorkoutBanner />
+      <Stack screenOptions={{ animation: "slide_from_bottom" }}>
         <Stack.Screen name="routes/login" options={{ headerShown: false }} />
         <Stack.Screen name="routes/onboarding/register" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

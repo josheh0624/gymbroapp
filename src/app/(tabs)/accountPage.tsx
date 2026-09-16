@@ -1,3 +1,4 @@
+import { useRoutineStore } from '@/store/routineStore';
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
@@ -16,6 +17,7 @@ export default function AccountScreen() {
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const insets = useSafeAreaInsets();
+  const activeSession = useRoutineStore(s => s.activeSession);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -34,7 +36,7 @@ export default function AccountScreen() {
         end={{ x: 1, y: 1 }}
       />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: activeSession ? 0 : insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerCentered}>
