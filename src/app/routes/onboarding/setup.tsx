@@ -1,9 +1,11 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect, Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   KeyboardAvoidingView,
   LayoutAnimation,
@@ -47,6 +49,10 @@ export default function SetupScreen() {
   const setUser = useAuthStore((s) => s.setUser);
 
   const [step, setStep] = useState(0);
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === "light";
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const [age, setAge] = useState("");
   const [feet, setFeet] = useState("");
@@ -191,10 +197,10 @@ export default function SetupScreen() {
       />
 
       <View style={styles.root}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
 
         <LinearGradient
-          colors={["#141518", "#1B1C20", "#141518"]}
+          colors={[colors.bg, colors.bg, colors.bg]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -210,7 +216,7 @@ export default function SetupScreen() {
               <Text style={styles.brandText}>Gymbro</Text>
             </View>
 
-            <BlurView intensity={35} tint="dark" style={styles.card}>
+            <BlurView intensity={35} tint={isLight ? "extraLight" : "dark"} style={styles.card}>
               <View style={styles.cardInner}>
                 <View style={styles.topRow}>
                   <TouchableOpacity
@@ -373,11 +379,8 @@ export default function SetupScreen() {
   );
 }
 
-const YELLOW = "#ffd61f";
-const GRAY_BORDER = "rgba(255,255,255,0.09)";
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#141518" },
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bg },
   content: {
     flexGrow: 1,
     alignItems: "center",
@@ -387,7 +390,7 @@ const styles = StyleSheet.create({
   },
   brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
   brandText: {
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -396,11 +399,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
+    borderColor: colors.surfaceBorder,
   },
   cardInner: {
     padding: 28,
-    backgroundColor: Platform.select({
+    backgroundColor: isLight ? "transparent" : Platform.select({
       ios: "rgba(30,31,35,0.38)",
       android: "rgba(30,31,35,0.78)",
       default: "rgba(30,31,35,0.6)",
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
   },
   backButton: { alignSelf: "flex-start" },
   backButtonText: {
-    color: "#84878E",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -427,19 +430,19 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 3,
     borderRadius: 1,
-    backgroundColor: GRAY_BORDER,
+    backgroundColor: colors.surfaceBorder,
   },
   progressSegmentActive: {
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
   },
   eyebrow: {
-    color: "#84878E",
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 10,
   },
   headline: {
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 30,
     fontWeight: "800",
     lineHeight: 34,
@@ -448,13 +451,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 3,
     borderRadius: 1,
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
     marginTop: 16,
     marginBottom: 28,
   },
   field: { marginBottom: 16 },
   label: {
-    color: "#8A8F98",
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "normal",
     marginBottom: 8,
@@ -462,19 +465,19 @@ const styles = StyleSheet.create({
   inputShell: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
-    backgroundColor: "rgba(255,255,255,0.03)",
+    borderColor: colors.surfaceBorder,
+    backgroundColor: colors.surface,
   },
   input: {
     height: 50,
     paddingHorizontal: 16,
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 15,
   },
   row: { flexDirection: "row", gap: 12 },
   halfField: { flex: 1 },
   unitCaption: {
-    color: "#54575D",
+    color: colors.textMuted,
     fontSize: 10,
     fontWeight: "700",
     marginTop: 6,
@@ -486,17 +489,17 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
-    backgroundColor: "rgba(255,255,255,0.03)",
+    borderColor: colors.surfaceBorder,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   pillSelected: {
-    backgroundColor: YELLOW,
-    borderColor: YELLOW,
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
   },
   pillText: {
-    color: "#84878E",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -506,10 +509,10 @@ const styles = StyleSheet.create({
   cta: {
     height: 54,
     borderRadius: 12,
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: YELLOW,
+    shadowColor: COLORS.accent,
     shadowOpacity: 0.1,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
@@ -517,7 +520,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ctaText: {
-    color: "#F5F5F6",
+    color: isLight ? "#000" : colors.text,
     fontSize: 14,
     fontWeight: "800",
   },
@@ -527,18 +530,18 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   skipLinkText: {
-    color: "#8A8F98",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "600",
   },
   footer: {
-    color: "#46484D",
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "600",
     marginTop: 24,
   },
   errorText: {
-    color: YELLOW,
+    color: COLORS.accent,
     fontSize: 13,
     fontWeight: "600",
     marginBottom: 12,

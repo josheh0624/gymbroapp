@@ -1,11 +1,11 @@
 import { supabase } from "@/api/supabase";
+import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
 import { useAuthStore } from "@/store/authStore"; // adjust to your actual path
-import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { useThemeStore } from "@/store/themeStore";
+import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlurView } from "expo-blur";
-import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -156,10 +156,26 @@ function useWeeklyMuscleHits(weekOffset: number) {
       if (!userId) throw new Error("Not logged in");
 
       const [currRes, prevRes, w2Res, w3Res] = await Promise.all([
-        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: start.format("YYYY-MM-DD"), p_end_date: end.format("YYYY-MM-DD") }),
-        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: prevStart.format("YYYY-MM-DD"), p_end_date: prevEnd.format("YYYY-MM-DD") }),
-        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: w2Start.format("YYYY-MM-DD"), p_end_date: w2End.format("YYYY-MM-DD") }),
-        supabase.rpc("get_muscle_summary", { p_user_id: userId, p_start_date: w3Start.format("YYYY-MM-DD"), p_end_date: w3End.format("YYYY-MM-DD") })
+        supabase.rpc("get_muscle_summary", {
+          p_user_id: userId,
+          p_start_date: start.format("YYYY-MM-DD"),
+          p_end_date: end.format("YYYY-MM-DD"),
+        }),
+        supabase.rpc("get_muscle_summary", {
+          p_user_id: userId,
+          p_start_date: prevStart.format("YYYY-MM-DD"),
+          p_end_date: prevEnd.format("YYYY-MM-DD"),
+        }),
+        supabase.rpc("get_muscle_summary", {
+          p_user_id: userId,
+          p_start_date: w2Start.format("YYYY-MM-DD"),
+          p_end_date: w2End.format("YYYY-MM-DD"),
+        }),
+        supabase.rpc("get_muscle_summary", {
+          p_user_id: userId,
+          p_start_date: w3Start.format("YYYY-MM-DD"),
+          p_end_date: w3End.format("YYYY-MM-DD"),
+        }),
       ]);
 
       if (currRes.error) throw currRes.error;
@@ -168,18 +184,18 @@ function useWeeklyMuscleHits(weekOffset: number) {
       setStats(currRes.data.stats ?? null);
       setDailyActivity(currRes.data.dailyActivity ?? []);
 
-      if (!prevRes.error && prevRes.data?.stats) setPrevStats(prevRes.data.stats);
+      if (!prevRes.error && prevRes.data?.stats)
+        setPrevStats(prevRes.data.stats);
       else setPrevStats(null);
 
       const mStats = [
         w3Res.data?.stats ?? { daysTrained: 0 },
         w2Res.data?.stats ?? { daysTrained: 0 },
         prevRes.data?.stats ?? { daysTrained: 0 },
-        currRes.data?.stats ?? { daysTrained: 0 }
+        currRes.data?.stats ?? { daysTrained: 0 },
       ] as WeeklyStats[];
-      
-      setMonthlyStats(mStats);
 
+      setMonthlyStats(mStats);
     } catch (err: any) {
       console.error("RPC Error:", err);
       setError(
@@ -196,7 +212,16 @@ function useWeeklyMuscleHits(weekOffset: number) {
     }, [fetchData]),
   );
 
-  return { data, stats, prevStats, monthlyStats, dailyActivity, loading, error, refetch: fetchData };
+  return {
+    data,
+    stats,
+    prevStats,
+    monthlyStats,
+    dailyActivity,
+    loading,
+    error,
+    refetch: fetchData,
+  };
 }
 
 /**
@@ -541,7 +566,7 @@ function AnatomicalMap({
 }) {
   const colors = useThemeColors();
   const { theme } = useThemeStore();
-  const isLight = theme === 'light';
+  const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   return (
@@ -564,7 +589,7 @@ function AnatomicalMap({
 function WeekDots({ dailyActivity }: { dailyActivity: DailyActivity[] }) {
   const colors = useThemeColors();
   const { theme } = useThemeStore();
-  const isLight = theme === 'light';
+  const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   if (dailyActivity.length === 0) return <View style={styles.weekDotsRow} />;
@@ -575,7 +600,7 @@ function WeekDots({ dailyActivity }: { dailyActivity: DailyActivity[] }) {
         <View key={day.date} style={styles.weekDotItem}>
           <View style={[styles.weekDot, day.trained && styles.weekDotFilled]}>
             {day.trained && (
-              <Ionicons name="checkmark" size={11} color={COLORS.bg} />
+              <Ionicons name="checkmark" size={11} color={isLight ? "#FFF" : "#141518"} />
             )}
           </View>
           <Text style={styles.weekDotLabel}>
@@ -598,7 +623,7 @@ function IconButton({
 }) {
   const colors = useThemeColors();
   const { theme } = useThemeStore();
-  const isLight = theme === 'light';
+  const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   return (
@@ -620,10 +645,8 @@ function IconButton({
 export default function MuscleMapScreen() {
   const colors = useThemeColors();
   const { theme } = useThemeStore();
-  const isLight = theme === 'light';
+  const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
-
-  
 
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
@@ -633,7 +656,16 @@ export default function MuscleMapScreen() {
   );
   const [weekOffset, setWeekOffset] = useState(0);
   const [mapSide, setMapSide] = useState<MuscleSide>("front");
-  const { data, stats, prevStats, monthlyStats, dailyActivity, loading, error, refetch } = useWeeklyMuscleHits(weekOffset);
+  const {
+    data,
+    stats,
+    prevStats,
+    monthlyStats,
+    dailyActivity,
+    loading,
+    error,
+    refetch,
+  } = useWeeklyMuscleHits(weekOffset);
 
   const isCurrentWeek = weekOffset === 0;
   const weekBounds = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
@@ -706,7 +738,12 @@ export default function MuscleMapScreen() {
               </View>
 
               {/* Floating Pill (Streak & Prompt) */}
-              <View style={[styles.floatingPill, !showStartWorkoutPrompt && styles.floatingPillSmall]}>
+              <View
+                style={[
+                  styles.floatingPill,
+                  !showStartWorkoutPrompt && styles.floatingPillSmall,
+                ]}
+              >
                 <View style={styles.pillIconContainer}>
                   <Ionicons name="flame" size={16} color="#ffd33d" />
                 </View>
@@ -749,7 +786,11 @@ export default function MuscleMapScreen() {
                       onPress={() => setWeekOffset((o) => o - 1)}
                       style={styles.navIcon}
                     >
-                      <Ionicons name="chevron-back" size={16} color={colors.text} />
+                      <Ionicons
+                        name="chevron-back"
+                        size={16}
+                        color={colors.text}
+                      />
                     </Pressable>
                     <Pressable
                       onPress={() => setWeekOffset((o) => o + 1)}
@@ -759,7 +800,11 @@ export default function MuscleMapScreen() {
                         isCurrentWeek && { opacity: 0.25 },
                       ]}
                     >
-                      <Ionicons name="chevron-forward" size={16} color={colors.text} />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={colors.text}
+                      />
                     </Pressable>
                   </View>
                 </View>
@@ -778,7 +823,7 @@ export default function MuscleMapScreen() {
                             <Ionicons
                               name="checkmark"
                               size={14}
-                              color="#141518"
+                              color={isLight ? "#FFF" : "#141518"}
                             />
                           )}
                         </View>
@@ -793,8 +838,8 @@ export default function MuscleMapScreen() {
 
               {/* Muscle Map */}
               <BlurView
-                intensity={20}
-                tint="dark"
+                intensity={isLight ? 40 : 20}
+                tint={isLight ? "extraLight" : "dark"}
                 style={[
                   styles.glassCard,
                   {
@@ -822,7 +867,7 @@ export default function MuscleMapScreen() {
                       </View>
                     )}
 
-                    <View style={styles.mapToggle}>
+                    <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.mapToggle}>
                       <Pressable
                         style={[
                           styles.mapToggleButton,
@@ -855,7 +900,7 @@ export default function MuscleMapScreen() {
                           Back
                         </Text>
                       </Pressable>
-                    </View>
+                    </BlurView>
 
                     <View style={styles.bodyCropBox}>
                       <View
@@ -916,324 +961,446 @@ export default function MuscleMapScreen() {
 
             <View style={styles.servicesGrid}>
               {(() => {
-                const renderStat = (icon: string, label: string, value: number, prevValue: number | undefined | null, unit: string = "") => {
-                  const diff = (prevValue !== undefined && prevValue !== null) ? (value - prevValue) : 0;
-                  // For stats like 'Workouts', a positive diff is good. 
+                const renderStat = (
+                  icon: string,
+                  label: string,
+                  value: number,
+                  prevValue: number | undefined | null,
+                  unit: string = "",
+                ) => {
+                  const diff =
+                    prevValue !== undefined && prevValue !== null
+                      ? value - prevValue
+                      : 0;
+                  // For stats like 'Workouts', a positive diff is good.
                   const isPositive = diff > 0;
                   const isNegative = diff < 0;
                   const color = isPositive ? "#30D158" : "#FF453A";
-                  const bgColor = isPositive ? colors.successBg : colors.errorBg;
-                  
+                  const bgColor = isPositive
+                    ? colors.successBg
+                    : colors.errorBg;
+
                   return (
                     <View style={styles.servicePill}>
                       <View style={styles.serviceIconWrap}>
-                        <Ionicons name={icon as any} size={16} color="#ffd33d" />
+                        <Ionicons
+                          name={icon as any}
+                          size={16}
+                          color="#ffd33d"
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          <Text style={styles.serviceValue} numberOfLines={1} adjustsFontSizeToFit>{value}{unit}</Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Text
+                            style={styles.serviceValue}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            {value}
+                            {unit}
+                          </Text>
                           {diff !== 0 && (
-                            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: bgColor, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 6 }}>
-                              <Ionicons name={isPositive ? "trending-up" : "trending-down"} size={10} color={color} style={{ marginRight: 2 }} />
-                              <Text style={{ fontSize: 10, fontWeight: "800", color: color }}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                backgroundColor: bgColor,
+                                paddingHorizontal: 4,
+                                paddingVertical: 2,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Ionicons
+                                name={
+                                  isPositive ? "trending-up" : "trending-down"
+                                }
+                                size={10}
+                                color={color}
+                                style={{ marginRight: 2 }}
+                              />
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: "800",
+                                  color: color,
+                                }}
+                              >
                                 {Math.abs(diff)}
                               </Text>
                             </View>
                           )}
                         </View>
-                        <Text style={styles.serviceLabel} numberOfLines={1}>{label}</Text>
+                        <Text style={styles.serviceLabel} numberOfLines={1}>
+                          {label}
+                        </Text>
                       </View>
                     </View>
                   );
                 };
 
-                const current = stats || { totalWorkouts: 0, daysTrained: 0, totalSets: 0, totalExercises: 0, totalVolume: 0 };
-                const prev = prevStats || { totalWorkouts: 0, daysTrained: 0, totalSets: 0, totalExercises: 0, totalVolume: 0 };
-                
+                const current = stats || {
+                  totalWorkouts: 0,
+                  daysTrained: 0,
+                  totalSets: 0,
+                  totalExercises: 0,
+                  totalVolume: 0,
+                };
+                const prev = prevStats || {
+                  totalWorkouts: 0,
+                  daysTrained: 0,
+                  totalSets: 0,
+                  totalExercises: 0,
+                  totalVolume: 0,
+                };
+
                 // Calculate averages safely
-                const avgSets = current.totalWorkouts > 0 ? Math.round(current.totalSets / current.totalWorkouts) : 0;
-                const prevAvgSets = prev.totalWorkouts > 0 ? Math.round(prev.totalSets / prev.totalWorkouts) : 0;
+                const avgSets =
+                  current.totalWorkouts > 0
+                    ? Math.round(current.totalSets / current.totalWorkouts)
+                    : 0;
+                const prevAvgSets =
+                  prev.totalWorkouts > 0
+                    ? Math.round(prev.totalSets / prev.totalWorkouts)
+                    : 0;
 
                 return (
                   <>
-                    {renderStat("barbell", "Workouts", current.totalWorkouts, prev.totalWorkouts)}
-                    {renderStat("time", "Days Trained", current.daysTrained, prev.daysTrained)}
-                    {renderStat("layers", "Total Sets", current.totalSets, prev.totalSets)}
-                    {renderStat("calculator", "Avg Sets/WO", avgSets, prevAvgSets)}
-                    {renderStat("fitness", "Total Exercises", current.totalExercises, prev.totalExercises)}
-                    {renderStat("analytics", "Total Volume", current.totalVolume || 0, prev.totalVolume || 0, " lb")}
+                    {renderStat(
+                      "barbell",
+                      "Workouts",
+                      current.totalWorkouts,
+                      prev.totalWorkouts,
+                    )}
+                    {renderStat(
+                      "time",
+                      "Days Trained",
+                      current.daysTrained,
+                      prev.daysTrained,
+                    )}
+                    {renderStat(
+                      "layers",
+                      "Total Sets",
+                      current.totalSets,
+                      prev.totalSets,
+                    )}
+                    {renderStat(
+                      "calculator",
+                      "Avg Sets/WO",
+                      avgSets,
+                      prevAvgSets,
+                    )}
+                    {renderStat(
+                      "fitness",
+                      "Total Exercises",
+                      current.totalExercises,
+                      prev.totalExercises,
+                    )}
+                    {renderStat(
+                      "analytics",
+                      "Total Volume",
+                      current.totalVolume || 0,
+                      prev.totalVolume || 0,
+                      " lb",
+                    )}
                   </>
                 );
               })()}
             </View>
-          
-          {/* Monthly Consistency Chart */}
-          <View style={[styles.servicesSection, { marginTop: 0, paddingTop: 16 }]}>
-            <Text style={styles.sectionTitle}>Days Trained (Past Month)</Text>
-            <View style={styles.chartContainer}>
-              {monthlyStats.map((weekStat, idx) => {
-                const days = weekStat?.daysTrained || 0;
-                const heightPercentage = Math.max((days / 7) * 100, 5);
-                const isCurrent = idx === 3;
-                const labels = ["3 Wks Ago", "2 Wks Ago", "Last Wk", "This Wk"];
-                
-                return (
-                  <View key={idx} style={styles.chartCol}>
-                    <View style={styles.barBackground}>
-                      <View style={[
-                        styles.barFill, 
-                        { height: `${heightPercentage}%`, backgroundColor: isCurrent ? "#ffd33d" : colors.accentTranslucent }
-                      ]} />
+
+            {/* Monthly Consistency Chart */}
+            <View
+              style={[styles.servicesSection, { marginTop: 0, paddingTop: 16 }]}
+            >
+              <Text style={styles.sectionTitle}>Days Trained</Text>
+              <View style={styles.chartContainer}>
+                {monthlyStats.map((weekStat, idx) => {
+                  const days = weekStat?.daysTrained || 0;
+                  const heightPercentage = Math.max((days / 7) * 100, 5);
+                  const isCurrent = idx === 3;
+                  const labels = [
+                    "3 Wks Ago",
+                    "2 Wks Ago",
+                    "Last Wk",
+                    "This Wk",
+                  ];
+
+                  return (
+                    <View key={idx} style={styles.chartCol}>
+                      <View style={styles.barBackground}>
+                        <View
+                          style={[
+                            styles.barFill,
+                            {
+                              height: `${heightPercentage}%`,
+                              backgroundColor: isCurrent
+                                ? "#ffd33d"
+                                : colors.accentTranslucent,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.chartLabel}>{labels[idx]}</Text>
+                      <Text style={styles.chartValue}>{days}</Text>
                     </View>
-                    <Text style={styles.chartLabel}>{labels[idx]}</Text>
-                    <Text style={styles.chartValue}>{days}</Text>
-                  </View>
-                )
-              })}
+                  );
+                })}
+              </View>
             </View>
+            <ExerciseProgressionChart />
           </View>
-          <ExerciseProgressionChart />
-</View>
         </ScrollView>
       </View>
     </>
   );
 }
 
-const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.bg },
-  gradientContainer: {
-    borderBottomLeftRadius: 60,
-    borderBottomRightRadius: 60,
-    overflow: "hidden",
-    marginHorizontal: 0,
-    marginTop: 0,
-  },
-  headerTop: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    marginBottom: 32,
-    marginTop: 16,
-  },
-  welcomeContainer: { alignItems: "center" },
-  welcomeBack: {
-    color: colors.textMuted,
-    fontSize: 16,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  userName: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: "bold",
-    letterSpacing: 0.35,
-  },
-  floatingPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.bgElevated,
-    padding: 16,
-    borderRadius: 60,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    marginBottom: 24,
-    marginHorizontal: 16,
-  },
-  floatingPillSmall: {
-    alignSelf: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginHorizontal: 0,
-  },
-  pillIconContainer: {
-    backgroundColor: colors.accentMuted,
-    width: 32,
-    height: 32,
-    borderRadius: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  pillText: { color: colors.text, fontSize: 15, fontWeight: "600" },
-  glassCard: {
-    marginHorizontal: 8,
-    borderRadius: 48,
-    padding: 20,
-    marginBottom: 8,
-    backgroundColor: colors.surface, // Smoked glass base
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    overflow: "hidden",
-  },
-  weekStripMinimal: {
-    width: "100%",
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  weekWidgetTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  weekPagerText: { color: colors.text, fontSize: 18, fontWeight: "800" },
-  weekStripInner: { flexDirection: "row", alignItems: "center" },
-  navIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 8,
-    backgroundColor: colors.surfaceBorder,
-  },
-  navIconPressed: { opacity: 0.5 },
-  navIconDisabled: { opacity: 0.25 },
-  weekDotsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 0,
-  },
-  weekDotItem: { alignItems: "center", gap: 6 },
-  weekDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: colors.surfaceBorder,
-    backgroundColor: "rgba(0,0,0,0.1)",
-  },
-  weekDotFilled: { backgroundColor: colors.text, borderColor: colors.text },
-  weekDotLabel: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  mapContainer: { position: "relative" },
-  loadingOverlay: {
-    backgroundColor: "rgba(0,0,0,0.5)",
-    zIndex: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  errorState: { padding: 40, alignItems: "center" },
-  errorText: { color: "#ff6b6b", marginBottom: 12, textAlign: "center" },
-  retryBtn: {
-    backgroundColor: colors.surfaceBorder,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  retryText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
-  mapToggle: {
-    flexDirection: "row",
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderRadius: 20,
-    padding: 4,
-    marginBottom: 20,
-    zIndex: 2,
-  },
-  mapToggleButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  mapToggleButtonActive: { backgroundColor: "#ffd33d" },
-  mapToggleText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
-  mapToggleTextActive: { color: "#141518" },
-  bodyCropBox: {
-    height: 500, // INCREASED TO AVOID CLIPPING LEGS
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "flex-start",
-  },
-  servicesSection: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 40,
-    marginTop: 16,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "600",
-    letterSpacing: 0.35,
-    marginBottom: 16,
-  },
-  servicesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  servicePill: {
-    width: "48%",
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-  },
-  serviceIconWrap: {
-    backgroundColor: colors.accentMuted,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  serviceValue: { color: colors.text, fontSize: 15, fontWeight: "700" },
-  serviceLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  chartContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-  },
-  chartCol: {
-    alignItems: "center",
-    width: "22%",
-  },
-  barBackground: {
-    width: 20,
-    height: 100,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderRadius: 10,
-    justifyContent: "flex-end",
-    marginBottom: 10,
-  },
-  barFill: {
-    width: "100%",
-    borderRadius: 10,
-  },
-  chartLabel: {
-    color: colors.textMuted,
-    fontSize: 9,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  chartValue: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "800",
-    marginTop: 4,
-  },
-});
+const getStyles = (colors: ThemeColors, isLight: boolean) =>
+  StyleSheet.create({
+    page: { flex: 1, backgroundColor: colors.bg },
+    gradientContainer: {
+      borderBottomLeftRadius: 60,
+      borderBottomRightRadius: 60,
+      overflow: "hidden",
+      marginHorizontal: 0,
+      marginTop: 0,
+    },
+    headerTop: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      marginBottom: 32,
+      marginTop: 16,
+    },
+    welcomeContainer: { alignItems: "center" },
+    welcomeBack: {
+      color: colors.textMuted,
+      fontSize: 16,
+      fontWeight: "600",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 2,
+    },
+    userName: {
+      color: colors.text,
+      fontSize: 34,
+      fontWeight: "bold",
+      letterSpacing: 0.35,
+    },
+    floatingPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.bgElevated,
+      padding: 16,
+      borderRadius: 60,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      marginBottom: 24,
+      marginHorizontal: 16,
+    },
+    floatingPillSmall: {
+      alignSelf: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      marginHorizontal: 0,
+    },
+    pillIconContainer: {
+      backgroundColor: colors.accentMuted,
+      width: 32,
+      height: 32,
+      borderRadius: 60,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    pillText: { color: colors.text, fontSize: 15, fontWeight: "600" },
+    glassCard: {
+      marginHorizontal: 8,
+      borderRadius: 48,
+      padding: 20,
+      marginBottom: 8,
+      backgroundColor: colors.surface, // Smoked glass base
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      overflow: "hidden",
+    },
+    weekStripMinimal: {
+      width: "100%",
+      paddingHorizontal: 24,
+      marginBottom: 32,
+    },
+    weekWidgetTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    weekPagerText: { color: colors.text, fontSize: 18, fontWeight: "800" },
+    weekStripInner: { flexDirection: "row", alignItems: "center" },
+    navIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: 8,
+      backgroundColor: colors.surfaceBorder,
+    },
+    navIconPressed: { opacity: 0.5 },
+    navIconDisabled: { opacity: 0.25 },
+    weekDotsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: 0,
+    },
+    weekDotItem: { alignItems: "center", gap: 6 },
+    weekDot: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1.5,
+      borderColor: colors.surfaceBorder,
+      backgroundColor: "rgba(0,0,0,0.1)",
+    },
+    weekDotFilled: { backgroundColor: colors.text, borderColor: colors.text },
+    weekDotLabel: {
+      color: colors.text,
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    mapContainer: { position: "relative" },
+    loadingOverlay: {
+      backgroundColor: "rgba(0,0,0,0.5)",
+      zIndex: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    errorState: { padding: 40, alignItems: "center" },
+    errorText: { color: "#ff6b6b", marginBottom: 12, textAlign: "center" },
+    retryBtn: {
+      backgroundColor: colors.surfaceBorder,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    retryText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
+    mapToggle: {
+      flexDirection: "row",
+      alignSelf: "center",
+      backgroundColor: isLight ? "transparent" : "rgba(0,0,0,0.3)",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      borderRadius: 20,
+      padding: 4,
+      marginBottom: 20,
+      zIndex: 2,
+    },
+    mapToggleButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 6,
+      borderRadius: 16,
+    },
+    mapToggleButtonActive: { backgroundColor: "#ffd33d" },
+    mapToggleText: { color: colors.text, fontSize: 13, fontWeight: "bold" },
+    mapToggleTextActive: { color: "#141518" },
+    bodyCropBox: {
+      height: 500, // INCREASED TO AVOID CLIPPING LEGS
+      overflow: "hidden",
+      alignItems: "center",
+      justifyContent: "flex-start",
+    },
+    servicesSection: {
+      paddingHorizontal: 16,
+      paddingTop: 24,
+      paddingBottom: 40,
+      marginTop: 16,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "600",
+      letterSpacing: 0.35,
+      marginBottom: 16,
+    },
+    servicesGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    servicePill: {
+      width: "48%",
+      backgroundColor: colors.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    serviceIconWrap: {
+      backgroundColor: colors.accentMuted,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 10,
+    },
+    serviceValue: { color: colors.text, fontSize: 15, fontWeight: "700" },
+    serviceLabel: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontWeight: "500",
+      marginTop: 2,
+    },
+    chartContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      backgroundColor: colors.surface,
+      borderRadius: 24,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    chartCol: {
+      alignItems: "center",
+      width: "22%",
+    },
+    barBackground: {
+      width: 20,
+      height: 100,
+      backgroundColor: isLight ? "transparent" : "rgba(0,0,0,0.3)",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      borderRadius: 10,
+      justifyContent: "flex-end",
+      marginBottom: 10,
+    },
+    barFill: {
+      width: "100%",
+      borderRadius: 10,
+    },
+    chartLabel: {
+      color: colors.textMuted,
+      fontSize: 9,
+      fontWeight: "700",
+      textTransform: "uppercase",
+    },
+    chartValue: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: "800",
+      marginTop: 4,
+    },
+  });

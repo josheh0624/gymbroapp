@@ -1,3 +1,4 @@
+import { useThemeStore } from "@/store/themeStore";
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { LinearGradient } from "expo-linear-gradient";
@@ -41,7 +42,8 @@ interface WorkoutExerciseInput {
 
 export default function CreateWorkout() {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -559,7 +561,7 @@ export default function CreateWorkout() {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -662,7 +664,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.85,
   },
   createButtonText: {
-    color: colors.bg,
+    color: isLight ? "#141518" : colors.bg,
     fontSize: 16,
     fontWeight: "800",
   },

@@ -1,3 +1,4 @@
+import { useThemeStore } from "@/store/themeStore";
 import { useThemeColors } from "@/styles/appStyles";
 import { ProfilePhoto } from "@/app/components/profile-photo";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -9,6 +10,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 function GlassTabBar(props: BottomTabBarProps) {
   const colors = useThemeColors();
+  const isLight = useThemeStore((s) => s.theme === "light");
 
   const { state, descriptors, navigation } = props;
 
@@ -36,7 +38,7 @@ function GlassTabBar(props: BottomTabBarProps) {
   };
 
   return (
-    <BlurView style={styles.tabBar} tint="dark" intensity={80}>
+    <BlurView style={styles.tabBar} tint={isLight ? "extraLight" : "dark"} intensity={80}>
       <View style={styles.row}>
         {state.routes.map((route, index) =>
           route.name === "index" ? renderTab(route, index) : null,
@@ -83,6 +85,7 @@ const styles = StyleSheet.create({
 
 export default function TabLayout() {
   const colors = useThemeColors();
+  const isLight = useThemeStore((s) => s.theme === "light");
 
   const pathname = usePathname();
   const showAddButton = pathname === "/";

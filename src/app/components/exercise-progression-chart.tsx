@@ -116,7 +116,7 @@ export default function ExerciseProgressionChart() {
 
   if (loading) {
     return (
-      <BlurView intensity={20} tint={isLight ? "light" : "dark"} style={[styles.glassCard, { justifyContent: "center", alignItems: "center", height: 200 }]}>
+      <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={[styles.glassCard, { justifyContent: "center", alignItems: "center", height: 200 }]}>
         <ActivityIndicator color={colors.accent} />
       </BlurView>
     );
@@ -124,7 +124,7 @@ export default function ExerciseProgressionChart() {
 
   if (availableExercises.length === 0) {
     return (
-      <BlurView intensity={20} tint={isLight ? "light" : "dark"} style={styles.glassCard}>
+      <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.glassCard}>
         <View style={styles.innerContainer}>
           <Text style={styles.sectionTitle}>Exercise Progression</Text>
           <View style={styles.emptyContainer}>
@@ -136,7 +136,7 @@ export default function ExerciseProgressionChart() {
   }
 
   return (
-    <BlurView intensity={20} tint={isLight ? "light" : "dark"} style={styles.glassCard}>
+    <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.glassCard}>
       <View style={styles.innerContainer}>
       <Text style={styles.sectionTitle}>Exercise Progression</Text>
       

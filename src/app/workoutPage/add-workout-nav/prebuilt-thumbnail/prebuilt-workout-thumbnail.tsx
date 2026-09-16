@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { useRoutineStore } from "@/store/routineStore";
+import { useThemeStore } from "@/store/themeStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
@@ -21,6 +22,7 @@ interface Props {
 
 export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
   const colors = useThemeColors();
+  const isLight = useThemeStore((s) => s.theme === "light");
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const router = useRouter();
@@ -52,7 +54,7 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
     <Pressable
       style={({ pressed }) => [styles.workoutCardWrapper, pressed && styles.pressed]}
     >
-      <BlurView intensity={20} tint="dark" style={styles.workoutCard}>
+      <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.workoutCard}>
       <View style={styles.infoSection}>
         <Text style={styles.text} numberOfLines={1}>
           {routine.name}
@@ -83,7 +85,7 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
                 pressed && styles.pressedBtn,
               ]}
             >
-              <Ionicons name="pencil" size={18} color="#F5F6F7" />
+              <Ionicons name="pencil" size={18} color={colors.text} />
             </Pressable>
           </>
         )}
@@ -124,7 +126,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 6,
   },
   text: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "800",
   },

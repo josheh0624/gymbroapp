@@ -1,9 +1,11 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
+import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect, Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dimensions,
   Platform,
@@ -26,6 +28,10 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const user = useAuthStore((s) => s.user);
+  const colors = useThemeColors();
+  const { theme } = useThemeStore();
+  const isLight = theme === "light";
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const handleLogin = async () => {
     setError("");
@@ -71,10 +77,10 @@ export default function LoginScreen() {
           headerTitleAlign: "left",
           headerBackButtonDisplayMode: "minimal",
           headerStyle: {
-            backgroundColor: "#141518",
+            backgroundColor: colors.bg,
           },
           headerShadowVisible: false,
-          headerTintColor: "#fff",
+          headerTintColor: colors.text,
 
           headerTitleStyle: {
             fontSize: 30,
@@ -84,11 +90,11 @@ export default function LoginScreen() {
       />
 
       <View style={styles.root}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
 
         {/* base gradient — flat charcoal, no color mixing */}
         <LinearGradient
-          colors={["#141518", "#1B1C20", "#141518"]}
+          colors={[colors.bg, colors.bg, colors.bg]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -100,7 +106,7 @@ export default function LoginScreen() {
             </View>
 
             {/* glass card */}
-            <BlurView intensity={35} tint="dark" style={styles.card}>
+            <BlurView intensity={35} tint={isLight ? "extraLight" : "dark"} style={styles.card}>
               <View style={styles.cardInner}>
                 <Text style={styles.eyebrow}>Welcome Back</Text>
                 <Text style={styles.headline}>
@@ -178,13 +184,10 @@ export default function LoginScreen() {
   );
 }
 
-const YELLOW = "#ffd61f";
-const GRAY_BORDER = "rgba(255,255,255,0.09)";
-
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#141518",
+    backgroundColor: colors.bg,
   },
   safe: {
     flex: 1,
@@ -202,7 +205,7 @@ const styles = StyleSheet.create({
     width: width * 1.03,
     height: width * 1.03,
     borderRadius: 999,
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
     top: -width * 0.3,
     left: -width * 0.03,
     opacity: 0.14,
@@ -218,11 +221,11 @@ const styles = StyleSheet.create({
     width: 16,
     height: 3,
     borderRadius: 1,
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
     marginRight: 10,
   },
   brandText: {
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -233,24 +236,24 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
+    borderColor: colors.surfaceBorder,
   },
   cardInner: {
     padding: 28,
-    backgroundColor: Platform.select({
+    backgroundColor: isLight ? "transparent" : Platform.select({
       ios: "rgba(30,31,35,0.38)",
       android: "rgba(30,31,35,0.78)",
       default: "rgba(30,31,35,0.6)",
     }),
   },
   eyebrow: {
-    color: "#84878E",
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 10,
   },
   headline: {
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 30,
     fontWeight: "800",
     lineHeight: 34,
@@ -259,7 +262,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 3,
     borderRadius: 1,
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
     marginTop: 16,
     marginBottom: 28,
   },
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: "#8A8F98",
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "normal",
     marginBottom: 8,
@@ -276,13 +279,13 @@ const styles = StyleSheet.create({
   inputShell: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
-    backgroundColor: "rgba(255,255,255,0.03)",
+    borderColor: colors.surfaceBorder,
+    backgroundColor: colors.surface,
   },
   input: {
     height: 50,
     paddingHorizontal: 16,
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 15,
   },
 
@@ -292,7 +295,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotText: {
-    color: "#84878E",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -300,17 +303,17 @@ const styles = StyleSheet.create({
   cta: {
     height: 54,
     borderRadius: 12,
-    backgroundColor: YELLOW,
+    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: YELLOW,
+    shadowColor: COLORS.accent,
     shadowOpacity: 0.1,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
   ctaText: {
-    color: "#F5F5F6",
+    color: isLight ? "#000" : colors.text,
     fontSize: 14,
     fontWeight: "800",
   },
@@ -324,10 +327,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: GRAY_BORDER,
+    backgroundColor: colors.surfaceBorder,
   },
   dividerText: {
-    color: "#54575D",
+    color: colors.textMuted,
     fontSize: 10,
     fontWeight: "700",
     marginHorizontal: 12,
@@ -337,24 +340,24 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
+    borderColor: colors.surfaceBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   secondaryCtaText: {
-    color: "#EDEDEF",
+    color: colors.text,
     fontSize: 14,
     fontWeight: "700",
   },
 
   footer: {
-    color: "#46484D",
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "600",
     marginTop: 24,
   },
   errorText: {
-    color: YELLOW,
+    color: COLORS.accent,
     fontSize: 13,
     fontWeight: "600",
     marginBottom: 12,

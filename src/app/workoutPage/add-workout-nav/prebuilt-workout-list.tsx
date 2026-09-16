@@ -1,3 +1,4 @@
+import { useThemeStore } from "@/store/themeStore";
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
@@ -9,6 +10,7 @@ import PrebuiltWorkoutThumbnail from "./prebuilt-thumbnail/prebuilt-workout-thum
 
 export default function PrebuiltWorkoutList() {
   const colors = useThemeColors();
+  const isLight = useThemeStore((s) => s.theme === "light");
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const { routineList, fetchRoutineList } = useRoutineStore();
@@ -28,7 +30,7 @@ export default function PrebuiltWorkoutList() {
           <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
         ))
       ) : (
-        <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
+        <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.emptyCard}>
           <Text style={styles.emptyText}>No custom routines yet.</Text>
         </BlurView>
       )}
@@ -39,7 +41,7 @@ export default function PrebuiltWorkoutList() {
           <PrebuiltWorkoutThumbnail routine={routine} key={routine.id} />
         ))
       ) : (
-        <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
+        <BlurView intensity={isLight ? 40 : 20} tint={isLight ? "extraLight" : "dark"} style={styles.emptyCard}>
           <Text style={styles.emptyText}>No prebuilt routines found.</Text>
         </BlurView>
       )}

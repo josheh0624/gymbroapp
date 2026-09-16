@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
+import { useThemeStore } from "@/store/themeStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
@@ -7,7 +8,8 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 export default function AddCustomButton() {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
 
@@ -18,13 +20,13 @@ export default function AddCustomButton() {
         router.push("/workoutPage/add-workout-nav/custom-workout");
       }}
     >
-      <FontAwesome6 name="plus" size={16} color={colors.bg} />
+      <FontAwesome6 name="plus" size={16} color={isLight ? "#141518" : colors.bg} />
       <Text style={styles.text}>Create Custom Routine</Text>
     </Pressable>
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   container: {
     flexDirection: "row",
     width: "100%",
@@ -42,6 +44,6 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   text: {
     fontSize: 16,
     fontWeight: "800",
-    color: colors.bg,
+    color: isLight ? "#141518" : colors.bg,
   },
 });

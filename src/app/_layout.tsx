@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore, SafeUser } from "@/store/authStore";
+import { useRoutineStore } from "@/store/routineStore";
 import { useThemeStore } from "@/store/themeStore";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +10,7 @@ import { ActivityIndicator, View } from "react-native";
 export default function RootLayout() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { theme, loadTheme } = useThemeStore();
+  const loadActiveRoutine = useRoutineStore((s) => s.loadActiveRoutine);
 
   useEffect(() => {
     loadTheme();
@@ -28,6 +30,7 @@ export default function RootLayout() {
       
       if (!error && data) {
         setUser(data as SafeUser);
+        loadActiveRoutine();
       } else {
         setUser(null);
       }
@@ -47,6 +50,7 @@ export default function RootLayout() {
         if (!isMounted) return;
         if (session?.user) {
           getProfile(session.user.id);
+          loadActiveRoutine();
         } else {
           setUser(null);
         }

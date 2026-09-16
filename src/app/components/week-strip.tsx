@@ -3,12 +3,7 @@ import moment from "moment";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const COLORS = {
-  text: "#FFFFFF",
-  textMuted: "rgba(255,255,255,0.5)",
-  accent: "#ffd33d",
-  accentText: "#141518",
-};
+
 
 type Props = {
   selectedDate: Date;
@@ -112,7 +107,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   dayLabel: {
-    color: "rgba(255,255,255,0.5)",
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "normal",
   },
@@ -131,7 +126,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.accent,
   },
   dayNumber: {
-    color: "rgba(255,255,255,0.9)",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],

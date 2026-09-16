@@ -1,3 +1,4 @@
+import { useThemeStore } from "@/store/themeStore";
 import { useMemo } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -24,7 +25,8 @@ type AvailableWorkout = { id: string; name: string; days?: number[]; user_id?: s
 
 export default function CustomWorkout() {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -231,9 +233,9 @@ export default function CustomWorkout() {
                                     onPress={() => toggleWorkoutDay(workout.id, day)}
                                     style={{
                                       width: 32, height: 32, borderRadius: 16, 
-                                      backgroundColor: isDaySelected ? colors.accent : 'rgba(255,255,255,0.05)',
+                                      backgroundColor: isDaySelected ? colors.accent : colors.surface,
                                       alignItems: 'center', justifyContent: 'center',
-                                      borderWidth: 1, borderColor: isDaySelected ? colors.accent : 'rgba(255,255,255,0.1)'
+                                      borderWidth: 1, borderColor: isDaySelected ? colors.accent : colors.surfaceBorder
                                     }}
                                   >
                                     <Text style={{ color: isDaySelected ? '#141518' : colors.textMuted, fontWeight: '700', fontSize: 13 }}>
@@ -295,7 +297,7 @@ export default function CustomWorkout() {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -384,7 +386,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.85,
   },
   createButtonText: {
-    color: colors.bg,
+    color: isLight ? "#141518" : colors.bg,
     fontSize: 16,
     fontWeight: "800",
   },

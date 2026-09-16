@@ -21,7 +21,8 @@ import {
 
 export default function WorkoutTodo() {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
 
 
@@ -90,11 +91,11 @@ export default function WorkoutTodo() {
           headerBackButtonDisplayMode: "minimal",
           headerStyle: { backgroundColor: colors.gradientTop },
           headerShadowVisible: false,
-          headerTintColor: "#F5F6F7",
+          headerTintColor: colors.text,
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "700",
-            color: "#F5F6F7",
+            color: colors.text,
           },
         }}
       />
@@ -172,7 +173,8 @@ function ExerciseCard({
   }) => Promise<void> | void;
 }) {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
   const [weight, setWeight] = useState(
     exercise.weight === null || exercise.weight === undefined
       ? ""
@@ -282,9 +284,8 @@ function DoneButton({
   selectedDateString?: string;
 }) {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
-  const { theme } = useThemeStore();
-  const isLight = theme === 'light';
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
   const markWorkoutDone = useRoutineStore((s) => s.markWorkoutDone);
@@ -302,14 +303,14 @@ function DoneButton({
         alignItems: "center",
       }}
     >
-      <Text style={{ color: colors.bg, fontWeight: "700", fontSize: 16 }}>
+      <Text style={{ color: isLight ? "#141518" : colors.bg, fontWeight: "700", fontSize: 16 }}>
         Finish Workout
       </Text>
     </Pressable>
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -364,7 +365,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: "#ffd61f",
   },
   exerciseDoneText: {
-    color: colors.bg,
+    color: isLight ? "#141518" : colors.bg,
     fontSize: 12,
     fontWeight: "800",
   },
@@ -387,7 +388,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 9,
     borderWidth: 1,
     borderColor: colors.glassStrongBorder,
-    backgroundColor: "rgba(0,0,0,0.2)",
+    backgroundColor: colors.surface,
     color: colors.text,
     fontSize: 16,
     fontWeight: "700",

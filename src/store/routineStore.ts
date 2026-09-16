@@ -2,6 +2,7 @@ import Exercise from "@/models/excerciseModel";
 import WorkoutRoutine from "@/models/workout-routine-model";
 import { create } from "zustand";
 import { supabase } from "@/api/supabase";
+import * as SecureStore from "expo-secure-store";
 
 interface RoutineListItem {
   id: string;
@@ -25,6 +26,7 @@ interface RoutineState {
   deleteRoutine: (id: string) => Promise<boolean>;
   addRoutine: (routine: WorkoutRoutine) => void;
   setActiveRoutine: (id: string | null) => void;
+  loadActiveRoutine: () => Promise<void>;
   getActiveRoutine: () => WorkoutRoutine | undefined;
   getExerciseById: (routineId: string, workoutId: string) => Promise<void>;
 
@@ -242,7 +244,42 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         : [...state.routines, routine],
     })),
 
-  setActiveRoutine: (id) => set({ activeRoutineId: id }),
+  setActiveRoutine: async (id) => {
+    set({ activeRoutineId: id });
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (userId) {
+        if (id) {
+          await SecureStore.setItemAsync(`active_routine_${userId}`, id);
+        } else {
+          await SecureStore.deleteItemAsync(`active_routine_${userId}`);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to persist active routine", err);
+    }
+  },
+
+  loadActiveRoutine: async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (userId) {
+        const storedId = await SecureStore.getItemAsync(`active_routine_${userId}`);
+        if (storedId) {
+          set({ activeRoutineId: storedId });
+          // Optionally fetch the routine if it's not already in the list
+          const { routines } = get();
+          if (!routines.find(r => r.id === storedId)) {
+            await get().fetchRoutineById(storedId);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load active routine", err);
+    }
+  },
 
   getActiveRoutine: () => {
     const { routines, activeRoutineId } = get();

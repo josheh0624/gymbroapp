@@ -1,11 +1,11 @@
-import { useMemo } from "react";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { useMemo } from "react";
 
 import { ProfilePhoto } from "@/app/components/profile-photo";
 import { useRoutineStore } from "@/store/routineStore";
-import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { useThemeStore } from "@/store/themeStore";
+import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs from "dayjs";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -87,7 +87,7 @@ function DockButton({
 export default function WorkoutScreen() {
   const colors = useThemeColors();
   const { theme, toggleTheme } = useThemeStore();
-  const isLight = theme === 'light';
+  const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
@@ -180,7 +180,7 @@ export default function WorkoutScreen() {
                   <Ionicons name="chevron-down" size={24} color={colors.text} />
                 </Pressable>
 
-                <Text style={styles.dateTextInline}>{currentDate}</Text>
+                <Text style={styles.workoutTitleCentered}>Workout</Text>
 
                 <Pressable
                   hitSlop={8}
@@ -188,10 +188,6 @@ export default function WorkoutScreen() {
                 >
                   <ProfilePhoto size={38} color={colors.text} />
                 </Pressable>
-              </View>
-
-              <View style={styles.headerCentered}>
-                <Text style={styles.workoutTitleCentered}>Workout</Text>
               </View>
 
               <View style={styles.weekCalendarContainer}>
@@ -218,7 +214,11 @@ export default function WorkoutScreen() {
                     selectedDate={selectedDate}
                   />
                 ) : (
-                  <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
+                  <BlurView
+                    intensity={isLight ? 40 : 20}
+                    tint={isLight ? "extraLight" : "dark"}
+                    style={styles.emptyCard}
+                  >
                     <Ionicons
                       name={hasRoutine ? "moon-outline" : "barbell-outline"}
                       size={26}
@@ -242,7 +242,7 @@ export default function WorkoutScreen() {
         {/* Floating Bottom Dock (Frosted Glass) */}
         <BlurView
           intensity={25}
-          tint="dark"
+          tint={isLight ? "extraLight" : "dark"}
           style={[styles.bottomDock, { paddingBottom: insets.bottom + 12 }]}
         >
           <View style={styles.dockRow}>
@@ -256,7 +256,11 @@ export default function WorkoutScreen() {
                   )
                 }
               >
-                <Ionicons name="swap-horizontal" size={20} color={colors.text} />
+                <Ionicons
+                  name="swap-horizontal"
+                  size={20}
+                  color={colors.text}
+                />
               </DockButton>
               <Text style={styles.dockLabel}>Swap Routine</Text>
             </View>
@@ -266,9 +270,11 @@ export default function WorkoutScreen() {
                 style={styles.playButton}
                 onPress={() => {
                   if (!startWorkout || !routine) return; // guard: no workout scheduled today
-                  const selectedDateString = selectedDate.toISOString().split("T")[0];
+                  const selectedDateString = selectedDate
+                    .toISOString()
+                    .split("T")[0];
                   router.push(
-                    `/workoutPage/workout-list/workout-thumbnail/${startWorkout.id}?routineID=${routine.id}&selectedDateString=${selectedDateString}` as any
+                    `/workoutPage/workout-list/workout-thumbnail/${startWorkout.id}?routineID=${routine.id}&selectedDateString=${selectedDateString}` as any,
                   );
                 }}
               >
@@ -303,146 +309,147 @@ export default function WorkoutScreen() {
   );
 }
 
-const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  gradientContainer: {
-    flex: 1,
-    minHeight: "100%",
-  },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    height: 56,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dateTextInline: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  headerCentered: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: -16, // Eliminates the gap between the Date and WORKOUT
-    marginBottom: 8,
-  },
-  workoutTitleCentered: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: "bold",
-    letterSpacing: 0.35,
-    lineHeight: 41,
-  },
-  weekCalendarContainer: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  sectionLabel: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "600",
-    letterSpacing: 0.35,
-  },
-  sectionCount: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  listContainer: {
-    gap: 16,
-    paddingHorizontal: 16,
-  },
-  emptyCard: {
-    borderRadius: 24,
-    backgroundColor: colors.surface,
-    padding: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    overflow: "hidden",
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptyBody: {
-    color: colors.textMuted,
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 18,
-    paddingHorizontal: 16,
-  },
-  bottomDock: {
-    position: "absolute",
-    left: 4,
-    right: 4,
-    bottom: 4,
-    paddingTop: 20,
-    borderRadius: 48,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    overflow: "hidden",
-  },
-  dockRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-end",
-    paddingHorizontal: 16,
-  },
-  dockItem: {
-    alignItems: "center",
-    gap: 8,
-  },
-  dockLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  changeRoutineButton: {
-    backgroundColor: colors.surfaceBorder,
-    borderWidth: 1,
-    borderColor: colors.surface,
-  },
-  addWorkoutButton: {
-    backgroundColor: colors.surfaceBorder,
-    borderWidth: 1,
-    borderColor: colors.surface,
-  },
-  playButton: {
-    backgroundColor: "#ffd33d",
-    shadowColor: "#ffd33d",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-});
+const getStyles = (colors: ThemeColors, isLight: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    gradientContainer: {
+      flex: 1,
+      minHeight: "100%",
+    },
+    topBar: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      height: 56,
+    },
+    iconBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surfaceBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dateTextInline: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 1,
+    },
+    headerCentered: {
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: -16, // Eliminates the gap between the Date and WORKOUT
+      marginBottom: 8,
+    },
+    workoutTitleCentered: {
+      color: colors.text,
+      fontSize: 34,
+      fontWeight: "bold",
+      letterSpacing: 0.35,
+      lineHeight: 41,
+    },
+    weekCalendarContainer: {
+      marginTop: 8,
+      marginBottom: 16,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      marginBottom: 20,
+      paddingHorizontal: 20,
+    },
+    sectionLabel: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "600",
+      letterSpacing: 0.35,
+    },
+    sectionCount: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    listContainer: {
+      gap: 16,
+      paddingHorizontal: 16,
+    },
+    emptyCard: {
+      borderRadius: 24,
+      backgroundColor: colors.surface,
+      padding: 32,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      overflow: "hidden",
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "700",
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    emptyBody: {
+      color: colors.textMuted,
+      fontSize: 13,
+      textAlign: "center",
+      lineHeight: 18,
+      paddingHorizontal: 16,
+    },
+    bottomDock: {
+      position: "absolute",
+      left: 4,
+      right: 4,
+      bottom: 4,
+      paddingTop: 20,
+      borderRadius: 48,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      overflow: "hidden",
+    },
+    dockRow: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      alignItems: "flex-end",
+      paddingHorizontal: 16,
+    },
+    dockItem: {
+      alignItems: "center",
+      gap: 8,
+    },
+    dockLabel: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    changeRoutineButton: {
+      backgroundColor: colors.surfaceBorder,
+      borderWidth: 1,
+      borderColor: colors.surface,
+    },
+    addWorkoutButton: {
+      backgroundColor: colors.surfaceBorder,
+      borderWidth: 1,
+      borderColor: colors.surface,
+    },
+    playButton: {
+      backgroundColor: "#ffd33d",
+      shadowColor: "#ffd33d",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+  });

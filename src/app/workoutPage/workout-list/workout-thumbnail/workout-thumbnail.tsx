@@ -1,3 +1,4 @@
+import { useThemeStore } from "@/store/themeStore";
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import WorkoutModel from "@/models/workout-model";
@@ -21,7 +22,8 @@ export default function WorkoutThumbnail({
   selectedDateString,
 }: Props) {
   const colors = useThemeColors();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const isLight = useThemeStore((s) => s.theme === "light");
+  const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
 
@@ -41,7 +43,7 @@ export default function WorkoutThumbnail({
         );
       }}
     >
-      <BlurView intensity={25} tint="dark" style={styles.workoutCard}>
+      <BlurView intensity={isLight ? 40 : 25} tint={isLight ? "extraLight" : "dark"} style={styles.workoutCard}>
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.title} numberOfLines={1}>
@@ -77,13 +79,13 @@ export default function WorkoutThumbnail({
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
+const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
   workoutCard: {
     marginHorizontal: 0,
     minHeight: 140,
     marginBottom: 0, // removed bottom gap because list container has gap 16
     borderRadius: 24,
-    backgroundColor: "rgba(20,21,24,0.3)",
+    backgroundColor: isLight ? "transparent" : "rgba(20,21,24,0.3)",
     overflow: "hidden",
     padding: 20,
     borderWidth: 1,
