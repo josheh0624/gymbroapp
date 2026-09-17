@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
+import { MeshGradientBackground } from "@/app/components/MeshGradientBackground";
 import { ProfilePhoto } from "@/app/components/profile-photo";
 import { useAuthStore } from "@/store/authStore";
 import { useRoutineStore } from "@/store/routineStore"; // adjust to your actual path
@@ -8,7 +9,6 @@ import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlurView } from "expo-blur";
-import { MeshGradientBackground } from "@/app/components/MeshGradientBackground";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -38,8 +38,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  * exercise, swap that in for `intensityForRegion` below.
  */
 
-const PRIMARY_COLOR = "#4169E1"; // red — primary tier (2+ sessions this week)
-const SECONDARY_COLOR = "#7CA0FF"; // gold — secondary tier (1 session)
+const PRIMARY_COLOR = "#FF4D5E"; // Vivid Coral/Red for primary (pops against blue)
+const SECONDARY_COLOR = "#FFB800"; // Vibrant Gold for secondary
 const BODY_BASE = "#8E9298"; // untargeted muscles / neutral figure fill
 const BODY_FACET = "#777B82";
 const GRID = "#4B4F55";
@@ -656,7 +656,7 @@ export default function MuscleMapScreen() {
 
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
-  const activeSession = useRoutineStore(s => s.activeSession);
+  const activeSession = useRoutineStore((s) => s.activeSession);
   const initials = useMemo(
     () => user?.username?.slice(0, 2).toUpperCase() ?? "?",
     [user?.username],
@@ -810,11 +810,12 @@ export default function MuscleMapScreen() {
 
               {/* Muscle Map */}
               <BlurView
-                intensity={isLight ? 40 : 20}
-                tint={isLight ? "extraLight" : "dark"}
+                intensity={isLight ? 20 : 15}
+                tint={isLight ? "light" : "dark"}
                 style={[
                   styles.glassCard,
                   {
+                    backgroundColor: isLight ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)",
                     borderTopRightRadius: 60,
                     borderTopLeftRadius: 60,
                     borderBottomRightRadius: 60,
@@ -1091,12 +1092,19 @@ export default function MuscleMapScreen() {
           </View>
 
           {/* Monthly Consistency Chart */}
-            <View
-              style={[styles.servicesSection, { marginTop: 0, paddingTop: 16 }]}
-            >
-              <View style={styles.chartContainer}>
-                <Text style={[styles.sectionTitle, { marginBottom: 24, paddingHorizontal: 0 }]}>Days Trained</Text>
-                <View style={styles.chartBarsRow}>
+          <View
+            style={[styles.servicesSection, { marginTop: 0, paddingTop: 16 }]}
+          >
+            <View style={styles.chartContainer}>
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { marginBottom: 24, paddingHorizontal: 0 },
+                ]}
+              >
+                Days Trained
+              </Text>
+              <View style={styles.chartBarsRow}>
                 {monthlyStats.map((weekStat, idx) => {
                   const days = weekStat?.daysTrained || 0;
                   const heightPercentage = Math.max((days / 7) * 100, 5);
@@ -1128,10 +1136,10 @@ export default function MuscleMapScreen() {
                     </View>
                   );
                 })}
-                </View>
               </View>
             </View>
-            <ExerciseProgressionChart />
+          </View>
+          <ExerciseProgressionChart />
         </ScrollView>
       </View>
     </>

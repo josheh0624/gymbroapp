@@ -2,6 +2,7 @@ import { supabase } from "@/api/supabase";
 import { useAuthStore, SafeUser } from "@/store/authStore";
 import { useRoutineStore } from "@/store/routineStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import ActiveWorkoutBanner from "./components/active-workout-banner";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -11,10 +12,12 @@ import { ActivityIndicator, View } from "react-native";
 export default function RootLayout() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { theme, loadTheme } = useThemeStore();
+  const { loadSettings } = useSettingsStore();
   const loadActiveRoutine = useRoutineStore((s) => s.loadActiveRoutine);
 
   useEffect(() => {
     loadTheme();
+    loadSettings();
   }, []);
   const segments = useSegments();
   const router = useRouter();
@@ -67,7 +70,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading) return;
 
-    const inProtectedGroup = segments[0] === '(tabs)' || segments[0] === 'workoutPage';
+    const inProtectedGroup = segments[0] === '(tabs)' || segments[0] === 'workoutPage' || segments[0] === 'editProfile' || segments[0] === 'editPassword' || segments[0] === 'deleteAccount';
     
     if (!user && inProtectedGroup) {
       // Redirect to login if not authenticated

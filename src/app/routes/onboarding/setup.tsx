@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { calculateAge } from "@/utils/dateUtils";
 import { useThemeStore } from "@/store/themeStore";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
@@ -27,13 +28,21 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 6;
 
 const STEP_META = [
-  { eyebrow: "STEP 1 OF 4", headline: "How old\nare you?" },
-  { eyebrow: "STEP 2 OF 4", headline: "How tall\nare you?" },
-  { eyebrow: "STEP 3 OF 4", headline: "What's your\nweight?" },
-  { eyebrow: "STEP 4 OF 4", headline: "What's your\ngender?" },
+  { eyebrow: "STEP 1 OF 6", headline: "When is your\nbirthday?" },
+  { eyebrow: "STEP 2 OF 6", headline: "How tall\nare you?" },
+  { eyebrow: "STEP 3 OF 6", headline: "What's your\nweight?" },
+  { eyebrow: "STEP 4 OF 6", headline: "What's your\ngender?" },
+  { eyebrow: "STEP 5 OF 6", headline: "What's your\nexperience?" },
+  { eyebrow: "STEP 6 OF 6", headline: "Current PRs\n(Optional)" },
+];
+
+const EXPERIENCE_OPTIONS = [
+  { label: "Beginner", value: "beginner" },
+  { label: "Intermediate", value: "intermediate" },
+  { label: "Advanced", value: "advanced" },
 ];
 
 const SEX_OPTIONS = [
@@ -54,11 +63,17 @@ export default function SetupScreen() {
   const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
-  const [age, setAge] = useState("");
+  const [bdayMonth, setBdayMonth] = useState("");
+  const [bdayDay, setBdayDay] = useState("");
+  const [bdayYear, setBdayYear] = useState("");
   const [feet, setFeet] = useState("");
   const [inches, setInches] = useState("");
   const [weightLbs, setWeightLbs] = useState("");
   const [sex, setSex] = useState<string | null>(null);
+  const [experience, setExperience] = useState("");
+  const [benchPR, setBenchPR] = useState("");
+  const [squatPR, setSquatPR] = useState("");
+  const [deadliftPR, setDeadliftPR] = useState("");
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -89,13 +104,20 @@ export default function SetupScreen() {
     setError("");
 
     if (step === 0) {
-      if (!age) {
+      if (!bdayMonth && !bdayDay && !bdayYear) {
         goNext();
         return;
       }
-      const ageNum = parseInt(age, 10);
-      if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-        setError("Enter a valid age, or skip this one.");
+      const m = parseInt(bdayMonth, 10);
+      const d = parseInt(bdayDay, 10);
+      const y = parseInt(bdayYear, 10);
+      if (!bdayMonth || !bdayDay || !bdayYear || isNaN(m) || isNaN(d) || isNaN(y) || m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > new Date().getFullYear()) {
+        setError("Enter a valid birthday (MM DD YYYY), or skip this one.");
+        return;
+      }
+      const ageNum = calculateAge(bdayMonth, bdayDay, bdayYear);
+      if (ageNum < 13) {
+        setError("You must be at least 13 years old.");
         return;
       }
     }
@@ -135,7 +157,7 @@ export default function SetupScreen() {
 
   const handleSkip = () => {
     setError("");
-    if (step === 0) setAge("");
+    if (step === 0) { setBdayMonth(""); setBdayDay(""); setBdayYear(""); }
     if (step === 1) {
       setFeet("");
       setInches("");
@@ -150,7 +172,19 @@ export default function SetupScreen() {
     try {
       const payload: Record<string, unknown> = {};
 
-      if (age) payload.age = parseInt(age, 10);
+      const authUpdates: Record<string, any> = {};
+      if (bdayMonth && bdayDay && bdayYear) {
+        payload.age = calculateAge(bdayMonth, bdayDay, bdayYear);
+        authUpdates.birthday = `${bdayYear}-${bdayMonth.padStart(2, '0')}-${bdayDay.padStart(2, '0')}`;
+      }
+      if (experience) authUpdates.experience_level = experience;
+      if (benchPR) authUpdates.bench_pr = parseInt(benchPR, 10);
+      if (squatPR) authUpdates.squat_pr = parseInt(squatPR, 10);
+      if (deadliftPR) authUpdates.deadlift_pr = parseInt(deadliftPR, 10);
+      
+      if (Object.keys(authUpdates).length > 0) {
+        await supabase.auth.updateUser({ data: authUpdates });
+      }
       if (feet) {
         const feetNum = parseInt(feet, 10);
         const inchesNum = parseInt(inches || "0", 10);
@@ -247,18 +281,42 @@ export default function SetupScreen() {
 
                 {step === 0 && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>Age</Text>
-                    <View style={styles.inputShell}>
-                      <TextInput
-                        placeholder="24"
-                        placeholderTextColor="#5A5D63"
-                        style={styles.input}
-                        keyboardType="number-pad"
-                        maxLength={3}
-                        value={age}
-                        onChangeText={setAge}
-                        autoFocus
-                      />
+                    <Text style={styles.label}>Birthday (MM / DD / YYYY)</Text>
+                    <View style={styles.row}>
+                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                        <TextInput
+                          placeholder="MM"
+                          placeholderTextColor="#5A5D63"
+                          style={[styles.input, { textAlign: 'center' }]}
+                          keyboardType="number-pad"
+                          maxLength={2}
+                          value={bdayMonth}
+                          onChangeText={setBdayMonth}
+                          autoFocus
+                        />
+                      </View>
+                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                        <TextInput
+                          placeholder="DD"
+                          placeholderTextColor="#5A5D63"
+                          style={[styles.input, { textAlign: 'center' }]}
+                          keyboardType="number-pad"
+                          maxLength={2}
+                          value={bdayDay}
+                          onChangeText={setBdayDay}
+                        />
+                      </View>
+                      <View style={[styles.inputShell, { flex: 1.5 }]}>
+                        <TextInput
+                          placeholder="YYYY"
+                          placeholderTextColor="#5A5D63"
+                          style={[styles.input, { textAlign: 'center' }]}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          value={bdayYear}
+                          onChangeText={setBdayYear}
+                        />
+                      </View>
                     </View>
                   </View>
                 )}

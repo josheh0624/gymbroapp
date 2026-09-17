@@ -1,4 +1,5 @@
 import { useThemeStore } from "@/store/themeStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,6 +11,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Keyboard,
   Pressable,
   ScrollView,
@@ -22,6 +24,7 @@ import {
 export default function WorkoutTodo() {
   const colors = useThemeColors();
   const isLight = useThemeStore((s) => s.theme === "light");
+  const { weightUnit } = useSettingsStore();
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
 
@@ -43,6 +46,8 @@ export default function WorkoutTodo() {
 
   const activeSession = useRoutineStore((s) => s.activeSession);
   const startSession = useRoutineStore((s) => s.startSession);
+  const router = useRouter();
+  const endSession = useRoutineStore((s) => s.endSession);
 
   const workout = routine?.workouts.find((w) => w.id === id);
 
@@ -176,9 +181,41 @@ export default function WorkoutTodo() {
           </View>
         </ScrollView>
         <View
-          style={{ paddingHorizontal: 34, paddingBottom: 20, paddingTop: 20 }}
+          style={{ paddingHorizontal: 34, paddingBottom: 40, paddingTop: 20, gap: 12 }}
         >
           <DoneButton routineID={routineID} workoutID={id} selectedDateString={selectedDateString} durationSeconds={elapsedSeconds} />
+          
+          <Pressable
+            onPress={() => {
+              Alert.alert(
+                "Stop Workout",
+                "Are you sure you want to stop? This will end the active timer without finishing the workout.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { 
+                    text: "Stop Workout", 
+                    style: "destructive", 
+                    onPress: () => {
+                      endSession();
+                      router.back();
+                    }
+                  }
+                ]
+              );
+            }}
+            style={{
+              backgroundColor: "transparent",
+              paddingVertical: 18,
+              borderRadius: 120,
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: colors.coral,
+            }}
+          >
+            <Text style={{ color: colors.coral, fontWeight: "700", fontSize: 16 }}>
+              Stop Workout
+            </Text>
+          </Pressable>
         </View>
       </View>
     </>
@@ -208,19 +245,24 @@ function ExerciseCard({
 }) {
   const colors = useThemeColors();
   const isLight = useThemeStore((s) => s.theme === "light");
+  const { weightUnit } = useSettingsStore();
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
   const [weight, setWeight] = useState(
     exercise.weight === null || exercise.weight === undefined
       ? ""
-      : String(exercise.weight),
+      : weightUnit === "kgs" ? String(Number((exercise.weight * 0.453592).toFixed(1))) : String(exercise.weight),
   );
   const [reps, setReps] = useState(String(exercise.reps));
   const [sets, setSets] = useState(String(exercise.sets));
 
   const saveWeight = () => {
-    const value = weight.trim() === "" ? null : Number(weight);
-    if (value !== null && (!Number.isFinite(value) || value < 0)) return;
-    void onSave({ weight: value });
+    const parsedValue = weight.trim() === "" ? null : Number(weight);
+    if (parsedValue !== null && (!Number.isFinite(parsedValue) || parsedValue < 0)) return;
+    
+    // Convert back to lbs for storage if user is typing in kgs
+    const valueToSave = parsedValue === null ? null : (weightUnit === "kgs" ? Number((parsedValue / 0.453592).toFixed(1)) : parsedValue);
+    
+    void onSave({ weight: valueToSave });
     Keyboard.dismiss();
   };
 
@@ -274,7 +316,7 @@ function ExerciseCard({
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Weight</Text>
+          <Text style={styles.inputLabel}>Weight ({weightUnit})</Text>
           <TextInput
             value={weight}
             onChangeText={setWeight}
@@ -287,7 +329,7 @@ function ExerciseCard({
             selectTextOnFocus
             style={styles.metricInput}
           />
-          <Text style={styles.inputUnit}>lb</Text>
+          <Text style={styles.inputUnit}>{weightUnit === "kgs" ? "kg" : "lb"}</Text>
         </View>
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Reps</Text>
@@ -320,6 +362,7 @@ function DoneButton({
 }) {
   const colors = useThemeColors();
   const isLight = useThemeStore((s) => s.theme === "light");
+  const { weightUnit } = useSettingsStore();
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();

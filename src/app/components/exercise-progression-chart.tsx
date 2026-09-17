@@ -5,6 +5,7 @@ import { BlurView } from "expo-blur";
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import { useThemeColors } from "@/styles/appStyles";
 import { LineChart } from "react-native-gifted-charts";
 import dayjs from "dayjs";
@@ -24,6 +25,7 @@ type LogEntry = {
 export default function ExerciseProgressionChart() {
   const { user } = useAuthStore();
   const isLight = useThemeStore((state) => state.theme === "light");
+  const { weightUnit } = useSettingsStore();
   const colors = useThemeColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
@@ -102,7 +104,8 @@ export default function ExerciseProgressionChart() {
     const dailyMax = new Map<string, number>();
     filtered.forEach((log) => {
       const date = dayjs(log.completed_at).format("MMM D");
-      const weight = log.weight;
+      const rawWeight = log.weight;
+      const weight = weightUnit === "kgs" ? Number((rawWeight * 0.453592).toFixed(1)) : rawWeight;
       const existing = dailyMax.get(date) || 0;
       if (weight > existing) {
         dailyMax.set(date, weight);

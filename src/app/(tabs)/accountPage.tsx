@@ -1,6 +1,8 @@
 import { useRoutineStore } from '@/store/routineStore';
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useRouter } from "expo-router";
+import { useSettingsStore } from "@/store/settingsStore";
 import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -8,12 +10,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { PickProfilePhoto } from "../components/profile-photo";
+import { ProfilePhoto } from "../components/profile-photo";
 
 export default function AccountScreen() {
   const colors = useThemeColors();
   const { theme, toggleTheme } = useThemeStore();
+  const { weightUnit, toggleWeightUnit } = useSettingsStore();
   const isLight = theme === "light";
+  const router = useRouter();
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const insets = useSafeAreaInsets();
@@ -36,7 +40,7 @@ export default function AccountScreen() {
         end={{ x: 1, y: 1 }}
       />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: activeSession ? 0 : insets.top }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: activeSession ? 0 : insets.top, paddingBottom: 140 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerCentered}>
@@ -52,7 +56,7 @@ export default function AccountScreen() {
           >
             <View style={styles.profileTop}>
               <View style={styles.avatarRing}>
-                <PickProfilePhoto />
+                <ProfilePhoto size={64} color="transparent" />
               </View>
               <View style={styles.profileInfo}>
                 <Text style={styles.username} numberOfLines={1}>
@@ -72,15 +76,17 @@ export default function AccountScreen() {
             icon="calendar"
           />
           <StatWidget
-            label="Weight"
-            value={user?.weight_lbs ? `${user.weight_lbs}` : "—"}
+            label={`Weight (${weightUnit})`}
+            value={user?.weight_lbs ? (weightUnit === "kgs" ? `${(user.weight_lbs * 0.453592).toFixed(1)}` : `${user.weight_lbs}`) : "—"}
             icon="barbell"
           />
           <StatWidget
-            label="Height"
+            label={weightUnit === "lbs" ? "Height" : "Height (cm)"}
             value={
               user?.height_ft
-                ? `${Math.floor(user.height_ft)}'${Math.round((user.height_ft % 1) * 12)}"`
+                ? weightUnit === "kgs"
+                  ? `${Math.round(user.height_ft * 30.48)}`
+                  : `${Math.floor(user.height_ft)}'${Math.round((user.height_ft % 1) * 12)}"`
                 : "—"
             }
             icon="body"
@@ -102,7 +108,7 @@ export default function AccountScreen() {
           </View>
 
           {/* Action Widgets */}
-          <ActionWidget label="Units" subLabel="Lbs" icon="swap-horizontal" />
+          <ActionWidget label="Units" subLabel={weightUnit === "lbs" ? "feet/lbs" : "cms/kgs"} icon="swap-horizontal" onPress={toggleWeightUnit} />
           <ActionWidget
             onPress={toggleTheme}
             label="Theme"
@@ -121,8 +127,8 @@ export default function AccountScreen() {
             <Text style={styles.sectionTitle}>Settings</Text>
           </View>
 
-          <ActionWidget label="Edit Profile" icon="person" />
-          <ActionWidget label="Password" icon="lock-closed" />
+          <ActionWidget label="Edit Profile" icon="person" onPress={() => router.push("/editProfile")} />
+          <ActionWidget label="Password" icon="lock-closed" onPress={() => router.push("/editPassword")} />
           <ActionWidget label="Privacy" icon="shield-checkmark" />
           <ActionWidget label="Support" icon="help-buoy" />
 
@@ -132,7 +138,7 @@ export default function AccountScreen() {
             <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
 
-          <Pressable style={styles.deleteAccountBtn}>
+          <Pressable style={styles.deleteAccountBtn} onPress={() => router.push("/deleteAccount")}>
             <Text style={styles.deleteText}>Delete Account</Text>
           </Pressable>
         </View>
@@ -153,6 +159,7 @@ function StatWidget({
   const colors = useThemeColors();
   const { theme } = useThemeStore();
   const isLight = theme === "light";
+  const router = useRouter();
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   return (
@@ -188,6 +195,7 @@ function ActionWidget({
   const colors = useThemeColors();
   const { theme } = useThemeStore();
   const isLight = theme === "light";
+  const router = useRouter();
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   return (

@@ -14,7 +14,7 @@ import {
   ColorValue,
 } from "react-native";
 
-export function PickProfilePhoto() {
+export function PickProfilePhoto({ size = 54 }: { size?: number }) {
   const { user, setUser } = useAuthStore();
   const [uploading, setUploading] = useState(false);
   const initials = user?.username
@@ -53,18 +53,18 @@ export function PickProfilePhoto() {
 
   return (
     <Pressable onPress={pickImage} disabled={uploading}>
-      <View style={styles.avatar}>
+      <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
         {user?.image_url ? (
           <Image
             source={{ uri: getFullImageUrl(user.image_url) }}
-            style={styles.profileImage}
+            style={[styles.profileImage, { width: size, height: size, borderRadius: size / 2 }]}
           />
         ) : (
-          <Text style={styles.avatarText}>{initials}</Text>
+          <Text style={[styles.avatarText, { fontSize: size * 0.33 }]}>{initials}</Text>
         )}
       </View>
 
-      <View style={styles.cameraButton}>
+      <View style={[styles.cameraButton, { right: size * 0.05, bottom: size * 0.05 }]}>
         {uploading ? (
           <ActivityIndicator size="small" color={COLORS.bg} />
         ) : (
