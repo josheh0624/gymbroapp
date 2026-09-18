@@ -705,6 +705,17 @@ export default function MuscleMapScreen() {
 
   const hasActiveStreak = streak > 0;
 
+  const workedOutToday = useMemo(() => {
+    const todayStr = dayjs().format("YYYY-MM-DD");
+    const todayActivity = dailyActivity.find((d) => d.date === todayStr);
+    return todayActivity?.trained ?? false;
+  }, [dailyActivity]);
+
+  const setStreakData = useRoutineStore(s => s.setStreakData);
+  useEffect(() => {
+    setStreakData(streak, workedOutToday);
+  }, [streak, workedOutToday, setStreakData]);
+
   const mostTrained = useMemo(() => {
     if (!data.length) return null;
     return [...data].sort((a, b) => b.timesHit - a.timesHit)[0];
@@ -750,16 +761,10 @@ export default function MuscleMapScreen() {
                     gap: 12,
                   }}
                 >
-                  <View style={styles.smallStreakPill}>
-                    <Ionicons name="flame" size={14} color="#4169E1" />
-                    <Text style={styles.smallStreakText}>{streak}</Text>
+                  <View style={[styles.streakPill, workedOutToday && { backgroundColor: "#4169E1" }]}>
+                    <Ionicons name="flame" size={20} color={workedOutToday ? "#FFFFFF" : "#4169E1"} />
+                    <Text style={[styles.streakText, workedOutToday && { color: "#FFFFFF" }]}>{streak}</Text>
                   </View>
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => router.push("/(tabs)/accountPage" as any)}
-                  >
-                    <ProfilePhoto size={36} color={colors.text} />
-                  </Pressable>
                 </View>
               </View>
 
@@ -1321,18 +1326,18 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       fontWeight: "bold",
       letterSpacing: 0.35,
     },
-    smallStreakPill: {
+    streakPill: {
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: colors.accentMuted,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: 16,
-      gap: 4,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      gap: 6,
     },
-    smallStreakText: {
+    streakText: {
       color: "#4169E1",
-      fontSize: 13,
+      fontSize: 16,
       fontWeight: "800",
     },
     glassCard: {

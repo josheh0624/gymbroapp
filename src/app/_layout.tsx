@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore, SafeUser } from "@/store/authStore";
+import { useHealthStore } from "@/store/healthStore";
 import { useRoutineStore } from "@/store/routineStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -14,10 +15,12 @@ export default function RootLayout() {
   const { theme, loadTheme } = useThemeStore();
   const { loadSettings } = useSettingsStore();
   const loadActiveRoutine = useRoutineStore((s) => s.loadActiveRoutine);
+  const loadPermissions = useHealthStore((s) => s.loadPermissions);
 
   useEffect(() => {
     loadTheme();
     loadSettings();
+    loadPermissions();
   }, []);
   const segments = useSegments();
   const router = useRouter();

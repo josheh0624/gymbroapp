@@ -26,7 +26,10 @@ interface RoutineState {
   activeSession: ActiveSession | null;
   isLoading: boolean;
   error: string | null;
+  streak: number;
+  workedOutToday: boolean;
 
+  setStreakData: (streak: number, workedOutToday: boolean) => void;
   fetchRoutineList: () => Promise<void>;
   fetchRoutineById: (id: string) => Promise<void>;
   createRoutine: (name: string, workoutIds: string[]) => Promise<string | null>;
@@ -67,6 +70,10 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   activeSession: null,
   isLoading: false,
   error: null,
+  streak: 0,
+  workedOutToday: false,
+
+  setStreakData: (streak, workedOutToday) => set({ streak, workedOutToday }),
 
   fetchRoutineList: async () => {
     set({ isLoading: true, error: null });

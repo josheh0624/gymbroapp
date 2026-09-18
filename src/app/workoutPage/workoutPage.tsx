@@ -93,6 +93,8 @@ export default function WorkoutScreen() {
 
   const router = useRouter();
 
+  const streak = useRoutineStore((s) => s.streak);
+  const workedOutToday = useRoutineStore((s) => s.workedOutToday);
   const addRoutine = useRoutineStore((state) => state.addRoutine);
   const setActiveRoutine = useRoutineStore((state) => state.setActiveRoutine);
   const activeRoutineId = useRoutineStore((state) => state.activeRoutineId);
@@ -200,11 +202,10 @@ export default function WorkoutScreen() {
 
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionLabel}>{sectionLabel}</Text>
-                {hasWorkoutToday && (
-                  <Text style={styles.sectionCount}>
-                    {visibleWorkouts.length} scheduled
-                  </Text>
-                )}
+                <View style={[styles.streakPill, workedOutToday && { backgroundColor: "#4169E1" }]}>
+                  <Ionicons name="flame" size={16} color={workedOutToday ? "#FFFFFF" : "#4169E1"} />
+                  <Text style={[styles.streakText, workedOutToday && { color: "#FFFFFF" }]}>{streak}</Text>
+                </View>
               </View>
 
               <View style={styles.listContainer}>
@@ -371,7 +372,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
     sectionHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
-      alignItems: "flex-end",
+      alignItems: "center",
       marginBottom: 20,
       paddingHorizontal: 20,
     },
@@ -380,6 +381,20 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       fontSize: 20,
       fontWeight: "600",
       letterSpacing: 0.35,
+    },
+    streakPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.accentMuted,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      gap: 4,
+    },
+    streakText: {
+      color: "#4169E1",
+      fontSize: 15,
+      fontWeight: "800",
     },
     sectionCount: {
       color: colors.textMuted,

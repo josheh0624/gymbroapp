@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import Constants from "expo-constants";
+import * as SecureStore from "expo-secure-store";
 import type { QuantityTypeIdentifier } from "@kingstinct/react-native-healthkit";
 
 export interface DailyHealthData {
@@ -14,6 +15,7 @@ interface HealthState {
   isLoading: boolean;
   requestPermissions: () => Promise<boolean>;
   fetchWeeklyData: () => Promise<void>;
+  loadPermissions: () => Promise<void>;
 }
 
 export const useHealthStore = create<HealthState>((set, get) => ({
@@ -41,10 +43,26 @@ export const useHealthStore = create<HealthState>((set, get) => ({
       ] });
       
       set({ hasPermissions: success });
+      if (success) {
+        await SecureStore.setItemAsync("health_permissions_granted", "true");
+      }
       return success;
     } catch (error) {
       console.error("HealthKit authorization error:", error);
       return false;
+    }
+  },
+
+  loadPermissions: async () => {
+    try {
+      const stored = await SecureStore.getItemAsync("health_permissions_granted");
+      if (stored === "true") {
+        set({ hasPermissions: true });
+        // After setting to true, we can automatically fetch data if needed
+        get().fetchWeeklyData();
+      }
+    } catch (error) {
+      console.error("Failed to load health permissions", error);
     }
   },
 

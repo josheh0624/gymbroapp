@@ -14,6 +14,12 @@ export async function uploadProfilePhoto(uri: string): Promise<SafeUser> {
   const fileResponse = await fetch(uri);
   const blob = await fileResponse.blob();
 
+  // Enforce a strict 2MB upload limit after compression
+  const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+  if (blob.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error(`File is too large. Must be under 2MB (current size: ${(blob.size / 1024 / 1024).toFixed(2)}MB).`);
+  }
+
   // Create a unique filepath like: user_id/timestamp.jpg
   const filePath = `${authUser.id}/${Date.now()}.${ext}`;
 

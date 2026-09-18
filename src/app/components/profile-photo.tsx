@@ -32,7 +32,7 @@ export function PickProfilePhoto({ size = 54 }: { size?: number }) {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.2, // Aggressive compression via ImagePicker to save DB space
     });
 
     if (result.canceled) return;
@@ -41,9 +41,9 @@ export function PickProfilePhoto({ size = 54 }: { size?: number }) {
       setUploading(true);
       const updatedUser = await uploadProfilePhoto(result.assets[0].uri);
       setUser(updatedUser);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Couldn't save your photo. Try again.");
+      alert(err.message || "Couldn't save your photo. Try again.");
     } finally {
       setUploading(false);
     }
