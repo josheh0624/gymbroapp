@@ -6,6 +6,7 @@
     "@expo/ui": "~57.0.18",
     "@expo/vector-icons": "^15.0.2",
     "@hookform/resolvers": "^5.4.0",
+    "@kingstinct/react-native-healthkit": "^15.1.0",
     "@react-native-picker/picker": "^2.11.4",
     "@react-native-vector-icons/common": "^13.0.1",
     "@react-navigation/bottom-tabs": "^7.18.8",

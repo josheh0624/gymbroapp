@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { useOnboardingStore } from "@/store/onboardingStore";
 import { calculateAge } from "@/utils/dateUtils";
 import { useThemeStore } from "@/store/themeStore";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
@@ -104,8 +105,8 @@ export default function SetupScreen() {
     setError("");
 
     if (step === 0) {
-      if (!bdayMonth && !bdayDay && !bdayYear) {
-        goNext();
+      if (!bdayMonth || !bdayDay || !bdayYear) {
+        setError("Birthday is required.");
         return;
       }
       const m = parseInt(bdayMonth, 10);
@@ -123,8 +124,8 @@ export default function SetupScreen() {
     }
 
     if (step === 1) {
-      if (!feet && !inches) {
-        goNext();
+      if (!feet) {
+        setError("Height is required.");
         return;
       }
       const feetNum = parseInt(feet || "0", 10);
@@ -170,9 +171,15 @@ export default function SetupScreen() {
   const handleFinish = async () => {
     setSubmitting(true);
     try {
-      const payload: Record<string, unknown> = {};
+      const { email, passwordHash, username } = useOnboardingStore.getState();
+      
+      if (!email || !passwordHash || !username) {
+        throw new Error("Missing registration data. Please restart the app.");
+      }
 
-      const authUpdates: Record<string, any> = {};
+      const payload: Record<string, unknown> = {};
+      const authUpdates: Record<string, any> = { username };
+      
       if (bdayMonth && bdayDay && bdayYear) {
         payload.age = calculateAge(bdayMonth, bdayDay, bdayYear);
         authUpdates.birthday = `${bdayYear}-${bdayMonth.padStart(2, '0')}-${bdayDay.padStart(2, '0')}`;
@@ -182,9 +189,6 @@ export default function SetupScreen() {
       if (squatPR) authUpdates.squat_pr = parseInt(squatPR, 10);
       if (deadliftPR) authUpdates.deadlift_pr = parseInt(deadliftPR, 10);
       
-      if (Object.keys(authUpdates).length > 0) {
-        await supabase.auth.updateUser({ data: authUpdates });
-      }
       if (feet) {
         const feetNum = parseInt(feet, 10);
         const inchesNum = parseInt(inches || "0", 10);
@@ -193,26 +197,31 @@ export default function SetupScreen() {
       if (weightLbs) payload.weight_lbs = parseInt(weightLbs, 10);
       if (sex) payload.sex = sex;
 
+      // 1. Account is already created in register.tsx, so just get the user
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const { data, error } = await supabase.from('users').update(payload).eq('id', authUser.id).select().single();
-        if (error) throw error;
-        setUser(data as any);
-      } // sync the store with what's actually persisted
+      if (!authUser) throw new Error("Failed to retrieve user.");
+
+      // 2. Update user metadata
+      const { error: authError } = await supabase.auth.updateUser({ data: authUpdates });
+      if (authError) throw authError;
+
+      // 3. Update the public users row with the detailed onboarding payload
+      const { data, error } = await supabase.from('users').update(payload).eq('id', authUser.id).select().single();
+      if (error) throw error;
+      
+      setUser(data as any);
+      useOnboardingStore.getState().clear();
 
       router.replace("/(tabs)");
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(err.message || "Something went wrong creating your account.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // guard: shouldn't be able to land here without being registered/logged in
-  if (!user) {
-    return <Redirect href="../login" />;
-  }
+  // guard removed: user is created at the very end of setup now!
 
   const meta = STEP_META[step];
   const ctaLabel = submitting
@@ -403,6 +412,78 @@ export default function SetupScreen() {
                           </TouchableOpacity>
                         );
                       })}
+                    </View>
+                  </View>
+                )}
+                
+                {step === 4 && (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Experience Level</Text>
+                    <View style={styles.pillRow}>
+                      {EXPERIENCE_OPTIONS.map((opt) => {
+                        const selected = experience === opt.value;
+                        return (
+                          <TouchableOpacity
+                            key={opt.value}
+                            style={[
+                              styles.pill,
+                              selected && styles.pillSelected,
+                            ]}
+                            activeOpacity={0.8}
+                            onPress={() => setExperience(opt.value)}
+                          >
+                            <Text
+                              style={[
+                                styles.pillText,
+                                selected && styles.pillTextSelected,
+                              ]}
+                            >
+                              {opt.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+                
+                {step === 5 && (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Personal Records (lbs)</Text>
+                    <View style={styles.row}>
+                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                        <TextInput
+                          placeholder="Bench"
+                          placeholderTextColor="#5A5D63"
+                          style={[styles.input, { textAlign: 'center' }]}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          value={benchPR}
+                          onChangeText={setBenchPR}
+                        />
+                      </View>
+                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                        <TextInput
+                          placeholder="Squat"
+                          placeholderTextColor="#5A5D63"
+                          style={[styles.input, { textAlign: 'center' }]}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          value={squatPR}
+                          onChangeText={setSquatPR}
+                        />
+                      </View>
+                      <View style={[styles.inputShell, { flex: 1 }]}>
+                        <TextInput
+                          placeholder="Deadlift"
+                          placeholderTextColor="#5A5D63"
+                          style={[styles.input, { textAlign: 'center' }]}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          value={deadliftPR}
+                          onChangeText={setDeadliftPR}
+                        />
+                      </View>
                     </View>
                   </View>
                 )}

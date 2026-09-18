@@ -1,5 +1,6 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { useOnboardingStore } from "@/store/onboardingStore";
 import { useThemeStore } from "@/store/themeStore";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
@@ -62,29 +63,35 @@ export default function RegisterScreen() {
 
     setSubmitting(true);
     try {
-      const { error: authError } = await supabase.auth.signUp({
+      // Create the account first so we can catch "Email already taken" instantly
+      const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
-        password,
+        password: password,
         options: {
-          data: {
-            username: trimmedUsername,
-          }
+          data: { username: trimmedUsername }
         }
       });
-      if (authError) throw authError;
-      // Stack.Protected in RootLayout swaps to (tabs) automatically
+      
+      if (error) throw error;
+      if (!data.user) throw new Error("Failed to create account.");
+
+      // Store credentials so setup.tsx can sync them, but account IS already created
+      const setRegisterData = useOnboardingStore.getState().setRegisterData;
+      setRegisterData(trimmedUsername, trimmedEmail, password);
+      
+      router.push("./setup");
     } catch (err: any) {
       console.error("Register error:", err);
-      setError(err.message || "Unable to create account.");
+      setError(err.message || "Unable to process account info.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // redirect after registering to user setup questions
-  if (user) {
-    return <Redirect href="./setup" />;
-  }
+  // Prevent auto-redirect because user isn't created yet
+  // if (user) {
+  //  return <Redirect href="./setup" />;
+  // }
 
   return (
     <>

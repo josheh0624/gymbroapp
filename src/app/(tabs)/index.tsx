@@ -5,12 +5,15 @@ import { ProfilePhoto } from "@/app/components/profile-photo";
 import { useAuthStore } from "@/store/authStore";
 import { useRoutineStore } from "@/store/routineStore"; // adjust to your actual path
 import { useThemeStore } from "@/store/themeStore";
+import { useHealthStore } from "@/store/healthStore";
+import { TouchableOpacity } from "react-native";
 import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlurView } from "expo-blur";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -155,7 +158,10 @@ function useWeeklyMuscleHits(weekOffset: number) {
 
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-      if (!userId) throw new Error("Not logged in");
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
 
       const [currRes, prevRes, w2Res, w3Res] = await Promise.all([
         supabase.rpc("get_muscle_summary", {
@@ -680,6 +686,14 @@ export default function MuscleMapScreen() {
 
   const router = useRouter();
 
+  const { hasPermissions, requestPermissions, fetchWeeklyData, dailyData, isLoading: healthLoading } = useHealthStore();
+
+  useEffect(() => {
+    if (hasPermissions) {
+      fetchWeeklyData();
+    }
+  }, [hasPermissions]);
+
   const streak = useMemo(() => {
     if (isCurrentWeek) {
       return stats?.currentStreak ?? computeTrailingStreak(dailyActivity);
@@ -815,7 +829,9 @@ export default function MuscleMapScreen() {
                 style={[
                   styles.glassCard,
                   {
-                    backgroundColor: isLight ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)",
+                    backgroundColor: isLight
+                      ? "rgba(255,255,255,0.3)"
+                      : "rgba(0,0,0,0.2)",
                     borderTopRightRadius: 60,
                     borderTopLeftRadius: 60,
                     borderBottomRightRadius: 60,
@@ -1140,6 +1156,112 @@ export default function MuscleMapScreen() {
             </View>
           </View>
           <ExerciseProgressionChart />
+
+        {/* HealthKit Integration */}
+        {!hasPermissions ? (
+          <TouchableOpacity
+            style={[styles.card, { backgroundColor: colors.surface, padding: 24, alignItems: "center", marginBottom: 24, marginHorizontal: 16 }]}
+            activeOpacity={0.8}
+            onPress={() => requestPermissions()}
+          >
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255, 59, 48, 0.1)', alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+              <MaterialCommunityIcons name="heart-pulse" size={24} color="#FF3B30" />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: "800", marginBottom: 8, textAlign: "center" }}>Connect Apple Fitness</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: "center", lineHeight: 18 }}>
+              Sync your daily steps and active calories directly from Apple Health.
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ paddingHorizontal: 16 }}>
+            {/* Steps Graph */}
+            <View style={[styles.card, { backgroundColor: colors.surface, marginBottom: 16 }]}>
+              <View style={[styles.cardHeader, { paddingHorizontal: 20 }]}>
+                <Text style={styles.cardTitle}>Daily Steps</Text>
+                <MaterialCommunityIcons name="shoe-sneaker" size={20} color="#FF9500" />
+              </View>
+              {healthLoading ? (
+                <View style={{ height: 160, justifyContent: "center", alignItems: "center" }}>
+                  <ActivityIndicator color="#FF9500" />
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", height: 160, alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 20 }}>
+                  {dailyData.map((day, i) => {
+                    const maxSteps = Math.max(...dailyData.map(d => d.steps), 5000);
+                    const heightPercent = (day.steps / maxSteps) * 100;
+                    const dateObj = new Date(day.date + 'T12:00:00Z');
+                    const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
+                    const isToday = i === dailyData.length - 1;
+                    
+                    return (
+                      <View key={day.date} style={{ alignItems: "center", width: 40 }}>
+                        <Text style={{ color: colors.text, fontSize: 10, fontWeight: "700", marginBottom: 6 }}>
+                          {day.steps > 0 ? (day.steps > 999 ? (day.steps/1000).toFixed(1) + 'k' : day.steps) : ''}
+                        </Text>
+                        <View style={{ width: "100%", height: 100, justifyContent: "flex-end" }}>
+                          <View style={{ 
+                            width: "100%", 
+                            height: `${heightPercent}%`, 
+                            backgroundColor: isToday ? "#FF9500" : "rgba(255, 149, 0, 0.2)", 
+                            borderRadius: 6,
+                            minHeight: 4
+                          }} />
+                        </View>
+                        <Text style={{ color: isToday ? colors.text : colors.textMuted, fontSize: 11, marginTop: 8, fontWeight: isToday ? "700" : "500" }}>
+                          {dayName}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Calories Graph */}
+            <View style={[styles.card, { backgroundColor: colors.surface, marginBottom: 24 }]}>
+              <View style={[styles.cardHeader, { paddingHorizontal: 20 }]}>
+                <Text style={styles.cardTitle}>Active Calories</Text>
+                <MaterialCommunityIcons name="fire" size={20} color="#FF3B30" />
+              </View>
+              {healthLoading ? (
+                <View style={{ height: 160, justifyContent: "center", alignItems: "center" }}>
+                  <ActivityIndicator color="#FF3B30" />
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", height: 160, alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 20 }}>
+                  {dailyData.map((day, i) => {
+                    const maxCals = Math.max(...dailyData.map(d => d.activeEnergyBurned), 500);
+                    const heightPercent = (day.activeEnergyBurned / maxCals) * 100;
+                    const dateObj = new Date(day.date + 'T12:00:00Z');
+                    const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
+                    const isToday = i === dailyData.length - 1;
+                    
+                    return (
+                      <View key={day.date} style={{ alignItems: "center", width: 40 }}>
+                        <Text style={{ color: colors.text, fontSize: 10, fontWeight: "700", marginBottom: 6 }}>
+                          {day.activeEnergyBurned > 0 ? Math.round(day.activeEnergyBurned) : ''}
+                        </Text>
+                        <View style={{ width: "100%", height: 100, justifyContent: "flex-end" }}>
+                          <View style={{ 
+                            width: "100%", 
+                            height: `${heightPercent}%`, 
+                            backgroundColor: isToday ? "#FF3B30" : "rgba(255, 59, 48, 0.2)", 
+                            borderRadius: 6,
+                            minHeight: 4
+                          }} />
+                        </View>
+                        <Text style={{ color: isToday ? colors.text : colors.textMuted, fontSize: 11, marginTop: 8, fontWeight: isToday ? "700" : "500" }}>
+                          {dayName}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+        <View style={{height:24}} />
         </ScrollView>
       </View>
     </>
@@ -1380,6 +1502,24 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       borderRadius: 10,
       justifyContent: "flex-end",
       marginBottom: 10,
+    },
+    card: {
+      borderRadius: 24,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingTop: 20,
+      paddingBottom: 16,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "800",
     },
     barFill: {
       width: "100%",

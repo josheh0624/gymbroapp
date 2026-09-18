@@ -333,7 +333,10 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-      if (!userId) throw new Error("Not logged in");
+      if (!userId) {
+        console.warn("Attempted to access routineStore while not logged in.");
+        return false as any;
+      }
 
       const routine = get().routines.find((r) => r.id === routineId);
       const workout = routine?.workouts.find((w) => w.id === workoutId);
