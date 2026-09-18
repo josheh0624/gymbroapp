@@ -347,20 +347,18 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       const dateStr = selectedDateString || new Date().toISOString();
       const allWeIds = workout?.exercises.map(e => e.workoutExerciseId).filter(Boolean) || [];
 
-      // Only delete ones that are NOT done
-      const notDoneIds = allWeIds.filter(id => id && !doneExerciseIds.includes(id));
-      if (notDoneIds.length > 0) {
+      // 1. Delete ALL existing logs for this workout's exercises for today to prevent duplicates
+      if (allWeIds.length > 0) {
         await supabase
           .from('workout_log')
           .delete()
           .eq('user_id', userId)
-          .in('workout_exercise_id', notDoneIds as string[])
+          .in('workout_exercise_id', allWeIds as string[])
           .gte('completed_at', `${dateStr.substring(0,10)}T00:00:00Z`)
           .lte('completed_at', `${dateStr.substring(0,10)}T23:59:59Z`);
       }
 
-      // Upsert the done ones (if they exist today, unique constraint will update/fail, wait! Supabase upsert requires primary key or unique index)
-      // Since we have a unique index on user_id, workout_exercise_id, date, we can upsert.
+      // 2. Insert ONLY the exercises that were marked as done
       if (doneExerciseIds.length > 0) {
         const insertData = doneExerciseIds.map(id => {
           const exercise = workout?.exercises.find(e => e.workoutExerciseId === id);
@@ -373,8 +371,9 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         });
         const { error } = await supabase
           .from('workout_log')
-          .upsert(insertData, { onConflict: 'user_id, workout_exercise_id, completed_at' }); // wait, upsert only supports primary keys directly unless we do something else. 
-          // Safest is inserting and catching duplicates, but JS allows filtering out existing.
+          .insert(insertData);
+          
+        if (error) console.error("Error inserting workout log:", error);
       }
 
       if (durationSeconds !== undefined) {

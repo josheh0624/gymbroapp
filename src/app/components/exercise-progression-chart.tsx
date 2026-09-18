@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from "react-native";
 import { ScrollView, Pressable, Modal, TouchableOpacity } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { BlurView } from "expo-blur";
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";

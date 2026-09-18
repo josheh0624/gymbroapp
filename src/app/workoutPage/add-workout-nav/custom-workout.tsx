@@ -7,6 +7,7 @@ import { useRoutineStore } from "@/store/routineStore";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { withAsyncLock } from "@/utils/asyncUtils";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -282,7 +283,7 @@ export default function CustomWorkout() {
               pressed && styles.pressedButton,
               isCreating && { opacity: 0.7 },
             ]}
-            onPress={handleCreate}
+            onPress={withAsyncLock(handleCreate)}
             disabled={isCreating}
           >
             {isCreating ? (

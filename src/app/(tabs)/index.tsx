@@ -688,11 +688,13 @@ export default function MuscleMapScreen() {
 
   const { hasPermissions, requestPermissions, fetchWeeklyData, dailyData, isLoading: healthLoading } = useHealthStore();
 
-  useEffect(() => {
-    if (hasPermissions) {
-      fetchWeeklyData();
-    }
-  }, [hasPermissions]);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasPermissions) {
+        fetchWeeklyData();
+      }
+    }, [hasPermissions])
+  );
 
   const streak = useMemo(() => {
     if (isCurrentWeek) {

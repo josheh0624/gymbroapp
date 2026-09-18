@@ -1,4 +1,5 @@
 import { useThemeStore } from "@/store/themeStore";
+import { withAsyncLock } from "@/utils/asyncUtils";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
@@ -370,10 +371,10 @@ function DoneButton({
 
   return (
     <Pressable
-      onPress={async () => {
+      onPress={withAsyncLock(async () => {
         const completed = await markWorkoutDone(routineID, workoutID, selectedDateString, durationSeconds);
         if (completed) router.back();
-      }}
+      })}
       style={{
         backgroundColor: "#4169E1",
         paddingVertical: 20,

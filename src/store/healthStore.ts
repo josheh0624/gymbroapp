@@ -64,15 +64,19 @@ export const useHealthStore = create<HealthState>((set, get) => ({
 
       // Fetch steps
       const stepSamples = await HealthKit.queryQuantitySamples('HKQuantityTypeIdentifierStepCount', {
-        from: startDate,
-        to: endDate,
-      } as any);
+        limit: 0,
+        filter: {
+          date: { startDate, endDate }
+        }
+      });
 
       // Fetch active energy
       const energySamples = await HealthKit.queryQuantitySamples('HKQuantityTypeIdentifierActiveEnergyBurned', {
-        from: startDate,
-        to: endDate,
-      } as any);
+        limit: 0,
+        filter: {
+          date: { startDate, endDate }
+        }
+      });
 
       // Aggregate by day
       const dailyMap: Record<string, DailyHealthData> = {};

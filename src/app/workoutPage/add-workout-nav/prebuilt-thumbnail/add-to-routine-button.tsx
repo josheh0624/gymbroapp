@@ -4,6 +4,7 @@ import { useRoutineStore } from "@/store/routineStore";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { router } from "expo-router";
 import { Pressable, StyleSheet } from "react-native";
+import { withAsyncLock } from "@/utils/asyncUtils";
 
 interface Props {
   routineId: string;
@@ -16,11 +17,11 @@ export default function AddToRoutine({ routineId }: Props) {
   const setActiveRoutine = useRoutineStore((s) => s.setActiveRoutine);
   const fetchRoutineById = useRoutineStore((s) => s.fetchRoutineById);
 
-  const handleAddWorkout = async () => {
+  const handleAddWorkout = withAsyncLock(async () => {
     await fetchRoutineById(routineId);
     setActiveRoutine(routineId);
     router.back();
-  };
+  });
 
   return (
     <Pressable
