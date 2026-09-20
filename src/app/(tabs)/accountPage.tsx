@@ -1,9 +1,11 @@
-import { useRoutineStore } from '@/store/routineStore';
 import { useAuthStore } from "@/store/authStore";
+import { useRoutineStore } from "@/store/routineStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+
 import { useSettingsStore } from "@/store/settingsStore";
-import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
+import { ThemeColors, useThemeColors } from "@/styles/appStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,7 +23,7 @@ export default function AccountScreen() {
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const insets = useSafeAreaInsets();
-  const activeSession = useRoutineStore(s => s.activeSession);
+  const activeSession = useRoutineStore((s) => s.activeSession);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -40,7 +42,10 @@ export default function AccountScreen() {
         end={{ x: 1, y: 1 }}
       />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: activeSession ? 0 : insets.top, paddingBottom: 140 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: activeSession ? 0 : insets.top, paddingBottom: 140 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerCentered}>
@@ -77,7 +82,13 @@ export default function AccountScreen() {
           />
           <StatWidget
             label={`Weight (${weightUnit})`}
-            value={user?.weight_lbs ? (weightUnit === "kgs" ? `${(user.weight_lbs * 0.453592).toFixed(1)}` : `${user.weight_lbs}`) : "—"}
+            value={
+              user?.weight_lbs
+                ? weightUnit === "kgs"
+                  ? `${(user.weight_lbs * 0.453592).toFixed(1)}`
+                  : `${user.weight_lbs}`
+                : "—"
+            }
             icon="barbell"
           />
           <StatWidget
@@ -103,12 +114,16 @@ export default function AccountScreen() {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-
             <Text style={styles.sectionTitle}>Preferences</Text>
           </View>
 
           {/* Action Widgets */}
-          <ActionWidget label="Units" subLabel={weightUnit === "lbs" ? "feet/lbs" : "cms/kgs"} icon="swap-horizontal" onPress={toggleWeightUnit} />
+          <ActionWidget
+            label="Units"
+            subLabel={weightUnit === "lbs" ? "feet/lbs" : "cms/kgs"}
+            icon="swap-horizontal"
+            onPress={toggleWeightUnit}
+          />
           <ActionWidget
             onPress={toggleTheme}
             label="Theme"
@@ -127,10 +142,34 @@ export default function AccountScreen() {
             <Text style={styles.sectionTitle}>Settings</Text>
           </View>
 
-          <ActionWidget label="Edit Profile" icon="person" onPress={() => router.push("/editProfile")} />
-          <ActionWidget label="Password" icon="lock-closed" onPress={() => router.push("/editPassword")} />
-          <ActionWidget label="Privacy" icon="shield-checkmark" />
-          <ActionWidget label="Support" icon="help-buoy" />
+          <ActionWidget
+            label="Edit Profile"
+            icon="person"
+            onPress={() => router.push("/editProfile")}
+          />
+          <ActionWidget
+            label="Password"
+            icon="lock-closed"
+            onPress={() => router.push("/editPassword")}
+          />
+          <ActionWidget
+            label="Privacy"
+            icon="shield-checkmark"
+            onPress={() =>
+              WebBrowser.openBrowserAsync(
+                "https://josheh0624.github.io/gymbroapp/PrivacyPolicy",
+              )
+            }
+          />
+          <ActionWidget
+            label="Support"
+            icon="help-buoy"
+            onPress={() =>
+              WebBrowser.openBrowserAsync(
+                "https://josheh0624.github.io/gymbroapp/TermsOfService",
+              )
+            }
+          />
 
           {/* Danger Zone */}
           <Pressable style={styles.logoutWidget} onPress={logout}>
@@ -138,7 +177,10 @@ export default function AccountScreen() {
             <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
 
-          <Pressable style={styles.deleteAccountBtn} onPress={() => router.push("/deleteAccount")}>
+          <Pressable
+            style={styles.deleteAccountBtn}
+            onPress={() => router.push("/deleteAccount")}
+          >
             <Text style={styles.deleteText}>Delete Account</Text>
           </Pressable>
         </View>

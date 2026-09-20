@@ -129,8 +129,12 @@ export const useHealthStore = create<HealthState>((set, get) => ({
         .map(k => dailyMap[k]);
 
       set({ dailyData: sortedData, isLoading: false });
-    } catch (error) {
+    } catch (error: any) {
       console.error("HealthKit fetch error:", error);
+      if (error?.message?.includes("Authorization status is not determined")) {
+        set({ hasPermissions: false });
+        SecureStore.deleteItemAsync("health_permissions_granted");
+      }
       set({ isLoading: false });
     }
   }

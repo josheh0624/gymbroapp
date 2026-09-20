@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.anonymous.gymbroapp",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Gym Bro uses your photos so you can add a profile picture."
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -54,7 +55,24 @@
           "NSHealthUpdateUsageDescription": "Gym Bro uses Apple Health to log your completed workouts to your Activity rings. Your health data remains strictly private and is never sold or shared with third parties."
         }
       ],
-      "./withDevLauncherFix.js"
+      "./withDevLauncherFix.js",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
+      "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -9,7 +9,6 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-
 export default function RootLayout() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { theme, loadTheme } = useThemeStore();
@@ -109,3 +108,6 @@ export default function RootLayout() {
     </React.Fragment>
   );
 }
+
+
+export { ErrorBoundary } from 'expo-router';

@@ -444,7 +444,7 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
     dockRow: {
       flexDirection: "row",
       justifyContent: "space-around",
-      alignItems: "flex-end",
+      alignItems: "center",
       paddingHorizontal: 16,
     },
     dockItem: {
