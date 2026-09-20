@@ -8,7 +8,6 @@
     "scheme": "gymbroapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.anonymous.gymbroapp",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Gym Bro uses your photos so you can add a profile picture."
@@ -51,8 +50,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Gym Bro uses Apple Health to display your daily steps and active calories.",
-          "NSHealthUpdateUsageDescription": "Gym Bro uses Apple Health to save your completed workouts."
+          "NSHealthShareUsageDescription": "Gym Bro uses Apple Health to display your daily steps and active calories directly on your personal dashboard. This data remains strictly private and is never sold or shared with third parties.",
+          "NSHealthUpdateUsageDescription": "Gym Bro uses Apple Health to log your completed workouts to your Activity rings. Your health data remains strictly private and is never sold or shared with third parties."
         }
       ],
       "./withDevLauncherFix.js"
