@@ -9,12 +9,12 @@ export function MeshGradientBackground() {
 
   // Soft, classic SwiftUI Mesh Gradient using Royal Blues
   const lightColors = {
-    bg: "#1a3673", 
-    blob1: "#4169E1", // Bright Royal Blue
-    blob2: "#8eb2ff", // Light highlight
-    blob3: "#2c4bb3", // Mid-tone sweeping across center
-    blob4: "#0B1D40", // Very Dark Blue
-    blob5: "#050F26", // Near Black Blue
+    bg: "#eaf2ff", // Very light icy blue background
+    blob1: "#4169E1", // Vibrant Royal Blue
+    blob2: "#a3c2ff", // Soft sky blue
+    blob3: "#739eff", // Mid-bright blue
+    blob4: "#d1e3ff", // Frosty pale blue
+    blob5: "#e6f0ff", // Near white-blue
   };
 
   const darkColors = {
@@ -69,7 +69,7 @@ export function MeshGradientBackground() {
         <Rect x="0" y="0" width="100" height="100" fill="url(#grad4)" />
         <Rect x="0" y="0" width="100" height="100" fill="url(#grad5)" />
       </Svg>
-      <BlurView intensity={isLight ? 60 : 50} tint={isLight ? "light" : "dark"} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={isLight ? 80 : 50} tint={isLight ? "light" : "dark"} style={StyleSheet.absoluteFill} />
     </View>
   );
 }

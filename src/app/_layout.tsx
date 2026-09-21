@@ -9,12 +9,21 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
+
+SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { theme, loadTheme } = useThemeStore();
   const { loadSettings } = useSettingsStore();
   const loadActiveRoutine = useRoutineStore((s) => s.loadActiveRoutine);
   const loadPermissions = useHealthStore((s) => s.loadPermissions);
+
+  useEffect(() => {
+    if (!loading) {
+      SplashScreen.hideAsync();
+    }
+  }, [loading]);
 
   useEffect(() => {
     loadTheme();
@@ -83,16 +92,7 @@ export default function RootLayout() {
   }, [user, loading, segments]);
 
   if (loading) {
-    return (
-      <React.Fragment>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <View
-          style={{ flex: 1, backgroundColor: theme === "dark" ? "#141518" : "#F2F2F7", justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" color="#4169E1" />
-        </View>
-      </React.Fragment>
-    );
+    return null; // The native splash screen stays visible instead!
   }
 
   return (

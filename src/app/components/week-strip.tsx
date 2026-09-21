@@ -126,13 +126,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.accent,
   },
   dayNumber: {
-    color: colors.text,
+    color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   selectedDayNumber: {
-    color: colors.accentText,
+    color: "#000000",
     fontWeight: "900",
   },
   todayDot: {

@@ -205,7 +205,9 @@ export default function ExerciseProgressionChart() {
             xAxisLabelTextStyle={{ color: colors.textFaint, fontSize: 10 }}
             textFontSize={10}
             textColor1={colors.text}
-            hideRules
+            hideRules={false}
+            rulesColor={isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}
+            rulesType="solid"
             thickness={3}
             areaChart
             curved

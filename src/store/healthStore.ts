@@ -75,7 +75,7 @@ export const useHealthStore = create<HealthState>((set, get) => ({
     try {
       // Fetch past 7 days
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 6);
+      startDate.setDate(startDate.getDate() - 27); // Fetch 4 weeks instead of 1
       startDate.setHours(0, 0, 0, 0);
 
       const endDate = new Date();
@@ -100,7 +100,7 @@ export const useHealthStore = create<HealthState>((set, get) => ({
       const dailyMap: Record<string, DailyHealthData> = {};
       
       // Initialize last 7 days
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 28; i++) {
         const d = new Date(startDate);
         d.setDate(d.getDate() + i);
         const iso = d.toISOString().split('T')[0];
