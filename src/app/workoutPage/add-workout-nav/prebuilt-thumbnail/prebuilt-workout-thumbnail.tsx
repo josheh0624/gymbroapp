@@ -27,8 +27,16 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
 
   const router = useRouter();
   const deleteRoutine = useRoutineStore((s) => s.deleteRoutine);
+  const activeSession = useRoutineStore((s) => s.activeSession);
 
   const handleDelete = () => {
+    if (activeSession && activeSession.routineId === routine.id) {
+      Alert.alert(
+        "Workout in Progress",
+        "You cannot delete this routine while a workout is currently active. Please finish your workout first."
+      );
+      return;
+    }
     Alert.alert(
       "Delete Routine",
       `Are you sure you want to delete "${routine.name}"?`,
@@ -44,6 +52,13 @@ export default function PrebuiltWorkoutThumbnail({ routine }: Props) {
   };
 
   const handleEdit = () => {
+    if (activeSession && activeSession.routineId === routine.id) {
+      Alert.alert(
+        "Workout in Progress",
+        "You cannot edit this routine while a workout is currently active. Please finish your workout first."
+      );
+      return;
+    }
     router.push({
       pathname: "/workoutPage/add-workout-nav/custom-workout",
       params: { id: routine.id },

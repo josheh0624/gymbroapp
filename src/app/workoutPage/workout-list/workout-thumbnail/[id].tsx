@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import NotFoundScreen from "@/app/+not-found";
 import { useRoutineStore } from "@/store/routineStore";
@@ -146,8 +147,17 @@ export default function WorkoutTodo() {
           start={{ x: 0.2, y: 0 }}
           end={{ x: 1, y: 1 }}
         />
-        <ScrollView style={styles.container}>
-          <Text style={styles.title}>{workout.name}</Text>
+        <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+          <View style={styles.headerColumn}>
+            <Text style={styles.title}>{workout.name}</Text>
+            <Pressable 
+              style={styles.addAdhocBtn}
+              onPress={() => router.push(`/workoutPage/workout-list/workout-thumbnail/add-adhoc-exercise?routineId=${routineID}&workoutId=${workout.id}` as any)}
+            >
+              <Ionicons name="add" size={20} color={colors.text} />
+              <Text style={styles.addAdhocBtnText}>Add Exercise</Text>
+            </Pressable>
+          </View>
 
           <View style={styles.list}>
             {workout.exercises.map((exercise) => (
@@ -390,6 +400,30 @@ function DoneButton({
 }
 
 const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
+  headerColumn: {
+    flexDirection: "column",
+    gap: 12,
+    paddingRight: 0,
+    marginBottom: 16,
+  },
+  addAdhocBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.glassStrong,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: colors.glassStrongBorder,
+    gap: 8,
+    width: "100%",
+  },
+  addAdhocBtnText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
   container: {
     flex: 1,
     backgroundColor: "transparent",

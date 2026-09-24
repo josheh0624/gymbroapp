@@ -277,19 +277,40 @@ export default function WorkoutScreen() {
                     );
                     return;
                   }
-                  if (!startWorkout || !routine) return; // guard: no workout scheduled today
-                  const selectedDateString = selectedDate
-                    .toISOString()
-                    .split("T")[0];
+                  
+                  const selectedDateString = selectedDate.toISOString().split("T")[0];
+                  
+                  let rId = routine?.id;
+                  let wId = startWorkout?.id;
+                  
+                  if (!rId || !wId) {
+                    rId = "ADHOC_ROUTINE";
+                    wId = "ADHOC_WORKOUT";
+                    // Ensure the freestyle routine is fresh and empty every time
+                    const store = useRoutineStore.getState();
+                    const existing = store.routines.find(r => r.id === rId);
+                    if (existing) {
+                      useRoutineStore.setState({
+                        routines: store.routines.map(r => r.id === rId ? { ...r, workouts: [{ id: wId, name: "Freestyle Workout", days: [], exercises: [] }] } : r)
+                      });
+                    } else {
+                      store.addRoutine({
+                        id: rId,
+                        name: "Freestyle",
+                        workouts: [{ id: wId, name: "Freestyle Workout", days: [], exercises: [] }]
+                      });
+                    }
+                  }
+                  
                   router.push(
-                    `/workoutPage/workout-list/workout-thumbnail/${startWorkout.id}?routineID=${routine.id}&selectedDateString=${selectedDateString}` as any,
+                    `/workoutPage/workout-list/workout-thumbnail/${wId}?routineID=${rId}&selectedDateString=${selectedDateString}` as any,
                   );
                 }}
               >
                 <Ionicons
                   name="play" 
                   size={32}
-                  color={startWorkout || activeSession ? COLORS.bg : COLORS.textMuted}
+                  color={COLORS.bg}
                 />
               </DockButton>
               <Text style={styles.dockLabel}>{activeSession ? "Resume" : "Play"}</Text>

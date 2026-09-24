@@ -15,6 +15,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -89,8 +91,9 @@ export default function LoginScreen() {
         }}
       />
 
-      <View style={styles.root}>
-        <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false} touchSoundDisabled>
+        <View style={styles.root}>
+          <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
 
         {/* base gradient — flat charcoal, no color mixing */}
         <LinearGradient
@@ -179,7 +182,8 @@ export default function LoginScreen() {
             <Text style={styles.footer}>Josh Haney 2026</Text>
           </View>
         </View>
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
     </>
   );
 }

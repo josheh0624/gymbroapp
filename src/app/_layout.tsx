@@ -8,7 +8,7 @@ import ActiveWorkoutBanner from "./components/active-workout-banner";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, TouchableWithoutFeedback, Keyboard } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 
 SplashScreen.preventAutoHideAsync();
@@ -18,6 +18,7 @@ export default function RootLayout() {
   const { loadSettings } = useSettingsStore();
   const loadActiveRoutine = useRoutineStore((s) => s.loadActiveRoutine);
   const loadPermissions = useHealthStore((s) => s.loadPermissions);
+  
 
   useEffect(() => {
     if (!loading) {
@@ -32,6 +33,8 @@ export default function RootLayout() {
   }, []);
   const segments = useSegments();
   const router = useRouter();
+  const isAddExerciseScreen = segments.includes("add-adhoc-exercise");
+
 
   useEffect(() => {
     let isMounted = true;
@@ -96,16 +99,16 @@ export default function RootLayout() {
   }
 
   return (
-    <React.Fragment>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <ActiveWorkoutBanner />
-      <Stack screenOptions={{ animation: "slide_from_bottom" }}>
-        <Stack.Screen name="routes/login" options={{ headerShown: false }} />
-        <Stack.Screen name="routes/onboarding/register" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="workoutPage/workoutPage" options={{ headerShown: false }} />
-      </Stack>
-    </React.Fragment>
+    <View style={{ flex: 1, backgroundColor: theme === "dark" ? "#000" : "#F2F2F7" }}>
+        <StatusBar style={theme === "dark" ? "light" : "dark"} />
+        {!isAddExerciseScreen && <ActiveWorkoutBanner />}
+        <Stack screenOptions={{ animation: "slide_from_bottom" }}>
+          <Stack.Screen name="routes/login" options={{ headerShown: false }} />
+          <Stack.Screen name="routes/onboarding/register" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="workoutPage/workoutPage" options={{ headerShown: false }} />
+        </Stack>
+    </View>
   );
 }
 

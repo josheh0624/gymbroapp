@@ -49,6 +49,7 @@ export default function EditProfileScreen() {
         }
       }
       if (authUser?.user_metadata?.experience_level) setExperience(authUser.user_metadata.experience_level);
+      if (authUser?.user_metadata?.primary_goal) setGoal(authUser.user_metadata.primary_goal);
       if (authUser?.user_metadata?.bench_pr) setBenchPR(String(authUser.user_metadata.bench_pr));
       if (authUser?.user_metadata?.squat_pr) setSquatPR(String(authUser.user_metadata.squat_pr));
       if (authUser?.user_metadata?.deadlift_pr) setDeadliftPR(String(authUser.user_metadata.deadlift_pr));
@@ -59,6 +60,7 @@ export default function EditProfileScreen() {
   const [bdayYear, setBdayYear] = useState("");
   const [heightFt, setHeightFt] = useState(user?.height_ft ? (weightUnit === "kgs" ? String(Math.round(user.height_ft * 30.48)) : String(user.height_ft)) : "");
     const [experience, setExperience] = useState("");
+  const [goal, setGoal] = useState("");
   const [benchPR, setBenchPR] = useState("");
   const [squatPR, setSquatPR] = useState("");
   const [deadliftPR, setDeadliftPR] = useState("");
@@ -85,6 +87,7 @@ export default function EditProfileScreen() {
         weight_lbs: weightLbs.trim() 
           ? (weightUnit === "kgs" ? parseFloat((parseFloat(weightLbs.trim()) / 0.453592).toFixed(1)) : parseFloat(weightLbs.trim())) 
           : null,
+        primary_goal: goal || null,
       };
 
             if (bdayMonth && bdayDay && bdayYear) {
@@ -92,6 +95,7 @@ export default function EditProfileScreen() {
           birthday: `${bdayYear}-${bdayMonth.padStart(2, '0')}-${bdayDay.padStart(2, '0')}`
         };
         if (experience) authUpdates.experience_level = experience;
+        if (goal) authUpdates.primary_goal = goal;
         if (benchPR) authUpdates.bench_pr = parseInt(benchPR, 10);
         if (squatPR) authUpdates.squat_pr = parseInt(squatPR, 10);
         if (deadliftPR) authUpdates.deadlift_pr = parseInt(deadliftPR, 10);
@@ -99,6 +103,7 @@ export default function EditProfileScreen() {
       } else {
         const authUpdates: Record<string, any> = {};
         if (experience) authUpdates.experience_level = experience;
+        if (goal) authUpdates.primary_goal = goal;
         if (benchPR) authUpdates.bench_pr = parseInt(benchPR, 10);
         if (squatPR) authUpdates.squat_pr = parseInt(squatPR, 10);
         if (deadliftPR) authUpdates.deadlift_pr = parseInt(deadliftPR, 10);
@@ -213,6 +218,37 @@ export default function EditProfileScreen() {
                 >
                   <Text style={{ color: experience === level ? colors.bg : colors.text, fontWeight: '600', textTransform: 'capitalize' }}>
                     {level}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Primary Goal</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                { label: "Building Muscle", value: "building muscle" },
+                { label: "Losing Weight/Fat", value: "losing weight/fat" },
+                { label: "Strength", value: "strength" },
+                { label: "Injury Rehab", value: "injury rehab" },
+                { label: "Health", value: "health" },
+                { label: "Athletic Training", value: "athletic training" },
+                { label: "Powerlifting", value: "powerlifting" },
+                { label: "Bodybuilding", value: "bodybuilding" },
+              ].map(opt => (
+                <Pressable
+                  key={opt.value}
+                  style={[
+                    { height: 44, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+                    goal === opt.value 
+                      ? { backgroundColor: colors.accent, borderColor: colors.accent } 
+                      : { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }
+                  ]}
+                  onPress={() => setGoal(opt.value)}
+                >
+                  <Text style={{ color: goal === opt.value ? colors.bg : colors.text, fontWeight: '600', textTransform: 'capitalize' }}>
+                    {opt.label}
                   </Text>
                 </Pressable>
               ))}

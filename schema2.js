@@ -5,6 +5,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_khNqjRm8zcD27-8c4ZFWrA_-UqEMMx-";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-supabase.from('workout_log').select('*').limit(1).then(res => {
-    console.log("workout_log select:", res.data, res.error);
+supabase.from('workout_exercises').insert({ exercise_id: 1, sets: 3, reps: 10 }).select().then(res => {
+    console.log("insert without workout_id:", res.error);
 });

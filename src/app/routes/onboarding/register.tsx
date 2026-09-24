@@ -16,6 +16,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -63,6 +65,19 @@ export default function RegisterScreen() {
 
     setSubmitting(true);
     try {
+      // Check if username is already taken (assuming 'users' table is readable)
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("username")
+        .eq("username", trimmedUsername)
+        .maybeSingle();
+
+      if (existingUser) {
+        setError("Username is already taken.");
+        setSubmitting(false);
+        return;
+      }
+
       // Create the account first so we can catch "Email already taken" instantly
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
@@ -112,6 +127,7 @@ export default function RegisterScreen() {
         }}
       />
 
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false} touchSoundDisabled>
       <View style={styles.root}>
         <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
 
@@ -221,7 +237,8 @@ export default function RegisterScreen() {
             <Text style={styles.footer}>Josh Haney 2026</Text>
           </View>
         </View>
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
     </>
   );
 }

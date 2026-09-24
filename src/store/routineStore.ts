@@ -60,6 +60,13 @@ interface RoutineState {
     workoutExerciseId: string,
     updates: { weight?: number | null; reps?: number; sets?: number },
   ) => Promise<void>;
+  addAdHocExerciseToActiveWorkout: (
+    routineId: string,
+    workoutId: string,
+    exerciseId: string,
+    exerciseName: string,
+    muscleGroupName?: string
+  ) => Promise<void>;
 }
 
 export const useRoutineStore = create<RoutineState>((set, get) => ({
@@ -534,6 +541,81 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       }
     } catch(err) {
       console.error(err);
+    }
+  },
+
+  addAdHocExerciseToActiveWorkout: async (routineId, workoutId, exerciseId, exerciseName, muscleGroupName) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("Not logged in");
+
+      // 1. Find or create an 'Ad Hoc Exercises' workout so we don't pollute the actual routine
+      let { data: dummyWorkout } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('name', 'Ad Hoc Exercises')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!dummyWorkout) {
+        const { data: newWorkout, error: newErr } = await supabase
+          .from('workouts')
+          .insert({ name: 'Ad Hoc Exercises', days: [], user_id: userId })
+          .select()
+          .single();
+        if (newErr) throw newErr;
+        dummyWorkout = newWorkout;
+      }
+
+      // 2. Insert into workout_exercises under the Ad Hoc workout
+      const { data: weData, error: weErr } = await supabase
+        .from('workout_exercises')
+        .insert({
+          workout_id: dummyWorkout.id,
+          exercise_id: exerciseId,
+          sets: 3,
+          reps: 10,
+          order_index: 999
+        })
+        .select()
+        .single();
+        
+      if (weErr) throw weErr;
+
+      // 3. Push it into the LOCAL active session state so it renders immediately
+      const newEx = {
+        id: exerciseId,
+        workoutExerciseId: weData.id,
+        name: exerciseName,
+        muscleGroupName: muscleGroupName,
+        sets: 3,
+        reps: 10,
+        weight: null,
+        isDone: false
+      };
+
+      set((state) => ({
+        routines: state.routines.map((r) => {
+          if (r.id !== routineId) return r;
+          return {
+            ...r,
+            workouts: r.workouts.map((w) => {
+              if (w.id !== workoutId) return w;
+              return {
+                ...w,
+                exercises: [...w.exercises, newEx]
+              };
+            })
+          };
+        }),
+        isLoading: false
+      }));
+
+    } catch (err: any) {
+      console.error("AdHoc error:", err);
+      set({ error: err.message, isLoading: false });
     }
   },
 

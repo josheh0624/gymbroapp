@@ -29,15 +29,27 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const STEP_META = [
-  { eyebrow: "STEP 1 OF 6", headline: "When is your\nbirthday?" },
-  { eyebrow: "STEP 2 OF 6", headline: "How tall\nare you?" },
-  { eyebrow: "STEP 3 OF 6", headline: "What's your\nweight?" },
-  { eyebrow: "STEP 4 OF 6", headline: "What's your\ngender?" },
-  { eyebrow: "STEP 5 OF 6", headline: "What's your\nexperience?" },
-  { eyebrow: "STEP 6 OF 6", headline: "Current PRs\n(Optional)" },
+  { eyebrow: "STEP 1 OF 7", headline: "When is your\nbirthday?" },
+  { eyebrow: "STEP 2 OF 7", headline: "How tall\nare you?" },
+  { eyebrow: "STEP 3 OF 7", headline: "What's your\nweight?" },
+  { eyebrow: "STEP 4 OF 7", headline: "What's your\ngender?" },
+  { eyebrow: "STEP 5 OF 7", headline: "What's your\nexperience?" },
+  { eyebrow: "STEP 6 OF 7", headline: "Why do you\ngo to the gym?" },
+  { eyebrow: "STEP 7 OF 7", headline: "Current PRs\n(Optional)" },
+];
+
+const GOAL_OPTIONS = [
+  { label: "Building Muscle", value: "building muscle" },
+  { label: "Losing Weight/Fat", value: "losing weight/fat" },
+  { label: "Strength", value: "strength" },
+  { label: "Injury Rehab", value: "injury rehab" },
+  { label: "Health", value: "health" },
+  { label: "Athletic Training", value: "athletic training" },
+  { label: "Powerlifting", value: "powerlifting" },
+  { label: "Bodybuilding", value: "bodybuilding" },
 ];
 
 const EXPERIENCE_OPTIONS = [
@@ -72,6 +84,7 @@ export default function SetupScreen() {
   const [weightLbs, setWeightLbs] = useState("");
   const [sex, setSex] = useState<string | null>(null);
   const [experience, setExperience] = useState("");
+  const [goal, setGoal] = useState("");
   const [benchPR, setBenchPR] = useState("");
   const [squatPR, setSquatPR] = useState("");
   const [deadliftPR, setDeadliftPR] = useState("");
@@ -153,6 +166,12 @@ export default function SetupScreen() {
     }
 
     // step 3 (sex) is a pill select — nothing to validate, selection or skip
+    if (step === 5) {
+      if (!goal) {
+        setError("Please select a primary goal.");
+        return;
+      }
+    }
     goNext();
   };
 
@@ -185,6 +204,7 @@ export default function SetupScreen() {
         authUpdates.birthday = `${bdayYear}-${bdayMonth.padStart(2, '0')}-${bdayDay.padStart(2, '0')}`;
       }
       if (experience) authUpdates.experience_level = experience;
+      if (goal) payload.primary_goal = goal;
       if (benchPR) authUpdates.bench_pr = parseInt(benchPR, 10);
       if (squatPR) authUpdates.squat_pr = parseInt(squatPR, 10);
       if (deadliftPR) authUpdates.deadlift_pr = parseInt(deadliftPR, 10);
@@ -449,6 +469,38 @@ export default function SetupScreen() {
                 
                 {step === 5 && (
                   <View style={styles.field}>
+                    <Text style={styles.label}>Primary Goal</Text>
+                    <View style={styles.pillRow}>
+                      {GOAL_OPTIONS.map((opt) => {
+                        const selected = goal === opt.value;
+                        return (
+                          <TouchableOpacity
+                            key={opt.value}
+                            style={[
+                              styles.pill,
+                              selected && styles.pillSelected,
+                              { marginBottom: 8 }
+                            ]}
+                            activeOpacity={0.8}
+                            onPress={() => setGoal(opt.value)}
+                          >
+                            <Text
+                              style={[
+                                styles.pillText,
+                                selected && styles.pillTextSelected,
+                              ]}
+                            >
+                              {opt.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+                
+                {step === 6 && (
+                  <View style={styles.field}>
                     <Text style={styles.label}>Personal Records (lbs)</Text>
                     <View style={styles.row}>
                       <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
@@ -499,14 +551,16 @@ export default function SetupScreen() {
                   <Text style={styles.ctaText}>{ctaLabel}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.skipLink}
-                  activeOpacity={0.7}
-                  onPress={handleSkip}
-                  disabled={submitting}
-                >
-                  <Text style={styles.skipLinkText}>{skipLabel}</Text>
-                </TouchableOpacity>
+                {step !== 5 && (
+                  <TouchableOpacity
+                    style={styles.skipLink}
+                    activeOpacity={0.7}
+                    onPress={handleSkip}
+                    disabled={submitting}
+                  >
+                    <Text style={styles.skipLinkText}>{skipLabel}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </BlurView>
 
