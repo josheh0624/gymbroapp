@@ -224,9 +224,9 @@ export default function SetupScreen() {
   const handleFinish = async () => {
     setSubmitting(true);
     try {
-      const { email, passwordHash, username } = useOnboardingStore.getState();
+      const { email, username } = useOnboardingStore.getState();
 
-      if (!email || !passwordHash || !username) {
+      if (!email || !username) {
         throw new Error("Missing registration data. Please restart the app.");
       }
 

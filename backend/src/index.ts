@@ -6,7 +6,6 @@ import pool from "./db/db";
 import { __dirname } from "./lib/path";
 import authRoutes from "./routes/auth";
 import { exerciseRouter } from "./routes/exercise";
-import { routineRouter } from "./routes/routines";
 import { usersRouter } from "./routes/users";
 import { workoutRouter } from "./routes/workouts";
 
@@ -31,10 +30,15 @@ app.use("/auth", authRoutes);
 app.use("/users", usersRouter);
 app.use("/exercises", exerciseRouter);
 app.use("/workouts", workoutRouter);
-app.use("/routines", routineRouter);
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
-
-app.get("/api/health", (req, res) => res.json({ ok: true, time: Date.now() }));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../../uploads"), {
+    setHeaders: (res) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Content-Security-Policy", "default-src 'none'");
+    },
+  }),
+);
 
 const PORT = process.env.PORT || 3000;
 

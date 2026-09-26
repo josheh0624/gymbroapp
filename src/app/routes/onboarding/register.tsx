@@ -119,9 +119,9 @@ export default function RegisterScreen() {
       if (error) throw error;
       if (!data.user) throw new Error("Failed to create account.");
 
-      // Store credentials so setup.tsx can sync them, but account IS already created
+      // Store registration info so setup.tsx can sync them, but account IS already created
       const setRegisterData = useOnboardingStore.getState().setRegisterData;
-      setRegisterData(trimmedUsername, trimmedEmail, password);
+      setRegisterData(trimmedUsername, trimmedEmail);
 
       router.push("./setup");
     } catch (err: any) {

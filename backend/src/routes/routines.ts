@@ -138,11 +138,16 @@ router.patch(
   protect,
   async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = req.user?.id;
     const { weight, reps, sets } = req.body as {
       weight?: number | null;
       reps?: number;
       sets?: number;
     };
+
+    if (!userId) {
+      return res.status(401).json({ error: "Not authorized" });
+    }
 
     if (
       (weight !== undefined && weight !== null && typeof weight !== "number") ||
@@ -158,6 +163,30 @@ router.patch(
     }
 
     try {
+      // Check exercise exists and verify ownership & not prebuilt
+      const checkResult = await pool.query(
+        `SELECT we.id, w.user_id, r.is_prebuilt
+         FROM workout_exercises we
+         JOIN workouts w ON w.id = we.workout_id
+         LEFT JOIN workout_routine_days wrd ON wrd.workout_id = w.id
+         LEFT JOIN workout_routines r ON r.id = wrd.routine_id
+         WHERE we.id = $1`,
+        [id],
+      );
+
+      if (checkResult.rows.length === 0) {
+        return res.status(404).json({ error: "Exercise not found" });
+      }
+
+      const row = checkResult.rows[0];
+      if (row.is_prebuilt) {
+        return res.status(403).json({ error: "Cannot modify prebuilt routine exercise details" });
+      }
+
+      if (row.user_id && row.user_id !== userId) {
+        return res.status(403).json({ error: "Unauthorized to modify this exercise" });
+      }
+
       const result = await pool.query(
         `UPDATE workout_exercises
          SET weight = CASE WHEN $1 THEN $2 ELSE weight END,
@@ -175,10 +204,6 @@ router.patch(
           id,
         ],
       );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: "Exercise not found" });
-      }
 
       res.json(result.rows[0]);
     } catch (err) {
@@ -226,7 +251,7 @@ router.put(["/workoutDone/:id", "/markDone/:id"], protect, async (req: Request, 
   }
 });
 
-router.post("/create", async (req: Request, res: Response) => {
+router.post("/create", protect, async (req: Request, res: Response) => {
   const { name, workoutIds } = req.body; // workoutIds: string[] of workout UUIDs, in order
 
   if (!name || !Array.isArray(workoutIds) || workoutIds.length === 0) {
@@ -263,7 +288,7 @@ router.post("/create", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/update/:id", async (req: Request, res: Response) => {
+router.put("/update/:id", protect, async (req: Request, res: Response) => {
   const { id } = req.params;
   const { name, workoutIds } = req.body;
 
@@ -277,14 +302,19 @@ router.put("/update/:id", async (req: Request, res: Response) => {
   try {
     await client.query("BEGIN");
 
-    // Check if exists
+    // Check if exists and if prebuilt
     const check = await client.query(
-      "SELECT id FROM workout_routines WHERE id = $1",
+      "SELECT id, is_prebuilt FROM workout_routines WHERE id = $1",
       [id],
     );
     if (check.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Routine not found" });
+    }
+
+    if (check.rows[0].is_prebuilt) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Cannot modify prebuilt routine" });
     }
 
     // Update name
@@ -316,18 +346,27 @@ router.put("/update/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/delete/:id", async (req: Request, res: Response) => {
+router.delete("/delete/:id", protect, async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
+    const check = await pool.query(
+      "SELECT id, is_prebuilt FROM workout_routines WHERE id = $1",
+      [id],
+    );
+
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Routine not found" });
+    }
+
+    if (check.rows[0].is_prebuilt) {
+      return res.status(403).json({ error: "Cannot delete prebuilt routine" });
+    }
+
     const result = await pool.query(
       "DELETE FROM workout_routines WHERE id = $1 RETURNING id",
       [id],
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Routine not found" });
-    }
 
     res.json({ deleted: true, id: result.rows[0].id });
   } catch (err) {

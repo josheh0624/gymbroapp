@@ -1,8 +1,8 @@
+import { supabase } from "@/api/supabase";
 import Exercise from "@/models/excerciseModel";
 import WorkoutRoutine from "@/models/workout-routine-model";
-import { create } from "zustand";
-import { supabase } from "@/api/supabase";
 import * as SecureStore from "expo-secure-store";
+import { create } from "zustand";
 
 export interface ActiveSession {
   workoutId: string;
@@ -33,7 +33,11 @@ interface RoutineState {
   fetchRoutineList: () => Promise<void>;
   fetchRoutineById: (id: string) => Promise<void>;
   createRoutine: (name: string, workoutIds: string[]) => Promise<string | null>;
-  updateRoutine: (id: string, name: string, workoutIds: string[]) => Promise<boolean>;
+  updateRoutine: (
+    id: string,
+    name: string,
+    workoutIds: string[],
+  ) => Promise<boolean>;
   deleteRoutine: (id: string) => Promise<boolean>;
   addRoutine: (routine: WorkoutRoutine) => void;
   setActiveRoutine: (id: string | null) => void;
@@ -43,9 +47,18 @@ interface RoutineState {
   getActiveRoutine: () => WorkoutRoutine | undefined;
   getExerciseById: (routineId: string, workoutId: string) => Promise<void>;
 
-  markWorkoutDone: (routineId: string, workoutId: string, selectedDateString?: string, durationSeconds?: number) => Promise<boolean>;
+  markWorkoutDone: (
+    routineId: string,
+    workoutId: string,
+    selectedDateString?: string,
+    durationSeconds?: number,
+  ) => Promise<boolean>;
   resetWorkoutProgress: (routineId: string, workoutId: string) => void;
-  syncWorkoutProgress: (routineId: string, workoutId: string, dateStr: string) => Promise<void>;
+  syncWorkoutProgress: (
+    routineId: string,
+    workoutId: string,
+    dateStr: string,
+  ) => Promise<void>;
   markExerciseDone: (
     routineId: string,
     workoutId: string,
@@ -65,7 +78,7 @@ interface RoutineState {
     workoutId: string,
     exerciseId: string,
     exerciseName: string,
-    muscleGroupName?: string
+    muscleGroupName?: string,
   ) => Promise<void>;
 }
 
@@ -86,17 +99,17 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { data, error } = await supabase
-        .from('workout_routines')
-        .select('id, name, is_prebuilt, workout_routine_days(count)')
-        .order('name');
-      
+        .from("workout_routines")
+        .select("id, name, is_prebuilt, workout_routine_days(count)")
+        .order("name");
+
       if (error) throw error;
-      
+
       const parsedData = data.map((r: any) => ({
         id: r.id,
         name: r.name,
         is_prebuilt: r.is_prebuilt,
-        workout_count: r.workout_routine_days[0]?.count || 0
+        workout_count: r.workout_routine_days[0]?.count || 0,
       }));
 
       set({ routineList: parsedData, isLoading: false });
@@ -109,8 +122,9 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { data, error } = await supabase
-        .from('workout_routines')
-        .select(`
+        .from("workout_routines")
+        .select(
+          `
           id, name,
           workout_routine_days (
             order_index,
@@ -125,8 +139,9 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
               )
             )
           )
-        `)
-        .eq('id', id)
+        `,
+        )
+        .eq("id", id)
         .single();
 
       if (error) throw error;
@@ -135,7 +150,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       const routine: WorkoutRoutine = {
         id: data.id,
         name: data.name,
-        workouts: []
+        workouts: [],
       };
 
       const days = (data.workout_routine_days || []) as any[];
@@ -144,7 +159,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       for (const day of days) {
         const w = day.workouts;
         if (!w) continue;
-        
+
         const exercises = (w.workout_exercises || []) as any[];
         exercises.sort((a, b) => a.order_index - b.order_index);
 
@@ -156,14 +171,14 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
           sets: we.sets,
           reps: we.reps,
           weight: we.weight,
-          isDone: false
+          isDone: false,
         }));
 
         routine.workouts.push({
           id: w.id,
           name: w.name,
           days: w.days,
-          exercises: parsedExercises
+          exercises: parsedExercises,
         });
       }
 
@@ -183,23 +198,25 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-      
+
       const { data: routine, error: rError } = await supabase
-        .from('workout_routines')
+        .from("workout_routines")
         .insert({ name, user_id: userId })
         .select()
         .single();
-        
+
       if (rError) throw rError;
 
       const days = workoutIds.map((wId, i) => ({
         routine_id: routine.id,
         workout_id: wId,
-        order_index: i
+        order_index: i,
       }));
 
       if (days.length > 0) {
-        const { error: dError } = await supabase.from('workout_routine_days').insert(days);
+        const { error: dError } = await supabase
+          .from("workout_routine_days")
+          .insert(days);
         if (dError) throw dError;
       }
 
@@ -215,26 +232,47 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   updateRoutine: async (id, name, workoutIds) => {
     set({ isLoading: true, error: null });
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("Not authenticated");
+
+      // Verify ownership and ensure the routine is not prebuilt
+      const { data: routine, error: fetchErr } = await supabase
+        .from("workout_routines")
+        .select("id, user_id, is_prebuilt")
+        .eq("id", id)
+        .single();
+
+      if (fetchErr || !routine) throw new Error("Routine not found");
+      if (routine.is_prebuilt)
+        throw new Error("Cannot modify a prebuilt routine");
+      if (routine.user_id !== userId)
+        throw new Error("Unauthorized to modify this routine");
+
       const { error: rError } = await supabase
-        .from('workout_routines')
+        .from("workout_routines")
         .update({ name })
-        .eq('id', id);
+        .eq("id", id)
+        .eq("user_id", userId)
+        .eq("is_prebuilt", false);
       if (rError) throw rError;
 
       const { error: delError } = await supabase
-        .from('workout_routine_days')
+        .from("workout_routine_days")
         .delete()
-        .eq('routine_id', id);
+        .eq("routine_id", id);
       if (delError) throw delError;
 
       const days = workoutIds.map((wId, i) => ({
         routine_id: id,
         workout_id: wId,
-        order_index: i
+        order_index: i,
       }));
 
       if (days.length > 0) {
-        const { error: dError } = await supabase.from('workout_routine_days').insert(days);
+        const { error: dError } = await supabase
+          .from("workout_routine_days")
+          .insert(days);
         if (dError) throw dError;
       }
 
@@ -250,9 +288,31 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
   deleteRoutine: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const { error } = await supabase.from('workout_routines').delete().eq('id', id);
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("Not authenticated");
+
+      // Verify ownership and ensure the routine is not prebuilt
+      const { data: routine, error: fetchErr } = await supabase
+        .from("workout_routines")
+        .select("id, user_id, is_prebuilt")
+        .eq("id", id)
+        .single();
+
+      if (fetchErr || !routine) throw new Error("Routine not found");
+      if (routine.is_prebuilt)
+        throw new Error("Cannot delete a prebuilt routine");
+      if (routine.user_id !== userId)
+        throw new Error("Unauthorized to delete this routine");
+
+      const { error } = await supabase
+        .from("workout_routines")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId)
+        .eq("is_prebuilt", false);
       if (error) throw error;
-      
+
       await get().fetchRoutineList();
       set({ isLoading: false });
       return true;
@@ -286,11 +346,19 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
-  startSession: (routineId, workoutId, dateStr) => set((state) => ({
-    activeSession: state.activeSession?.workoutId === workoutId && state.activeSession?.selectedDateString === dateStr 
-      ? state.activeSession 
-      : { workoutId, routineId, selectedDateString: dateStr, startTime: Date.now() }
-  })),
+  startSession: (routineId, workoutId, dateStr) =>
+    set((state) => ({
+      activeSession:
+        state.activeSession?.workoutId === workoutId &&
+        state.activeSession?.selectedDateString === dateStr
+          ? state.activeSession
+          : {
+              workoutId,
+              routineId,
+              selectedDateString: dateStr,
+              startTime: Date.now(),
+            },
+    })),
 
   endSession: () => set({ activeSession: null }),
 
@@ -299,12 +367,14 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (userId) {
-        const storedId = await SecureStore.getItemAsync(`active_routine_${userId}`);
+        const storedId = await SecureStore.getItemAsync(
+          `active_routine_${userId}`,
+        );
         if (storedId) {
           set({ activeRoutineId: storedId });
           // Optionally fetch the routine if it's not already in the list
           const { routines } = get();
-          if (!routines.find(r => r.id === storedId)) {
+          if (!routines.find((r) => r.id === storedId)) {
             await get().fetchRoutineById(storedId);
           }
         }
@@ -323,12 +393,12 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { data, error } = await supabase
-        .from('exercises')
-        .select('*, muscle_groups(name)')
-        .eq('id', id)
+        .from("exercises")
+        .select("*, muscle_groups(name)")
+        .eq("id", id)
         .single();
       if (error) throw error;
-      
+
       const ex: any = { ...data, muscleGroupName: data.muscle_groups?.name };
 
       set((state) => ({
@@ -342,7 +412,12 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }
   },
 
-  markWorkoutDone: async (routineId, workoutId, selectedDateString, durationSeconds) => {
+  markWorkoutDone: async (
+    routineId,
+    workoutId,
+    selectedDateString,
+    durationSeconds,
+  ) => {
     set({ isLoading: true, error: null });
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -354,39 +429,42 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
 
       const routine = get().routines.find((r) => r.id === routineId);
       const workout = routine?.workouts.find((w) => w.id === workoutId);
-      const doneExerciseIds = workout?.exercises
-        .filter((e) => e.isDone && e.workoutExerciseId)
-        .map((e) => e.workoutExerciseId) || [];
+      const doneExerciseIds =
+        workout?.exercises
+          .filter((e) => e.isDone && e.workoutExerciseId)
+          .map((e) => e.workoutExerciseId) || [];
 
       const dateStr = selectedDateString || new Date().toISOString();
-      const allWeIds = workout?.exercises.map(e => e.workoutExerciseId).filter(Boolean) || [];
+      const allWeIds =
+        workout?.exercises.map((e) => e.workoutExerciseId).filter(Boolean) ||
+        [];
 
       // 1. Delete ALL existing logs for this workout's exercises for today to prevent duplicates
       if (allWeIds.length > 0) {
         await supabase
-          .from('workout_log')
+          .from("workout_log")
           .delete()
-          .eq('user_id', userId)
-          .in('workout_exercise_id', allWeIds as string[])
-          .gte('completed_at', `${dateStr.substring(0,10)}T00:00:00Z`)
-          .lte('completed_at', `${dateStr.substring(0,10)}T23:59:59Z`);
+          .eq("user_id", userId)
+          .in("workout_exercise_id", allWeIds as string[])
+          .gte("completed_at", `${dateStr.substring(0, 10)}T00:00:00Z`)
+          .lte("completed_at", `${dateStr.substring(0, 10)}T23:59:59Z`);
       }
 
       // 2. Insert ONLY the exercises that were marked as done
       if (doneExerciseIds.length > 0) {
-        const insertData = doneExerciseIds.map(id => {
-          const exercise = workout?.exercises.find(e => e.workoutExerciseId === id);
+        const insertData = doneExerciseIds.map((id) => {
+          const exercise = workout?.exercises.find(
+            (e) => e.workoutExerciseId === id,
+          );
           return {
             user_id: userId,
             workout_exercise_id: id as string,
             completed_at: new Date(dateStr).toISOString(),
-            weight: exercise?.weight || null
+            weight: exercise?.weight || null,
           };
         });
-        const { error } = await supabase
-          .from('workout_log')
-          .insert(insertData);
-          
+        const { error } = await supabase.from("workout_log").insert(insertData);
+
         if (error) console.error("Error inserting workout log:", error);
       }
 
@@ -394,15 +472,18 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         try {
           // Attempt to log session duration
           // Note: Requires a `workout_sessions` table in Supabase
-          await supabase.from('workout_sessions').insert({
+          await supabase.from("workout_sessions").insert({
             user_id: userId,
             routine_id: routineId,
             workout_id: workoutId,
             duration_seconds: durationSeconds,
-            completed_at: new Date(dateStr).toISOString()
+            completed_at: new Date(dateStr).toISOString(),
           });
         } catch (e) {
-          console.warn("Could not save workout session duration. Make sure workout_sessions table exists.", e);
+          console.warn(
+            "Could not save workout session duration. Make sure workout_sessions table exists.",
+            e,
+          );
         }
       }
 
@@ -421,15 +502,15 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       if (!userId) return;
 
       const { data, error } = await supabase
-        .from('workout_log')
-        .select('workout_exercise_id')
-        .eq('user_id', userId)
-        .gte('completed_at', `${dateStr.substring(0,10)}T00:00:00Z`)
-        .lte('completed_at', `${dateStr.substring(0,10)}T23:59:59Z`);
-      
+        .from("workout_log")
+        .select("workout_exercise_id")
+        .eq("user_id", userId)
+        .gte("completed_at", `${dateStr.substring(0, 10)}T00:00:00Z`)
+        .lte("completed_at", `${dateStr.substring(0, 10)}T23:59:59Z`);
+
       if (error) throw error;
-      
-      const completedIds = new Set(data.map(d => d.workout_exercise_id));
+
+      const completedIds = new Set(data.map((d) => d.workout_exercise_id));
       set((state) => ({
         routines: state.routines.map((routine) =>
           routine.id !== routineId
@@ -443,7 +524,9 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
                         ...workout,
                         exercises: workout.exercises.map((exercise) => ({
                           ...exercise,
-                          isDone: exercise.workoutExerciseId ? completedIds.has(exercise.workoutExerciseId) : false,
+                          isDone: exercise.workoutExerciseId
+                            ? completedIds.has(exercise.workoutExerciseId)
+                            : false,
                         })),
                       },
                 ),
@@ -507,44 +590,52 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         }),
       }));
 
-    applyIsDone(isDone); 
-    
+    applyIsDone(isDone);
+
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId || !workoutExerciseId) return;
-      
+
       const dateStr = selectedDateString || new Date().toISOString();
 
       if (isDone) {
         // Find the weight of this exercise from state
-        const routine = get().routines.find(r => r.id === routineId);
-        const workout = routine?.workouts.find(w => w.id === workoutId);
-        const exercise = workout?.exercises.find(e => e.workoutExerciseId === workoutExerciseId);
+        const routine = get().routines.find((r) => r.id === routineId);
+        const workout = routine?.workouts.find((w) => w.id === workoutId);
+        const exercise = workout?.exercises.find(
+          (e) => e.workoutExerciseId === workoutExerciseId,
+        );
         const weight = exercise?.weight || null;
 
         // Insert log. Using standard insert. If it errors due to unique constraint, that's fine.
-        await supabase.from('workout_log').insert({
+        await supabase.from("workout_log").insert({
           user_id: userId,
           workout_exercise_id: workoutExerciseId,
           completed_at: dateStr,
-          weight: weight
+          weight: weight,
         });
       } else {
         await supabase
-          .from('workout_log')
+          .from("workout_log")
           .delete()
-          .eq('user_id', userId)
-          .eq('workout_exercise_id', workoutExerciseId)
-          .gte('completed_at', `${dateStr.substring(0,10)}T00:00:00Z`)
-          .lte('completed_at', `${dateStr.substring(0,10)}T23:59:59Z`);
+          .eq("user_id", userId)
+          .eq("workout_exercise_id", workoutExerciseId)
+          .gte("completed_at", `${dateStr.substring(0, 10)}T00:00:00Z`)
+          .lte("completed_at", `${dateStr.substring(0, 10)}T23:59:59Z`);
       }
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
   },
 
-  addAdHocExerciseToActiveWorkout: async (routineId, workoutId, exerciseId, exerciseName, muscleGroupName) => {
+  addAdHocExerciseToActiveWorkout: async (
+    routineId,
+    workoutId,
+    exerciseId,
+    exerciseName,
+    muscleGroupName,
+  ) => {
     set({ isLoading: true, error: null });
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -553,35 +644,39 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
 
       // 1. Find or create an 'Ad Hoc Exercises' workout so we don't pollute the actual routine
       let { data: dummyWorkout } = await supabase
-        .from('workouts')
-        .select('id')
-        .eq('name', 'Ad Hoc Exercises')
-        .eq('user_id', userId)
+        .from("workouts")
+        .select("id")
+        .eq("name", "Ad Hoc Exercises")
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (!dummyWorkout) {
         const { data: newWorkout, error: newErr } = await supabase
-          .from('workouts')
-          .insert({ name: 'Ad Hoc Exercises', days: [], user_id: userId })
+          .from("workouts")
+          .insert({ name: "Ad Hoc Exercises", days: [], user_id: userId })
           .select()
           .single();
         if (newErr) throw newErr;
         dummyWorkout = newWorkout;
       }
 
+      if (!dummyWorkout) {
+        throw new Error("Failed to initialize ad-hoc workout");
+      }
+
       // 2. Insert into workout_exercises under the Ad Hoc workout
       const { data: weData, error: weErr } = await supabase
-        .from('workout_exercises')
+        .from("workout_exercises")
         .insert({
           workout_id: dummyWorkout.id,
           exercise_id: exerciseId,
           sets: 3,
           reps: 10,
-          order_index: 999
+          order_index: 999,
         })
         .select()
         .single();
-        
+
       if (weErr) throw weErr;
 
       // 3. Push it into the LOCAL active session state so it renders immediately
@@ -593,7 +688,7 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         sets: 3,
         reps: 10,
         weight: null,
-        isDone: false
+        isDone: false,
       };
 
       set((state) => ({
@@ -605,14 +700,13 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
               if (w.id !== workoutId) return w;
               return {
                 ...w,
-                exercises: [...w.exercises, newEx]
+                exercises: [...w.exercises, newEx],
               };
-            })
+            }),
           };
         }),
-        isLoading: false
+        isLoading: false,
       }));
-
     } catch (err: any) {
       console.error("AdHoc error:", err);
       set({ error: err.message, isLoading: false });
@@ -642,9 +736,18 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
                           ? exercise
                           : {
                               ...exercise,
-                              weight: updates.weight !== undefined ? updates.weight : exercise.weight,
-                              reps: updates.reps !== undefined ? updates.reps : exercise.reps,
-                              sets: updates.sets !== undefined ? updates.sets : exercise.sets,
+                              weight:
+                                updates.weight !== undefined
+                                  ? updates.weight
+                                  : exercise.weight,
+                              reps:
+                                updates.reps !== undefined
+                                  ? updates.reps
+                                  : exercise.reps,
+                              sets:
+                                updates.sets !== undefined
+                                  ? updates.sets
+                                  : exercise.sets,
                             },
                       ),
                     },
@@ -654,14 +757,35 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
     }));
 
     try {
-      const { data, error } = await supabase
-        .from('workout_exercises')
-        .update({ weight: updates.weight, reps: updates.reps, sets: updates.sets })
-        .eq('id', workoutExerciseId)
-        .select()
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) return;
+
+      // Verify that this exercise belongs to a custom workout owned by this user
+      // and is not part of a shared prebuilt template
+      const { data: weRecord, error: weErr } = await supabase
+        .from("workout_exercises")
+        .select("id, workout_id, workouts(id, user_id)")
+        .eq("id", workoutExerciseId)
         .single();
-        
-      if (error) throw error;
+
+      if (weErr || !weRecord) return;
+      const workoutOwner = (weRecord.workouts as any)?.user_id;
+
+      // If the workout is owned by the current user, persist the new defaults
+      if (workoutOwner && workoutOwner === userId) {
+        const { error } = await supabase
+          .from("workout_exercises")
+          .update({
+            weight: updates.weight,
+            reps: updates.reps,
+            sets: updates.sets,
+          })
+          .eq("id", workoutExerciseId);
+
+        if (error) throw error;
+      }
+      // If workout is prebuilt or unowned, we only keep changes in local state for this session
     } catch (err: any) {
       set({ error: err.message });
       // In a real app we'd roll back here, but for now just show error

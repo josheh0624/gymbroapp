@@ -43,6 +43,8 @@ export const protect = async (
     req.user = safeUser as SafeUser;
     next(); // Proceed to the next middleware or route handler
   } catch (error) {
-    return res.status(401).json({ message: "Not authorized", error });
+    return res
+      .status(401)
+      .json({ message: "Not authorized, invalid or expired token" });
   }
 };

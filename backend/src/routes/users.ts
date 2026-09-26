@@ -54,19 +54,36 @@ router.patch("/setup", protect, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/changeAge", (req: Request, res: Response) => {
-  const { age, id } = req.body;
+router.post("/changeAge", protect, async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const { age } = req.body;
 
-  const query = "UPDATE users SET age = $1 WHERE id = $2";
-  pool.query(query, [age, id], (err, result) => {
-    if (err) {
-      console.error("Error updating user age:", err);
-      res.status(500).send("Error updating user age");
-    } else {
-      res.send("User age updated successfully");
+  if (!userId) {
+    return res.status(401).json({ message: "Not authorized" });
+  }
+
+  if (age === undefined || typeof age !== "number") {
+    return res.status(400).json({ message: "Valid age is required" });
+  }
+
+  try {
+    const query = "UPDATE users SET age = $1 WHERE id = $2";
+    const result = await pool.query(query, [age, userId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "User not found" });
     }
-  });
+    return res.json({ message: "User age updated successfully" });
+  } catch (err) {
+    console.error("Error updating user age:", err);
+    return res.status(500).json({ message: "Error updating user age" });
+  }
 });
+
+const ALLOWED_MIME_TYPES: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
 
 const uploadDir = path.join(__dirname, "../../uploads/profile-photos");
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -79,14 +96,17 @@ const upload = multer({
         return cb(new Error("Not authenticated"), "");
       }
 
-      const ext = path.extname(file.originalname) || ".jpg";
-      cb(null, `${req.user.id}-${randomUUID()}${ext}`);
+      const safeExt = ALLOWED_MIME_TYPES[file.mimetype.toLowerCase()] || ".jpg";
+      cb(null, `${req.user.id}-${randomUUID()}${safeExt}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files are allowed"));
+    const mime = file.mimetype.toLowerCase();
+    if (!ALLOWED_MIME_TYPES[mime]) {
+      return cb(
+        new Error("Only JPEG, PNG, and WebP image files are allowed. SVG and other formats are prohibited."),
+      );
     }
     cb(null, true);
   },

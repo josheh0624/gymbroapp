@@ -5,6 +5,8 @@
     "target": "ES2023",
     "strict": true,
     "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "ignoreDeprecations": "6.0"
   }
 }

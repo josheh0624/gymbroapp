@@ -3,9 +3,20 @@ import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import pool from "../db/db";
 import { protect } from "../middleware/auth";
+import { createRateLimiter } from "../middleware/rateLimiter";
 import { SafeUser } from "../models/user-model";
 
 const router = express.Router();
+
+// Rate limiter for authentication endpoints: max 10 requests per 15 minutes per IP
+const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Too many authentication attempts. Please try again after 15 minutes.",
+});
+
+router.use("/login", authLimiter);
+router.use("/register", authLimiter);
 
 //convert JWT_SECRET to a string
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -56,7 +67,8 @@ router.post("/register", async (req: Request, res: Response) => {
 
     return res.status(201).json({ user: safeUser as SafeUser, token });
   } catch (error) {
-    return res.status(500).json({ message: "Error registering user", error });
+    console.error("Register error:", error);
+    return res.status(500).json({ message: "Error registering user" });
   }
 });
 // =========================
@@ -103,7 +115,8 @@ router.post("/login", async (req: Request, res: Response) => {
 
     return;
   } catch (error) {
-    return res.status(500).json({ message: "Error logging in", error });
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Error logging in" });
   }
 });
 
@@ -121,7 +134,8 @@ router.post("/logout", async (req: Request, res: Response) => {
   try {
     res.json({ message: "Logged out successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Error logging out", error });
+    console.error("Logout error:", error);
+    return res.status(500).json({ message: "Error logging out" });
   }
 });
 

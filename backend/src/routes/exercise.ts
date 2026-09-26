@@ -1,5 +1,6 @@
 import Router, { Request, Response } from "express";
 import pool from "../db/db";
+import { protect } from "../middleware/auth";
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.get("/", (req: Request, res: Response) => {
 
 //create exercise
 
-router.post("/create", async (req: Request, res: Response) => {
+router.post("/create", protect, async (req: Request, res: Response) => {
   const { name, muscleGroupId } = req.body;
 
   if (!name) {
@@ -80,11 +81,14 @@ router.get("/fetchExercise/:id", async (req: Request, res: Response) => {
 
 //update exercise data
 
-router.put("/updateExercise/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { name, muscleGroupId } = req.body;
+router.put(
+  "/updateExercise/:id",
+  protect,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name, muscleGroupId } = req.body;
 
-  const update_query = `
+    const update_query = `
     UPDATE exercises
     SET name = COALESCE($2, name),
         muscle_group_id = COALESCE($3, muscle_group_id)
@@ -92,44 +96,49 @@ router.put("/updateExercise/:id", async (req: Request, res: Response) => {
     RETURNING id, name, muscle_group_id;
   `;
 
-  try {
-    const result = await pool.query(update_query, [
-      id,
-      name ?? null,
-      muscleGroupId ?? null,
-    ]);
+    try {
+      const result = await pool.query(update_query, [
+        id,
+        name ?? null,
+        muscleGroupId ?? null,
+      ]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Exercise not found" });
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Exercise not found" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error("error updateExercise:", err);
+      res.status(500).json({ error: "Failed to update exercise" });
     }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("error updateExercise:", err);
-    res.status(500).json({ error: "Failed to update exercise" });
-  }
-});
+  },
+);
 
 // delete exercise
 
-router.delete("/deleteExercise/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
+router.delete(
+  "/deleteExercise/:id",
+  protect,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-  const delete_query = "DELETE FROM exercises WHERE id = $1 RETURNING id";
+    const delete_query = "DELETE FROM exercises WHERE id = $1 RETURNING id";
 
-  try {
-    const result = await pool.query(delete_query, [id]);
+    try {
+      const result = await pool.query(delete_query, [id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Exercise not found" });
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Exercise not found" });
+      }
+
+      res.json({ deleted: true, id: result.rows[0].id });
+    } catch (err) {
+      console.error("error deleteExercise:", err);
+      res.status(500).json({ error: "Failed to delete exercise" });
     }
-
-    res.json({ deleted: true, id: result.rows[0].id });
-  } catch (err) {
-    console.error("error deleteExercise:", err);
-    res.status(500).json({ error: "Failed to delete exercise" });
-  }
-});
+  },
+);
 
 // get all muscle groups
 router.get("/muscleGroups", async (req: Request, res: Response) => {

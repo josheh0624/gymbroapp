@@ -1,5 +1,14 @@
-const { Pool } = require('pg');
-const pool = new Pool({ user: 'joshhaney', host: 'localhost', database: 'workoutroutines', port: 5432, password: 'StormS503' });
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
+const { Pool } = require("pg");
+
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  port: parseInt(process.env.DB_PORT || "5432", 10),
+  password: process.env.DB_PASSWORD,
+});
 async function run() {
   const res = await pool.query(`
     SELECT w.name as workout_name, e.name as exercise_name, we.sets, we.reps, we.weight
@@ -9,7 +18,7 @@ async function run() {
     WHERE w.name IN ('Push Day', 'Pull Day', 'Leg Day')
     ORDER BY w.name, we.order_index
   `);
-  console.log('Exercises in PPL:', res.rows);
+  console.log("Exercises in PPL:", res.rows);
   pool.end();
 }
 run();

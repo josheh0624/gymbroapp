@@ -97,14 +97,24 @@ router.get("/muscle-summary", protect, async (req: Request, res: Response) => {
 
   try {
     const cwResult = await pool.query(completedWorkoutsQuery, [userId]);
-    const muscleHitsResult = await pool.query(muscleHitsQuery, [start, end, userId]);
+    const muscleHitsResult = await pool.query(muscleHitsQuery, [
+      start,
+      end,
+      userId,
+    ]);
     const statsResult = await pool.query(statsQuery, [start, end, userId]);
-    const dailyActivityResult = await pool.query(dailyActivityQuery, [start, end, userId]);
+    const dailyActivityResult = await pool.query(dailyActivityQuery, [
+      start,
+      end,
+      userId,
+    ]);
 
     // calculate current streak (logic unchanged)
     let streak = 0;
     const completedDates = new Set(
-      cwResult.rows.map((row) => row.completed_date.toISOString().split("T")[0])
+      cwResult.rows.map(
+        (row) => row.completed_date.toISOString().split("T")[0],
+      ),
     );
 
     const today = new Date();
@@ -153,33 +163,36 @@ router.get("/muscle-summary", protect, async (req: Request, res: Response) => {
   }
 });
 
+router.get(
+  "/completed-exercises/:workoutId",
+  protect,
+  async (req: Request, res: Response) => {
+    const { workoutId } = req.params;
+    const dateStr = String(req.query.date ?? "");
+    const userId = (req as any).user.id;
 
-router.get("/completed-exercises/:workoutId", protect, async (req: Request, res: Response) => {
-  const { workoutId } = req.params;
-  const dateStr = String(req.query.date ?? "");
-  const userId = (req as any).user.id;
+    if (!/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      return res.status(400).json({ error: "date must start with YYYY-MM-DD" });
+    }
 
-  if (!/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-    return res.status(400).json({ error: "date must start with YYYY-MM-DD" });
-  }
-
-  try {
-    const result = await pool.query(
-      `SELECT wl.workout_exercise_id
+    try {
+      const result = await pool.query(
+        `SELECT wl.workout_exercise_id
        FROM workout_log wl
        JOIN workout_exercises we ON we.id = wl.workout_exercise_id
        WHERE wl.user_id = $1
          AND we.workout_id = $2
          AND (wl.completed_at AT TIME ZONE 'UTC')::date = $3::date`,
-      [userId, workoutId, dateStr.substring(0, 10)]
-    );
+        [userId, workoutId, dateStr.substring(0, 10)],
+      );
 
-    res.json(result.rows.map(r => r.workout_exercise_id));
-  } catch (err) {
-    console.error("error completed-exercises:", err);
-    res.status(500).json({ error: "Failed to fetch completed exercises" });
-  }
-});
+      res.json(result.rows.map((r) => r.workout_exercise_id));
+    } catch (err) {
+      console.error("error completed-exercises:", err);
+      res.status(500).json({ error: "Failed to fetch completed exercises" });
+    }
+  },
+);
 
 router.get("/getAll", async (req: Request, res: Response) => {
   const fetch_query = "SELECT * FROM workouts ORDER BY name";
@@ -292,7 +305,7 @@ router.get(
   },
 );
 
-router.post("/create", async (req: Request, res: Response) => {
+router.post("/create", protect, async (req: Request, res: Response) => {
   const { name, days, exercises } = req.body;
   // exercises: [{ exerciseId, sets, reps, weight, orderIndex }]
 
