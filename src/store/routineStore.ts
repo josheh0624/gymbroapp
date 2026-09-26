@@ -1,6 +1,7 @@
 import { supabase } from "@/api/supabase";
 import Exercise from "@/models/excerciseModel";
 import WorkoutRoutine from "@/models/workout-routine-model";
+import { checkAndUpdatePRs } from "@/utils/prUtils";
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
@@ -466,6 +467,21 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
         const { error } = await supabase.from("workout_log").insert(insertData);
 
         if (error) console.error("Error inserting workout log:", error);
+
+        // Check and update PRs for all completed exercises
+        const doneExercises =
+          workout?.exercises
+            .filter((e) => e.isDone && e.weight && e.weight > 0)
+            .map((e) => ({
+              id: e.id,
+              name: e.name,
+              weight: e.weight,
+              isDone: true,
+            })) || [];
+
+        if (doneExercises.length > 0) {
+          void checkAndUpdatePRs(doneExercises);
+        }
       }
 
       if (durationSeconds !== undefined) {
@@ -615,6 +631,18 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
           completed_at: dateStr,
           weight: weight,
         });
+
+        // Check and update PR if performed weight exceeds current record
+        if (exercise && weight && weight > 0) {
+          void checkAndUpdatePRs([
+            {
+              id: exercise.id,
+              name: exercise.name,
+              weight: weight,
+              isDone: true,
+            },
+          ]);
+        }
       } else {
         await supabase
           .from("workout_log")
@@ -755,6 +783,25 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
             },
       ),
     }));
+
+    // If this exercise is already marked done and weight is updated, check PRs
+    const currentRoutine = get().routines.find((r) => r.id === routineId);
+    const currentWorkout = currentRoutine?.workouts.find(
+      (w) => w.id === workoutId,
+    );
+    const updatedEx = currentWorkout?.exercises.find(
+      (e) => e.workoutExerciseId === workoutExerciseId,
+    );
+    if (updatedEx && updatedEx.isDone && updates.weight && updates.weight > 0) {
+      void checkAndUpdatePRs([
+        {
+          id: updatedEx.id,
+          name: updatedEx.name,
+          weight: updates.weight,
+          isDone: true,
+        },
+      ]);
+    }
 
     try {
       const { data: userData } = await supabase.auth.getUser();

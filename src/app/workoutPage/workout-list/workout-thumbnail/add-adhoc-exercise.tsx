@@ -1,10 +1,10 @@
-import { useThemeStore } from "@/store/themeStore";
-import { useMemo, useState, useEffect } from "react";
-import { useThemeColors } from "@/styles/appStyles";
-import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "@/api/supabase";
+import { useThemeStore } from "@/store/themeStore";
+import { useThemeColors } from "@/styles/appStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,8 +15,8 @@ import {
   View,
 } from "react-native";
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRoutineStore } from "@/store/routineStore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface AvailableExercise {
   id: string;
@@ -25,23 +25,32 @@ interface AvailableExercise {
 }
 
 export default function AddAdhocExercise() {
-  const { routineId, workoutId } = useLocalSearchParams<{ routineId: string; workoutId: string }>();
+  const { routineId, workoutId } = useLocalSearchParams<{
+    routineId: string;
+    workoutId: string;
+  }>();
   const colors = useThemeColors();
   const isLight = useThemeStore((s) => s.theme === "light");
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const addAdHocExerciseToActiveWorkout = useRoutineStore(s => s.addAdHocExerciseToActiveWorkout);
+  const addAdHocExerciseToActiveWorkout = useRoutineStore(
+    (s) => s.addAdHocExerciseToActiveWorkout,
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [exercises, setExercises] = useState<AvailableExercise[]>([]);
-  const [muscleGroups, setMuscleGroups] = useState<{ id: string; name: string }[]>([]);
+  const [muscleGroups, setMuscleGroups] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
-  
+
   const [isCreatingExercise, setIsCreatingExercise] = useState(false);
-  const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState<string | null>(null);
+  const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState<
+    string | null
+  >(null);
   const [showMgDropdown, setShowMgDropdown] = useState(false);
 
   useEffect(() => {
@@ -49,7 +58,9 @@ export default function AddAdhocExercise() {
       const { data } = await supabase
         .from("exercises")
         .select("id, name, muscle_groups(name)");
-      const { data: mgData } = await supabase.from("muscle_groups").select("id, name");
+      const { data: mgData } = await supabase
+        .from("muscle_groups")
+        .select("id, name");
       if (mgData) {
         setMuscleGroups(mgData);
       }
@@ -59,7 +70,7 @@ export default function AddAdhocExercise() {
             id: d.id,
             name: d.name,
             muscle_group_name: d.muscle_groups?.name,
-          }))
+          })),
         );
       }
       setLoading(false);
@@ -75,20 +86,26 @@ export default function AddAdhocExercise() {
     setIsAdding(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const { data, error } = await supabase.from('exercises').insert({
-        name,
-        muscle_group_id: selectedMuscleGroupId,
-        user_id: userData.user?.id
-      }).select('id, name, muscle_groups(name)').single();
-      
+      const { data, error } = await supabase
+        .from("exercises")
+        .insert({
+          name,
+          muscle_group_id: selectedMuscleGroupId,
+          user_id: userData.user?.id,
+        })
+        .select("id, name, muscle_groups(name)")
+        .single();
+
       if (error) throw error;
-      
-      const newEx: AvailableExercise = { 
-        id: data.id, 
+
+      const newEx: AvailableExercise = {
+        id: data.id,
         name: data.name,
-        muscle_group_name: data.muscle_groups?.name 
+        muscle_group_name: Array.isArray(data.muscle_groups)
+          ? (data.muscle_groups[0] as any)?.name
+          : (data.muscle_groups as any)?.name,
       };
-      setExercises(prev => [...prev, newEx]);
+      setExercises((prev) => [...prev, newEx]);
       setIsCreatingExercise(false);
       setSearchQuery("");
       setSelectedMuscleGroupId(null);
@@ -103,12 +120,20 @@ export default function AddAdhocExercise() {
   const handleAdd = async (ex: AvailableExercise) => {
     if (!routineId || !workoutId || isAdding) return;
     setIsAdding(true);
-    await addAdHocExerciseToActiveWorkout(routineId, workoutId, ex.id, ex.name, ex.muscle_group_name);
+    await addAdHocExerciseToActiveWorkout(
+      routineId,
+      workoutId,
+      ex.id,
+      ex.name,
+      ex.muscle_group_name,
+    );
     setIsAdding(false);
     router.back();
   };
 
-  const filtered = exercises.filter(e => e.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filtered = exercises.filter((e) =>
+    e.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   return (
     <>
@@ -136,7 +161,7 @@ export default function AddAdhocExercise() {
             end={{ x: 1, y: 1 }}
           />
         </View>
-        
+
         <View style={{ paddingTop: 24, flex: 1 }}>
           <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
             {!isCreatingExercise ? (
@@ -158,13 +183,12 @@ export default function AddAdhocExercise() {
                 ]}
                 onPress={() => setIsCreatingExercise(true)}
               >
-                <Ionicons
-                  name="add-circle"
-                  size={20}
-                  color={colors.accent}
-                />
+                <Ionicons name="add-circle" size={20} color={colors.accent} />
                 <Text
-                  style={[styles.workoutName, { color: colors.accent, marginLeft: 8 }]}
+                  style={[
+                    styles.workoutName,
+                    { color: colors.accent, marginLeft: 8 },
+                  ]}
                 >
                   Create Custom Exercise
                 </Text>
@@ -246,7 +270,13 @@ export default function AddAdhocExercise() {
                     </Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.formBtn, { backgroundColor: colors.accent, opacity: isAdding ? 0.7 : 1 }]}
+                    style={[
+                      styles.formBtn,
+                      {
+                        backgroundColor: colors.accent,
+                        opacity: isAdding ? 0.7 : 1,
+                      },
+                    ]}
                     onPress={handleCreateNewExercise}
                     disabled={isAdding}
                   >
@@ -262,45 +292,58 @@ export default function AddAdhocExercise() {
               </View>
             )}
           </View>
-          
+
           {!isCreatingExercise && (
             <View style={{ paddingHorizontal: 16 }}>
-            <TextInput
-              style={[styles.input, { marginBottom: 16 }]}
-              placeholder="Search exercises..."
-              placeholderTextColor={colors.textFaint}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              returnKeyType="search"
-              autoFocus
-            />
+              <TextInput
+                style={[styles.input, { marginBottom: 16 }]}
+                placeholder="Search exercises..."
+                placeholderTextColor={colors.textFaint}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+                autoFocus
+              />
             </View>
           )}
 
           {loading && !isCreatingExercise ? (
-          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
-        ) : (
-          <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
-            {filtered.map((ex, i) => (
-              <Pressable
-                key={ex.id}
-                onPress={() => handleAdd(ex)}
-                style={({ pressed }) => [
-                  styles.workoutRow,
-                  i !== filtered.length - 1 && styles.rowDivider,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <View>
-                  <Text style={styles.workoutName}>{ex.name}</Text>
-                  {ex.muscle_group_name && (
-                    <Text style={styles.workoutMeta}>{ex.muscle_group_name}</Text>
-                  )}
-                </View>
-                <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-              </Pressable>
-            ))}
-          </ScrollView>
+            <ActivityIndicator
+              size="large"
+              color={colors.accent}
+              style={{ marginTop: 40 }}
+            />
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.list}
+              keyboardShouldPersistTaps="handled"
+            >
+              {filtered.map((ex, i) => (
+                <Pressable
+                  key={ex.id}
+                  onPress={() => handleAdd(ex)}
+                  style={({ pressed }) => [
+                    styles.workoutRow,
+                    i !== filtered.length - 1 && styles.rowDivider,
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <View>
+                    <Text style={styles.workoutName}>{ex.name}</Text>
+                    {ex.muscle_group_name && (
+                      <Text style={styles.workoutMeta}>
+                        {ex.muscle_group_name}
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={24}
+                    color={colors.accent}
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
           )}
         </View>
       </View>
@@ -308,102 +351,103 @@ export default function AddAdhocExercise() {
   );
 }
 
-const getStyles = (colors: any, isLight: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  input: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "700",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceBorder,
-    paddingBottom: 8,
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
-  workoutRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
-  },
-  rowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  workoutName: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  workoutMeta: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  customExerciseForm: {
-    backgroundColor: colors.surface,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    marginBottom: 16,
-  },
-  muscleGroupContainer: {
-    marginTop: 12,
-  },
-  metricLabel: {
-    color: colors.textFaint,
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  dropdownToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.bg,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-  },
-  dropdownToggleText: {
-    color: colors.text,
-    fontSize: 15,
-  },
-  dropdownList: {
-    maxHeight: 150,
-    backgroundColor: colors.bgElevated,
-    borderRadius: 8,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.surfaceBorder,
-  },
-  dropdownItemText: {
-    color: colors.text,
-    fontSize: 15,
-  },
-  dropdownItemTextActive: {
-    color: colors.accent,
-    fontWeight: "700",
-  },
-  formBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const getStyles = (colors: any, isLight: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    input: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+      borderBottomWidth: 1,
+      borderBottomColor: colors.surfaceBorder,
+      paddingBottom: 8,
+    },
+    list: {
+      paddingHorizontal: 16,
+      paddingBottom: 40,
+    },
+    workoutRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 16,
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    workoutName: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    workoutMeta: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginTop: 4,
+    },
+    customExerciseForm: {
+      backgroundColor: colors.surface,
+      padding: 16,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      marginBottom: 16,
+    },
+    muscleGroupContainer: {
+      marginTop: 12,
+    },
+    metricLabel: {
+      color: colors.textFaint,
+      fontSize: 12,
+      fontWeight: "600",
+      marginBottom: 8,
+    },
+    dropdownToggle: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.bg,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    dropdownToggleText: {
+      color: colors.text,
+      fontSize: 15,
+    },
+    dropdownList: {
+      maxHeight: 150,
+      backgroundColor: colors.bgElevated,
+      borderRadius: 8,
+      marginTop: 4,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    dropdownItem: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.surfaceBorder,
+    },
+    dropdownItemText: {
+      color: colors.text,
+      fontSize: 15,
+    },
+    dropdownItemTextActive: {
+      color: colors.accent,
+      fontWeight: "700",
+    },
+    formBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });

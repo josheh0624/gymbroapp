@@ -1,11 +1,11 @@
-import { useMemo } from "react";
-import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
 import { useRoutineStore } from "@/store/routineStore";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { router } from "expo-router";
-import { Alert, Pressable, StyleSheet } from "react-native";
+import { ThemeColors, useThemeColors } from "@/styles/appStyles";
 import { withAsyncLock } from "@/utils/asyncUtils";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
+import { useMemo } from "react";
+import { Alert, Pressable, StyleSheet } from "react-native";
 
 interface Props {
   routineId: string;
@@ -26,7 +26,7 @@ export default function AddToRoutine({ routineId }: Props) {
     if (activeSession) {
       Alert.alert(
         "Workout in Progress",
-        "You cannot change or remove your routine while a workout is currently active. Please finish your workout first."
+        "You cannot change or remove your routine while a workout is currently active. Please finish your workout first.",
       );
       return;
     }
@@ -43,9 +43,9 @@ export default function AddToRoutine({ routineId }: Props) {
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.button, 
+        styles.button,
         isActive && styles.activeButton,
-        pressed && styles.pressed
+        pressed && styles.pressed,
       ]}
       onPress={handleToggleWorkout}
       hitSlop={8}
@@ -59,22 +59,23 @@ export default function AddToRoutine({ routineId }: Props) {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  button: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#4169E1",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  activeButton: {
-    backgroundColor: colors.surfaceBorder,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.94 }],
-  },
-});
+const getStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    button: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: "#4169E1",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    activeButton: {
+      backgroundColor: colors.surfaceBorder,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    pressed: {
+      opacity: 0.85,
+      transform: [{ scale: 0.94 }],
+    },
+  });

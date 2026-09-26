@@ -1,15 +1,15 @@
 import { supabase } from "@/api/supabase";
-import { useAuthStore, SafeUser } from "@/store/authStore";
+import { SafeUser, useAuthStore } from "@/store/authStore";
 import { useHealthStore } from "@/store/healthStore";
 import { useRoutineStore } from "@/store/routineStore";
-import { useThemeStore } from "@/store/themeStore";
 import { useSettingsStore } from "@/store/settingsStore";
-import ActiveWorkoutBanner from "./components/active-workout-banner";
+import { useThemeStore } from "@/store/themeStore";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
-import { ActivityIndicator, View, TouchableWithoutFeedback, Keyboard } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { View } from "react-native";
+import ActiveWorkoutBanner from "./components/active-workout-banner";
 
 SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
@@ -18,7 +18,6 @@ export default function RootLayout() {
   const { loadSettings } = useSettingsStore();
   const loadActiveRoutine = useRoutineStore((s) => s.loadActiveRoutine);
   const loadPermissions = useHealthStore((s) => s.loadPermissions);
-  
 
   useEffect(() => {
     if (!loading) {
@@ -33,19 +32,20 @@ export default function RootLayout() {
   }, []);
   const segments = useSegments();
   const router = useRouter();
-  const isAddExerciseScreen = segments.includes("add-adhoc-exercise");
-
+  const isAddExerciseScreen = (segments as string[]).includes(
+    "add-adhoc-exercise",
+  );
 
   useEffect(() => {
     let isMounted = true;
 
     async function getProfile(userId: string) {
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
+        .from("users")
+        .select("*")
+        .eq("id", userId)
         .single();
-      
+
       if (!error && data) {
         setUser(data as SafeUser);
         loadActiveRoutine();
@@ -63,17 +63,17 @@ export default function RootLayout() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!isMounted) return;
-        if (session?.user) {
-          getProfile(session.user.id);
-          loadActiveRoutine();
-        } else {
-          setUser(null);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        getProfile(session.user.id);
+        loadActiveRoutine();
+      } else {
+        setUser(null);
       }
-    );
+    });
 
     return () => {
       isMounted = false;
@@ -84,13 +84,18 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading) return;
 
-    const inProtectedGroup = segments[0] === '(tabs)' || segments[0] === 'workoutPage' || segments[0] === 'editProfile' || segments[0] === 'editPassword' || segments[0] === 'deleteAccount';
-    
+    const inProtectedGroup =
+      segments[0] === "(tabs)" ||
+      segments[0] === "workoutPage" ||
+      segments[0] === "editProfile" ||
+      segments[0] === "editPassword" ||
+      segments[0] === "deleteAccount";
+
     if (!user && inProtectedGroup) {
       // Redirect to login if not authenticated
-      router.replace('/routes/login');
+      router.replace("/routes/login");
     }
-    // Note: We let the individual auth screens (login, register, setup) handle their own redirects 
+    // Note: We let the individual auth screens (login, register, setup) handle their own redirects
     // when the user state changes, so we don't accidentally interrupt the onboarding flow!
   }, [user, loading, segments]);
 
@@ -99,18 +104,28 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme === "dark" ? "#000" : "#F2F2F7" }}>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        {!isAddExerciseScreen && <ActiveWorkoutBanner />}
-        <Stack screenOptions={{ animation: "slide_from_bottom" }}>
-          <Stack.Screen name="routes/login" options={{ headerShown: false }} />
-          <Stack.Screen name="routes/onboarding/register" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="workoutPage/workoutPage" options={{ headerShown: false }} />
-        </Stack>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme === "dark" ? "#000" : "#F2F2F7",
+      }}
+    >
+      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      {!isAddExerciseScreen && <ActiveWorkoutBanner />}
+      <Stack screenOptions={{ animation: "slide_from_bottom" }}>
+        <Stack.Screen name="routes/login" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="routes/onboarding/register"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="workoutPage/workoutPage"
+          options={{ headerShown: false }}
+        />
+      </Stack>
     </View>
   );
 }
 
-
-export { ErrorBoundary } from 'expo-router';
+export { ErrorBoundary } from "expo-router";
