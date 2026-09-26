@@ -105,7 +105,9 @@ const upload = multer({
     const mime = file.mimetype.toLowerCase();
     if (!ALLOWED_MIME_TYPES[mime]) {
       return cb(
-        new Error("Only JPEG, PNG, and WebP image files are allowed. SVG and other formats are prohibited."),
+        new Error(
+          "Only JPEG, PNG, and WebP image files are allowed. SVG and other formats are prohibited.",
+        ),
       );
     }
     cb(null, true);

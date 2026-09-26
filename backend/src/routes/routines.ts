@@ -105,33 +105,37 @@ router.get("/fetchRoutine/:id", async (req: Request, res: Response) => {
 });
 
 // Toggle a single exercise's done state — :id is workout_exercises.id
-router.patch("/markExerciseDone/:id", protect, async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { isDone, completedAt } = req.body as any;
-  const userId = (req as any).user.id;
+router.patch(
+  "/markExerciseDone/:id",
+  protect,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { isDone, completedAt } = req.body as any;
+    const userId = (req as any).user.id;
 
-  try {
-    if (isDone) {
-      await pool.query(
-        `INSERT INTO workout_log (user_id, workout_exercise_id, completed_at)
+    try {
+      if (isDone) {
+        await pool.query(
+          `INSERT INTO workout_log (user_id, workout_exercise_id, completed_at)
          VALUES ($1, $2, COALESCE($3::timestamptz, NOW()))
          ON CONFLICT (user_id, workout_exercise_id, ((completed_at AT TIME ZONE 'UTC')::date))
          DO UPDATE SET completed_at = EXCLUDED.completed_at`,
-        [userId, id, completedAt || null]
-      );
-    } else {
-      await pool.query(
-        `DELETE FROM workout_log 
+          [userId, id, completedAt || null],
+        );
+      } else {
+        await pool.query(
+          `DELETE FROM workout_log 
          WHERE user_id = $1 AND workout_exercise_id = $2 AND (completed_at AT TIME ZONE 'UTC')::date = (COALESCE($3::timestamptz, NOW()) AT TIME ZONE 'UTC')::date`,
-        [userId, id, completedAt || null]
-      );
-    }
-    res.json({ success: true });
-  } catch(err) {
+          [userId, id, completedAt || null],
+        );
+      }
+      res.json({ success: true });
+    } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to update exercise" });
-  }
-});
+    }
+  },
+);
 
 router.patch(
   "/updateExerciseDetails/:id",
@@ -180,11 +184,15 @@ router.patch(
 
       const row = checkResult.rows[0];
       if (row.is_prebuilt) {
-        return res.status(403).json({ error: "Cannot modify prebuilt routine exercise details" });
+        return res
+          .status(403)
+          .json({ error: "Cannot modify prebuilt routine exercise details" });
       }
 
       if (row.user_id && row.user_id !== userId) {
-        return res.status(403).json({ error: "Unauthorized to modify this exercise" });
+        return res
+          .status(403)
+          .json({ error: "Unauthorized to modify this exercise" });
       }
 
       const result = await pool.query(
@@ -214,42 +222,57 @@ router.patch(
 );
 
 // Finish a whole workout — :id is workouts.id, marks every exercise in it done
-router.put(["/workoutDone/:id", "/markDone/:id"], protect, async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { doneExerciseIds, completedAt } = req.body as any;
-  const userId = (req as any).user.id;
+router.put(
+  ["/workoutDone/:id", "/markDone/:id"],
+  protect,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { doneExerciseIds, completedAt } = req.body as any;
+    const userId = (req as any).user.id;
 
-  try {
-    const workoutResult = await pool.query("SELECT id FROM workouts WHERE id = $1", [id]);
-    if (workoutResult.rows.length === 0) return res.status(404).json({ error: "Workout not found" });
+    try {
+      const workoutResult = await pool.query(
+        "SELECT id FROM workouts WHERE id = $1",
+        [id],
+      );
+      if (workoutResult.rows.length === 0)
+        return res.status(404).json({ error: "Workout not found" });
 
-    if (doneExerciseIds && doneExerciseIds.length > 0) {
-      await pool.query(
-        `INSERT INTO workout_log (user_id, workout_exercise_id, completed_at)
+      if (doneExerciseIds && doneExerciseIds.length > 0) {
+        await pool.query(
+          `INSERT INTO workout_log (user_id, workout_exercise_id, completed_at)
          SELECT $1, unnest($2::uuid[]), COALESCE($3::timestamptz, NOW())
          ON CONFLICT (user_id, workout_exercise_id, ((completed_at AT TIME ZONE 'UTC')::date))
          DO UPDATE SET completed_at = EXCLUDED.completed_at`,
-         [userId, doneExerciseIds, completedAt || null]
-      );
-    }
+          [userId, doneExerciseIds, completedAt || null],
+        );
+      }
 
-    await pool.query(
-      `DELETE FROM workout_log wl
+      await pool.query(
+        `DELETE FROM workout_log wl
        USING workout_exercises we
        WHERE wl.workout_exercise_id = we.id
          AND we.workout_id = $2
          AND wl.user_id = $1
          AND (wl.completed_at AT TIME ZONE 'UTC')::date = (COALESCE($3::timestamptz, NOW()) AT TIME ZONE 'UTC')::date
          AND ($4::uuid[] IS NULL OR NOT (we.id = ANY($4::uuid[])))`,
-      [userId, id, completedAt || null, doneExerciseIds && doneExerciseIds.length > 0 ? doneExerciseIds : null]
-    );
+        [
+          userId,
+          id,
+          completedAt || null,
+          doneExerciseIds && doneExerciseIds.length > 0
+            ? doneExerciseIds
+            : null,
+        ],
+      );
 
-    res.json({ workoutId: id, workoutDone: true });
-  } catch(err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to mark workout done" });
-  }
-});
+      res.json({ workoutId: id, workoutDone: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to mark workout done" });
+    }
+  },
+);
 
 router.post("/create", protect, async (req: Request, res: Response) => {
   const { name, workoutIds } = req.body; // workoutIds: string[] of workout UUIDs, in order
