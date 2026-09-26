@@ -2,29 +2,28 @@ import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useThemeStore } from "@/store/themeStore";
-import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
+import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { Redirect, Stack, useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { Stack, useRouter } from "expo-router";
+import { useMemo, useRef, useState } from "react";
 import {
   Dimensions,
+  Keyboard,
   Platform,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Keyboard,
   TouchableWithoutFeedback,
+  View,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
 
 export default function RegisterScreen() {
   const router = useRouter();
-
 
   const user = useAuthStore((s) => s.user);
   const colors = useThemeColors();
@@ -38,6 +37,41 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+
+  const checkUsernameAvailable = async (name: string): Promise<boolean> => {
+    const trimmed = name.trim();
+    if (!trimmed) return true;
+
+    try {
+      // 1. Try checking via secure RPC (bypasses RLS safely for anon users)
+      const { data: isTakenRpc, error: rpcError } = await supabase.rpc(
+        "check_username_exists",
+        { username_to_check: trimmed },
+      );
+
+      if (!rpcError && isTakenRpc === true) {
+        return false;
+      }
+
+      // 2. Direct table fallback (case-insensitive) if public SELECT policy is enabled
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("username")
+        .ilike("username", trimmed)
+        .maybeSingle();
+
+      if (existingUser) {
+        return false;
+      }
+    } catch {
+      // Passive check network/schema error fallback
+    }
+
+    return true;
+  };
 
   const handleRegister = async () => {
     setError("");
@@ -65,39 +99,60 @@ export default function RegisterScreen() {
 
     setSubmitting(true);
     try {
-      // Check if username is already taken (assuming 'users' table is readable)
-      const { data: existingUser } = await supabase
-        .from("users")
-        .select("username")
-        .eq("username", trimmedUsername)
-        .maybeSingle();
-
-      if (existingUser) {
-        setError("Username is already taken.");
+      // Check if username is already taken
+      const isAvailable = await checkUsernameAvailable(trimmedUsername);
+      if (!isAvailable) {
+        setError("That username is already taken. Please choose another one.");
         setSubmitting(false);
         return;
       }
 
-      // Create the account first so we can catch "Email already taken" instantly
+      // Create the account
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
         password: password,
         options: {
-          data: { username: trimmedUsername }
-        }
+          data: { username: trimmedUsername },
+        },
       });
-      
+
       if (error) throw error;
       if (!data.user) throw new Error("Failed to create account.");
 
       // Store credentials so setup.tsx can sync them, but account IS already created
       const setRegisterData = useOnboardingStore.getState().setRegisterData;
       setRegisterData(trimmedUsername, trimmedEmail, password);
-      
+
       router.push("./setup");
     } catch (err: any) {
       console.error("Register error:", err);
-      setError(err.message || "Unable to process account info.");
+      const msg = err?.message || "";
+      const lower = msg.toLowerCase();
+
+      if (
+        lower.includes("database error saving new user") ||
+        lower.includes("unique constraint") ||
+        lower.includes("duplicate key") ||
+        lower.includes("violates unique") ||
+        lower.includes("username") ||
+        lower.includes("user_already_exists")
+      ) {
+        if (lower.includes("email") || lower.includes("already registered")) {
+          setError(
+            "An account with this email already exists. Please log in instead.",
+          );
+        } else {
+          setError(
+            "That username is already taken. Please choose another one.",
+          );
+        }
+      } else if (lower.includes("user already registered")) {
+        setError(
+          "An account with this email already exists. Please log in instead.",
+        );
+      } else {
+        setError(msg || "Unable to process account info.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -127,242 +182,288 @@ export default function RegisterScreen() {
         }}
       />
 
-      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false} touchSoundDisabled>
-      <View style={styles.root}>
-        <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
+      <TouchableWithoutFeedback
+        onPress={() => Keyboard.dismiss()}
+        accessible={false}
+        touchSoundDisabled
+      >
+        <View style={styles.root}>
+          <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
 
-        <LinearGradient
-          colors={[colors.bg, colors.bg, colors.bg]}
-          style={StyleSheet.absoluteFill}
-        />
+          <LinearGradient
+            colors={[colors.bg, colors.bg, colors.bg]}
+            style={StyleSheet.absoluteFill}
+          />
 
-        <View style={styles.safe}>
-          <View style={styles.content}>
-            <View style={styles.brandRow}>
-              <Text style={styles.brandText}>Gymbro</Text>
-            </View>
-
-            <BlurView intensity={35} tint={isLight ? "extraLight" : "dark"} style={styles.card}>
-              <View style={styles.cardInner}>
-                <Text style={styles.eyebrow}>New Here</Text>
-                <Text style={styles.headline}>Create your{"\n"}account.</Text>
-                <View style={styles.headlineBar} />
-
-                <View style={styles.field}>
-                  <Text style={styles.label}>Username</Text>
-                  <View style={styles.inputShell}>
-                    <TextInput
-                      placeholder="gymbro"
-                      placeholderTextColor="#5A5D63"
-                      style={styles.input}
-                      autoCapitalize="none"
-                      value={username}
-                      onChangeText={setUsername}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputShell}>
-                    <TextInput
-                      placeholder="you@example.com"
-                      placeholderTextColor="#5A5D63"
-                      style={styles.input}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      value={email}
-                      onChangeText={setEmail}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={styles.inputShell}>
-                    <TextInput
-                      placeholder="••••••••"
-                      placeholderTextColor="#5A5D63"
-                      style={styles.input}
-                      secureTextEntry
-                      value={password}
-                      onChangeText={setPassword}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.label}>Confirm Password</Text>
-                  <View style={styles.inputShell}>
-                    <TextInput
-                      placeholder="••••••••"
-                      placeholderTextColor="#5A5D63"
-                      style={styles.input}
-                      secureTextEntry
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                    />
-                  </View>
-                </View>
-
-                {!!error && <Text style={styles.errorText}>{error}</Text>}
-
-                <TouchableOpacity
-                  style={styles.cta}
-                  activeOpacity={0.85}
-                  onPress={handleRegister}
-                  disabled={submitting}
-                >
-                  <Text style={styles.ctaText}>
-                    {submitting ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>Already a Member</Text>
-                  <View style={styles.dividerLine} />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.secondaryCta}
-                  activeOpacity={0.7}
-                  onPress={() => router.push("../login")}
-                >
-                  <Text style={styles.secondaryCtaText}>Log in instead</Text>
-                </TouchableOpacity>
+          <View style={styles.safe}>
+            <View style={styles.content}>
+              <View style={styles.brandRow}>
+                <Text style={styles.brandText}>Gymbro</Text>
               </View>
-            </BlurView>
 
-            <Text style={styles.footer}>Josh Haney 2026</Text>
+              <BlurView
+                intensity={35}
+                tint={isLight ? "extraLight" : "dark"}
+                style={styles.card}
+              >
+                <View style={styles.cardInner}>
+                  <Text style={styles.eyebrow}>New Here</Text>
+                  <Text style={styles.headline}>Create your{"\n"}account.</Text>
+                  <View style={styles.headlineBar} />
+
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Username</Text>
+                    <View style={styles.inputShell}>
+                      <TextInput
+                        placeholder="gymbro"
+                        placeholderTextColor="#5A5D63"
+                        style={styles.input}
+                        autoCapitalize="none"
+                        value={username}
+                        onChangeText={(val) => {
+                          setUsername(val);
+                          if (
+                            error &&
+                            error.toLowerCase().includes("username")
+                          ) {
+                            setError("");
+                          }
+                        }}
+                        onBlur={async () => {
+                          if (username.trim().length >= 3) {
+                            const isAvailable =
+                              await checkUsernameAvailable(username);
+                            if (!isAvailable) {
+                              setError(
+                                "That username is already taken. Please choose another one.",
+                              );
+                            }
+                          }
+                        }}
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => emailRef.current?.focus()}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Email</Text>
+                    <View style={styles.inputShell}>
+                      <TextInput
+                        ref={emailRef}
+                        placeholder="you@example.com"
+                        placeholderTextColor="#5A5D63"
+                        style={styles.input}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        value={email}
+                        onChangeText={setEmail}
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => passwordRef.current?.focus()}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Password</Text>
+                    <View style={styles.inputShell}>
+                      <TextInput
+                        ref={passwordRef}
+                        placeholder="••••••••"
+                        placeholderTextColor="#5A5D63"
+                        style={styles.input}
+                        secureTextEntry
+                        value={password}
+                        onChangeText={setPassword}
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() =>
+                          confirmPasswordRef.current?.focus()
+                        }
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Confirm Password</Text>
+                    <View style={styles.inputShell}>
+                      <TextInput
+                        ref={confirmPasswordRef}
+                        placeholder="••••••••"
+                        placeholderTextColor="#5A5D63"
+                        style={styles.input}
+                        secureTextEntry
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        returnKeyType="done"
+                        onSubmitEditing={handleRegister}
+                      />
+                    </View>
+                  </View>
+
+                  {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+                  <TouchableOpacity
+                    style={styles.cta}
+                    activeOpacity={0.85}
+                    onPress={handleRegister}
+                    disabled={submitting}
+                  >
+                    <Text style={styles.ctaText}>
+                      {submitting ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>Already a Member</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.secondaryCta}
+                    activeOpacity={0.7}
+                    onPress={() => router.push("../login")}
+                  >
+                    <Text style={styles.secondaryCtaText}>Log in instead</Text>
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+
+              <Text style={styles.footer}>Josh Haney 2026</Text>
+            </View>
           </View>
-        </View>
         </View>
       </TouchableWithoutFeedback>
     </>
   );
 }
 
-const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  safe: { flex: 1 },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
-  brandText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  card: {
-    width: "100%",
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-  },
-  cardInner: {
-    padding: 28,
-    backgroundColor: isLight ? "transparent" : Platform.select({
-      ios: "rgba(30,31,35,0.38)",
-      android: "rgba(30,31,35,0.78)",
-      default: "rgba(30,31,35,0.6)",
-    }),
-  },
-  eyebrow: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  headline: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "800",
-    lineHeight: 34,
-  },
-  headlineBar: {
-    width: 40,
-    height: 3,
-    borderRadius: 1,
-    backgroundColor: COLORS.accent,
-    marginTop: 16,
-    marginBottom: 28,
-  },
-  field: { marginBottom: 16 },
-  label: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "normal",
-    marginBottom: 8,
-  },
-  inputShell: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    backgroundColor: colors.surface,
-  },
-  input: {
-    height: 50,
-    paddingHorizontal: 16,
-    color: colors.text,
-    fontSize: 15,
-  },
-  cta: {
-    height: 54,
-    borderRadius: 12,
-    backgroundColor: COLORS.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: COLORS.accent,
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-    marginTop: 4,
-  },
-  ctaText: {
-    color: isLight ? "#000" : colors.text,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 26,
-    marginBottom: 18,
-  },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.surfaceBorder },
-  dividerText: {
-    color: colors.textMuted,
-    fontSize: 10,
-    fontWeight: "700",
-    marginHorizontal: 12,
-  },
-  secondaryCta: {
-    height: 50,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  secondaryCtaText: { color: colors.text, fontSize: 14, fontWeight: "700" },
-  footer: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 24,
-  },
-  errorText: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-});
+const getStyles = (colors: ThemeColors, isLight: boolean) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.bg },
+    safe: { flex: 1 },
+    content: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 24,
+    },
+    brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
+    brandText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+    card: {
+      width: "100%",
+      borderRadius: 20,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    cardInner: {
+      padding: 28,
+      backgroundColor: isLight
+        ? "transparent"
+        : Platform.select({
+            ios: "rgba(30,31,35,0.38)",
+            android: "rgba(30,31,35,0.78)",
+            default: "rgba(30,31,35,0.6)",
+          }),
+    },
+    eyebrow: {
+      color: colors.textMuted,
+      fontSize: 12,
+      fontWeight: "700",
+      marginBottom: 10,
+    },
+    headline: {
+      color: colors.text,
+      fontSize: 30,
+      fontWeight: "800",
+      lineHeight: 34,
+    },
+    headlineBar: {
+      width: 40,
+      height: 3,
+      borderRadius: 1,
+      backgroundColor: COLORS.accent,
+      marginTop: 16,
+      marginBottom: 28,
+    },
+    field: { marginBottom: 16 },
+    label: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontWeight: "normal",
+      marginBottom: 8,
+    },
+    inputShell: {
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      backgroundColor: colors.surface,
+    },
+    input: {
+      height: 50,
+      paddingHorizontal: 16,
+      color: colors.text,
+      fontSize: 15,
+    },
+    cta: {
+      height: 54,
+      borderRadius: 12,
+      backgroundColor: COLORS.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: COLORS.accent,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 6,
+      marginTop: 4,
+    },
+    ctaText: {
+      color: isLight ? "#000" : colors.text,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    dividerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 26,
+      marginBottom: 18,
+    },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors.surfaceBorder },
+    dividerText: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontWeight: "700",
+      marginHorizontal: 12,
+    },
+    secondaryCta: {
+      height: 50,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    secondaryCtaText: { color: colors.text, fontSize: 14, fontWeight: "700" },
+    footer: {
+      color: colors.textMuted,
+      fontSize: 12,
+      fontWeight: "600",
+      marginTop: 24,
+    },
+    errorText: {
+      color: COLORS.accent,
+      fontSize: 13,
+      fontWeight: "600",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+  });

@@ -1,13 +1,13 @@
 import { supabase } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
-import { calculateAge } from "@/utils/dateUtils";
 import { useThemeStore } from "@/store/themeStore";
-import { COLORS, useThemeColors, ThemeColors } from "@/styles/appStyles";
+import { COLORS, ThemeColors, useThemeColors } from "@/styles/appStyles";
+import { calculateAge } from "@/utils/dateUtils";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { Redirect, Stack, useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { Stack, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   LayoutAnimation,
@@ -75,6 +75,16 @@ export default function SetupScreen() {
   const { theme } = useThemeStore();
   const isLight = theme === "light";
   const styles = useMemo(() => getStyles(colors, isLight), [colors, isLight]);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const bdayDayRef = useRef<TextInput>(null);
+  const bdayYearRef = useRef<TextInput>(null);
+  const inchesRef = useRef<TextInput>(null);
+  const squatRef = useRef<TextInput>(null);
+  const deadliftRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+  }, [step]);
 
   const [bdayMonth, setBdayMonth] = useState("");
   const [bdayDay, setBdayDay] = useState("");
@@ -84,7 +94,14 @@ export default function SetupScreen() {
   const [weightLbs, setWeightLbs] = useState("");
   const [sex, setSex] = useState<string | null>(null);
   const [experience, setExperience] = useState("");
-  const [goal, setGoal] = useState("");
+  const [goals, setGoals] = useState<string[]>([]);
+
+  const toggleGoal = (value: string) => {
+    setError("");
+    setGoals((prev) =>
+      prev.includes(value) ? prev.filter((g) => g !== value) : [...prev, value],
+    );
+  };
   const [benchPR, setBenchPR] = useState("");
   const [squatPR, setSquatPR] = useState("");
   const [deadliftPR, setDeadliftPR] = useState("");
@@ -125,7 +142,20 @@ export default function SetupScreen() {
       const m = parseInt(bdayMonth, 10);
       const d = parseInt(bdayDay, 10);
       const y = parseInt(bdayYear, 10);
-      if (!bdayMonth || !bdayDay || !bdayYear || isNaN(m) || isNaN(d) || isNaN(y) || m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > new Date().getFullYear()) {
+      if (
+        !bdayMonth ||
+        !bdayDay ||
+        !bdayYear ||
+        isNaN(m) ||
+        isNaN(d) ||
+        isNaN(y) ||
+        m < 1 ||
+        m > 12 ||
+        d < 1 ||
+        d > 31 ||
+        y < 1900 ||
+        y > new Date().getFullYear()
+      ) {
         setError("Enter a valid birthday (MM DD YYYY), or skip this one.");
         return;
       }
@@ -167,8 +197,8 @@ export default function SetupScreen() {
 
     // step 3 (sex) is a pill select — nothing to validate, selection or skip
     if (step === 5) {
-      if (!goal) {
-        setError("Please select a primary goal.");
+      if (goals.length === 0) {
+        setError("Please select at least one goal.");
         return;
       }
     }
@@ -177,7 +207,11 @@ export default function SetupScreen() {
 
   const handleSkip = () => {
     setError("");
-    if (step === 0) { setBdayMonth(""); setBdayDay(""); setBdayYear(""); }
+    if (step === 0) {
+      setBdayMonth("");
+      setBdayDay("");
+      setBdayYear("");
+    }
     if (step === 1) {
       setFeet("");
       setInches("");
@@ -191,24 +225,28 @@ export default function SetupScreen() {
     setSubmitting(true);
     try {
       const { email, passwordHash, username } = useOnboardingStore.getState();
-      
+
       if (!email || !passwordHash || !username) {
         throw new Error("Missing registration data. Please restart the app.");
       }
 
       const payload: Record<string, unknown> = {};
       const authUpdates: Record<string, any> = { username };
-      
+
       if (bdayMonth && bdayDay && bdayYear) {
         payload.age = calculateAge(bdayMonth, bdayDay, bdayYear);
-        authUpdates.birthday = `${bdayYear}-${bdayMonth.padStart(2, '0')}-${bdayDay.padStart(2, '0')}`;
+        authUpdates.birthday = `${bdayYear}-${bdayMonth.padStart(2, "0")}-${bdayDay.padStart(2, "0")}`;
       }
       if (experience) authUpdates.experience_level = experience;
-      if (goal) payload.primary_goal = goal;
+      if (goals.length > 0) {
+        const formattedGoals = goals.join(", ");
+        payload.primary_goal = formattedGoals;
+        authUpdates.primary_goal = formattedGoals;
+      }
       if (benchPR) authUpdates.bench_pr = parseInt(benchPR, 10);
       if (squatPR) authUpdates.squat_pr = parseInt(squatPR, 10);
       if (deadliftPR) authUpdates.deadlift_pr = parseInt(deadliftPR, 10);
-      
+
       if (feet) {
         const feetNum = parseInt(feet, 10);
         const inchesNum = parseInt(inches || "0", 10);
@@ -218,18 +256,49 @@ export default function SetupScreen() {
       if (sex) payload.sex = sex;
 
       // 1. Account is already created in register.tsx, so just get the user
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Failed to retrieve user.");
 
       // 2. Update user metadata
-      const { error: authError } = await supabase.auth.updateUser({ data: authUpdates });
+      const { error: authError } = await supabase.auth.updateUser({
+        data: authUpdates,
+      });
       if (authError) throw authError;
 
       // 3. Update the public users row with the detailed onboarding payload
-      const { data, error } = await supabase.from('users').update(payload).eq('id', authUser.id).select().single();
+      let { data, error } = await supabase
+        .from("users")
+        .update(payload)
+        .eq("id", authUser.id)
+        .select()
+        .single();
+
+      // If 'primary_goal' column hasn't been added to public.users yet, retry without it
+      if (
+        error &&
+        (error.code === "PGRST204" ||
+          error.message?.includes("primary_goal")) &&
+        "primary_goal" in payload
+      ) {
+        const { primary_goal, ...fallbackPayload } = payload;
+        const retry = await supabase
+          .from("users")
+          .update(fallbackPayload)
+          .eq("id", authUser.id)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) throw error;
-      
-      setUser(data as any);
+
+      setUser({
+        ...(data || {}),
+        ...(goals.length > 0 ? { primary_goal: goals.join(", ") } : {}),
+      } as any);
       useOnboardingStore.getState().clear();
 
       router.replace("/(tabs)");
@@ -272,14 +341,24 @@ export default function SetupScreen() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <ScrollView
-            contentContainerStyle={styles.content}
+            ref={scrollViewRef}
+            contentContainerStyle={[
+              styles.content,
+              step === 5 && styles.scrollableContent,
+            ]}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            bounces={true}
           >
             <View style={styles.brandRow}>
               <Text style={styles.brandText}>Gymbro</Text>
             </View>
 
-            <BlurView intensity={35} tint={isLight ? "extraLight" : "dark"} style={styles.card}>
+            <BlurView
+              intensity={35}
+              tint={isLight ? "extraLight" : "dark"}
+              style={styles.card}
+            >
               <View style={styles.cardInner}>
                 <View style={styles.topRow}>
                   <TouchableOpacity
@@ -312,38 +391,62 @@ export default function SetupScreen() {
                   <View style={styles.field}>
                     <Text style={styles.label}>Birthday (MM / DD / YYYY)</Text>
                     <View style={styles.row}>
-                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                      <View
+                        style={[styles.inputShell, { flex: 1, marginRight: 8 }]}
+                      >
                         <TextInput
                           placeholder="MM"
                           placeholderTextColor="#5A5D63"
-                          style={[styles.input, { textAlign: 'center' }]}
+                          style={[styles.input, { textAlign: "center" }]}
                           keyboardType="number-pad"
                           maxLength={2}
                           value={bdayMonth}
-                          onChangeText={setBdayMonth}
+                          onChangeText={(val) => {
+                            setBdayMonth(val);
+                            if (val.length === 2) {
+                              bdayDayRef.current?.focus();
+                            }
+                          }}
+                          returnKeyType="next"
+                          blurOnSubmit={false}
+                          onSubmitEditing={() => bdayDayRef.current?.focus()}
                           autoFocus
                         />
                       </View>
-                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                      <View
+                        style={[styles.inputShell, { flex: 1, marginRight: 8 }]}
+                      >
                         <TextInput
+                          ref={bdayDayRef}
                           placeholder="DD"
                           placeholderTextColor="#5A5D63"
-                          style={[styles.input, { textAlign: 'center' }]}
+                          style={[styles.input, { textAlign: "center" }]}
                           keyboardType="number-pad"
                           maxLength={2}
                           value={bdayDay}
-                          onChangeText={setBdayDay}
+                          onChangeText={(val) => {
+                            setBdayDay(val);
+                            if (val.length === 2) {
+                              bdayYearRef.current?.focus();
+                            }
+                          }}
+                          returnKeyType="next"
+                          blurOnSubmit={false}
+                          onSubmitEditing={() => bdayYearRef.current?.focus()}
                         />
                       </View>
                       <View style={[styles.inputShell, { flex: 1.5 }]}>
                         <TextInput
+                          ref={bdayYearRef}
                           placeholder="YYYY"
                           placeholderTextColor="#5A5D63"
-                          style={[styles.input, { textAlign: 'center' }]}
+                          style={[styles.input, { textAlign: "center" }]}
                           keyboardType="number-pad"
                           maxLength={4}
                           value={bdayYear}
                           onChangeText={setBdayYear}
+                          returnKeyType="done"
+                          onSubmitEditing={handleContinue}
                         />
                       </View>
                     </View>
@@ -363,7 +466,15 @@ export default function SetupScreen() {
                             keyboardType="number-pad"
                             maxLength={1}
                             value={feet}
-                            onChangeText={setFeet}
+                            onChangeText={(val) => {
+                              setFeet(val);
+                              if (val.length >= 1) {
+                                inchesRef.current?.focus();
+                              }
+                            }}
+                            returnKeyType="next"
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => inchesRef.current?.focus()}
                             autoFocus
                           />
                         </View>
@@ -372,6 +483,7 @@ export default function SetupScreen() {
                       <View style={styles.halfField}>
                         <View style={styles.inputShell}>
                           <TextInput
+                            ref={inchesRef}
                             placeholder="9"
                             placeholderTextColor="#5A5D63"
                             style={styles.input}
@@ -379,6 +491,8 @@ export default function SetupScreen() {
                             maxLength={2}
                             value={inches}
                             onChangeText={setInches}
+                            returnKeyType="done"
+                            onSubmitEditing={handleContinue}
                           />
                         </View>
                         <Text style={styles.unitCaption}>Inches</Text>
@@ -399,6 +513,8 @@ export default function SetupScreen() {
                         maxLength={3}
                         value={weightLbs}
                         onChangeText={setWeightLbs}
+                        returnKeyType="done"
+                        onSubmitEditing={handleContinue}
                         autoFocus
                       />
                     </View>
@@ -435,7 +551,7 @@ export default function SetupScreen() {
                     </View>
                   </View>
                 )}
-                
+
                 {step === 4 && (
                   <View style={styles.field}>
                     <Text style={styles.label}>Experience Level</Text>
@@ -466,28 +582,27 @@ export default function SetupScreen() {
                     </View>
                   </View>
                 )}
-                
+
                 {step === 5 && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>Primary Goal</Text>
-                    <View style={styles.pillRow}>
+                    <Text style={styles.label}>Select all that apply</Text>
+                    <View style={styles.goalStack}>
                       {GOAL_OPTIONS.map((opt) => {
-                        const selected = goal === opt.value;
+                        const selected = goals.includes(opt.value);
                         return (
                           <TouchableOpacity
                             key={opt.value}
                             style={[
-                              styles.pill,
-                              selected && styles.pillSelected,
-                              { marginBottom: 8 }
+                              styles.goalButton,
+                              selected && styles.goalButtonSelected,
                             ]}
-                            activeOpacity={0.8}
-                            onPress={() => setGoal(opt.value)}
+                            activeOpacity={0.7}
+                            onPress={() => toggleGoal(opt.value)}
                           >
                             <Text
                               style={[
-                                styles.pillText,
-                                selected && styles.pillTextSelected,
+                                styles.goalButtonText,
+                                selected && styles.goalButtonTextSelected,
                               ]}
                             >
                               {opt.label}
@@ -498,42 +613,56 @@ export default function SetupScreen() {
                     </View>
                   </View>
                 )}
-                
+
                 {step === 6 && (
                   <View style={styles.field}>
                     <Text style={styles.label}>Personal Records (lbs)</Text>
                     <View style={styles.row}>
-                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                      <View
+                        style={[styles.inputShell, { flex: 1, marginRight: 8 }]}
+                      >
                         <TextInput
                           placeholder="Bench"
                           placeholderTextColor="#5A5D63"
-                          style={[styles.input, { textAlign: 'center' }]}
+                          style={[styles.input, { textAlign: "center" }]}
                           keyboardType="number-pad"
                           maxLength={4}
                           value={benchPR}
                           onChangeText={setBenchPR}
+                          returnKeyType="next"
+                          blurOnSubmit={false}
+                          onSubmitEditing={() => squatRef.current?.focus()}
                         />
                       </View>
-                      <View style={[styles.inputShell, { flex: 1, marginRight: 8 }]}>
+                      <View
+                        style={[styles.inputShell, { flex: 1, marginRight: 8 }]}
+                      >
                         <TextInput
+                          ref={squatRef}
                           placeholder="Squat"
                           placeholderTextColor="#5A5D63"
-                          style={[styles.input, { textAlign: 'center' }]}
+                          style={[styles.input, { textAlign: "center" }]}
                           keyboardType="number-pad"
                           maxLength={4}
                           value={squatPR}
                           onChangeText={setSquatPR}
+                          returnKeyType="next"
+                          blurOnSubmit={false}
+                          onSubmitEditing={() => deadliftRef.current?.focus()}
                         />
                       </View>
                       <View style={[styles.inputShell, { flex: 1 }]}>
                         <TextInput
+                          ref={deadliftRef}
                           placeholder="Deadlift"
                           placeholderTextColor="#5A5D63"
-                          style={[styles.input, { textAlign: 'center' }]}
+                          style={[styles.input, { textAlign: "center" }]}
                           keyboardType="number-pad"
                           maxLength={4}
                           value={deadliftPR}
                           onChangeText={setDeadliftPR}
+                          returnKeyType="done"
+                          onSubmitEditing={handleContinue}
                         />
                       </View>
                     </View>
@@ -572,172 +701,210 @@ export default function SetupScreen() {
   );
 }
 
-const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  content: {
-    flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-  },
-  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
-  brandText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  card: {
-    width: "100%",
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-  },
-  cardInner: {
-    padding: 28,
-    backgroundColor: isLight ? "transparent" : Platform.select({
-      ios: "rgba(30,31,35,0.38)",
-      android: "rgba(30,31,35,0.78)",
-      default: "rgba(30,31,35,0.6)",
-    }),
-  },
-  topRow: {
-    height: 22,
-    justifyContent: "center",
-    marginBottom: 6,
-  },
-  backButton: { alignSelf: "flex-start" },
-  backButtonText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  hidden: { opacity: 0 },
-  progressRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 22,
-  },
-  progressSegment: {
-    flex: 1,
-    height: 3,
-    borderRadius: 1,
-    backgroundColor: colors.surfaceBorder,
-  },
-  progressSegmentActive: {
-    backgroundColor: COLORS.accent,
-  },
-  eyebrow: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  headline: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "800",
-    lineHeight: 34,
-  },
-  headlineBar: {
-    width: 40,
-    height: 3,
-    borderRadius: 1,
-    backgroundColor: COLORS.accent,
-    marginTop: 16,
-    marginBottom: 28,
-  },
-  field: { marginBottom: 16 },
-  label: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "normal",
-    marginBottom: 8,
-  },
-  inputShell: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    backgroundColor: colors.surface,
-  },
-  input: {
-    height: 50,
-    paddingHorizontal: 16,
-    color: colors.text,
-    fontSize: 15,
-  },
-  row: { flexDirection: "row", gap: 12 },
-  halfField: { flex: 1 },
-  unitCaption: {
-    color: colors.textMuted,
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 6,
-    textAlign: "center",
-  },
-  pillRow: { flexDirection: "row", gap: 10 },
-  pill: {
-    flex: 1,
-    height: 48,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pillSelected: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
-  pillText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  pillTextSelected: {
-    color: "#141518",
-  },
-  cta: {
-    height: 54,
-    borderRadius: 12,
-    backgroundColor: COLORS.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: COLORS.accent,
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-    marginTop: 4,
-  },
-  ctaText: {
-    color: isLight ? "#000" : colors.text,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  skipLink: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-  },
-  skipLinkText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  footer: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 24,
-  },
-  errorText: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-});
+const getStyles = (colors: ThemeColors, isLight: boolean) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.bg },
+    content: {
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 40,
+    },
+    scrollableContent: {
+      justifyContent: "flex-start",
+      paddingTop: Platform.OS === "ios" ? 60 : 40,
+      paddingBottom: 60,
+    },
+    brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
+    brandText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+    card: {
+      width: "100%",
+      borderRadius: 20,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    cardInner: {
+      padding: 28,
+      backgroundColor: isLight
+        ? "transparent"
+        : Platform.select({
+            ios: "rgba(30,31,35,0.38)",
+            android: "rgba(30,31,35,0.78)",
+            default: "rgba(30,31,35,0.6)",
+          }),
+    },
+    topRow: {
+      height: 22,
+      justifyContent: "center",
+      marginBottom: 6,
+    },
+    backButton: { alignSelf: "flex-start" },
+    backButtonText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    hidden: { opacity: 0 },
+    progressRow: {
+      flexDirection: "row",
+      gap: 6,
+      marginBottom: 22,
+    },
+    progressSegment: {
+      flex: 1,
+      height: 3,
+      borderRadius: 1,
+      backgroundColor: colors.surfaceBorder,
+    },
+    progressSegmentActive: {
+      backgroundColor: COLORS.accent,
+    },
+    eyebrow: {
+      color: colors.textMuted,
+      fontSize: 12,
+      fontWeight: "700",
+      marginBottom: 10,
+    },
+    headline: {
+      color: colors.text,
+      fontSize: 30,
+      fontWeight: "800",
+      lineHeight: 34,
+    },
+    headlineBar: {
+      width: 40,
+      height: 3,
+      borderRadius: 1,
+      backgroundColor: COLORS.accent,
+      marginTop: 16,
+      marginBottom: 28,
+    },
+    field: { marginBottom: 16 },
+    label: {
+      color: colors.textMuted,
+      fontSize: 11,
+      fontWeight: "normal",
+      marginBottom: 8,
+    },
+    inputShell: {
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      backgroundColor: colors.surface,
+    },
+    input: {
+      height: 50,
+      paddingHorizontal: 16,
+      color: colors.text,
+      fontSize: 15,
+    },
+    row: { flexDirection: "row", gap: 12 },
+    halfField: { flex: 1 },
+    unitCaption: {
+      color: colors.textMuted,
+      fontSize: 10,
+      fontWeight: "700",
+      marginTop: 6,
+      textAlign: "center",
+    },
+    pillRow: { flexDirection: "row", gap: 10 },
+    pill: {
+      flex: 1,
+      height: 48,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pillSelected: {
+      backgroundColor: COLORS.accent,
+      borderColor: COLORS.accent,
+    },
+    pillText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    pillTextSelected: {
+      color: "#141518",
+    },
+    goalStack: {
+      flexDirection: "column",
+      width: "100%",
+      gap: 10,
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    goalButton: {
+      width: "100%",
+      height: 52,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+    },
+    goalButtonSelected: {
+      backgroundColor: COLORS.accent,
+      borderColor: COLORS.accent,
+    },
+    goalButtonText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "700",
+    },
+    goalButtonTextSelected: {
+      color: "#141518",
+    },
+    cta: {
+      height: 54,
+      borderRadius: 12,
+      backgroundColor: COLORS.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: COLORS.accent,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 6,
+      marginTop: 4,
+    },
+    ctaText: {
+      color: isLight ? "#000" : colors.text,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    skipLink: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 16,
+    },
+    skipLinkText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    footer: {
+      color: colors.textMuted,
+      fontSize: 12,
+      fontWeight: "600",
+      marginTop: 24,
+    },
+    errorText: {
+      color: COLORS.accent,
+      fontSize: 13,
+      fontWeight: "600",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+  });
