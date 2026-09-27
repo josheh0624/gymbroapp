@@ -1,16 +1,24 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies
 node_modules/
+frontend/node_modules/
+backend/node_modules/
 
-# Expo
+# Expo & Web Builds
 .expo/
+frontend/.expo/
+backend/.expo/
 dist/
+frontend/dist/
 backend/dist/
 web-build/
 expo-env.d.ts
+frontend/expo-env.d.ts
 
-# Native
+# Native builds & prebuild directories
+/ios
+/android
+frontend/ios
+frontend/android
 .kotlin/
 *.orig.*
 *.jks
@@ -22,7 +30,7 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Debug logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -31,30 +39,29 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Environment variables
 .env
 .env.*
 .env*.local
 *.env
 backend/.env
+frontend/.env
 !.env.example
 !*.env.example
 !backend/.env.example
+!frontend/.env.example
 
-# user uploads
+# User uploads & data
 backend/uploads/
+uploads/
 
-# scratch and testing scripts
+# Scratch, test logs, build logs
 /scratch/
 scratch/
 schema*.js
 test-*.js
+build-log.txt
+*.log
 
-# typescript
+# TypeScript
 *.tsbuildinfo
-
-example
-
-# generated native folders
-/ios
-/android

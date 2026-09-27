@@ -1,0 +1,24 @@
+{
+  "name": "gymbroapp-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gym Bro App - Mobile client and backend services",
+  "scripts": {
+    "start": "npm start --prefix frontend",
+    "ios": "npm run ios --prefix frontend",
+    "android": "npm run android --prefix frontend",
+    "frontend": "npm start --prefix frontend",
+    "frontend:ios": "npm run ios --prefix frontend",
+    "frontend:android": "npm run android --prefix frontend",
+    "frontend:web": "npm run web --prefix frontend",
+    "frontend:lint": "npm run lint --prefix frontend",
+    "backend": "npm run dev --prefix backend",
+    "backend:start": "npm start --prefix backend",
+    "build:backend": "npm run build --prefix backend",
+    "typecheck": "npm run typecheck --prefix frontend && npm run build --prefix backend",
+    "test": "echo \"Running checks...\" && npm run typecheck"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
