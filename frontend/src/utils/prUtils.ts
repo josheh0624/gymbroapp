@@ -3,7 +3,7 @@ import { supabase } from "@/api/supabase";
 export type PRType = "bench_pr" | "squat_pr" | "deadlift_pr";
 
 export interface ExercisePRCheck {
-  id?: string;
+  id?: string | number;
   name?: string;
   weight?: number | null;
   isDone?: boolean;
@@ -13,19 +13,23 @@ export interface ExercisePRCheck {
  * Categorizes an exercise as Bench Press, Squat, or Deadlift for PR tracking.
  * Returns null if the exercise is not one of the Big 3 or is an accessory/variation.
  */
-export function detectPRType(exercise: {
-  id?: string;
-  name?: string;
-}): PRType | null {
-  // Check known IDs from prebuilt routines
-  if (exercise.id) {
-    const idLower = exercise.id.toLowerCase();
+export function detectPRType(
+  exercise?: {
+    id?: string | number;
+    name?: string;
+  } | null,
+): PRType | null {
+  if (!exercise) return null;
+
+  // Check known IDs from prebuilt routines (handle both string and numeric IDs safely)
+  if (exercise.id !== undefined && exercise.id !== null) {
+    const idLower = String(exercise.id).toLowerCase();
     if (idLower === "bench" || idLower === "bench-press") return "bench_pr";
     if (idLower === "squat") return "squat_pr";
     if (idLower === "rdl" || idLower === "deadlift") return "deadlift_pr";
   }
 
-  if (!exercise.name) return null;
+  if (!exercise.name || typeof exercise.name !== "string") return null;
   const name = exercise.name.trim().toLowerCase();
 
   // Bench Press
@@ -86,19 +90,24 @@ export function detectPRType(exercise: {
  * If any performed weight exceeds the current record, it automatically updates the PR.
  */
 export async function checkAndUpdatePRs(
-  exercises: ExercisePRCheck[],
+  exercises?: ExercisePRCheck[] | null,
 ): Promise<Partial<Record<PRType, number>>> {
   try {
+    if (!Array.isArray(exercises) || exercises.length === 0) return {};
+
     const candidates = exercises.filter(
-      (e) => e.isDone !== false && typeof e.weight === "number" && e.weight > 0,
+      (e) =>
+        e &&
+        e.isDone !== false &&
+        typeof e.weight === "number" &&
+        !isNaN(e.weight) &&
+        e.weight > 0,
     );
 
     if (candidates.length === 0) return {};
 
-    const {
-      data: { user: authUser },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const { data, error: userError } = await supabase.auth.getUser();
+    const authUser = data?.user;
 
     if (userError || !authUser) {
       console.warn("checkAndUpdatePRs: User is not authenticated");
@@ -118,7 +127,7 @@ export async function checkAndUpdatePRs(
       const prType = detectPRType(ex);
       if (!prType) continue;
 
-      const performedWeight = Math.round(ex.weight!);
+      const performedWeight = Math.round(Number(ex.weight));
       const currentHighest = updates[prType] ?? currentPRs[prType];
 
       if (performedWeight > currentHighest) {

@@ -170,7 +170,12 @@ export default function WorkoutScreen() {
               end={{ x: 1, y: 1 }}
             />
 
-            <View style={{ paddingTop: activeSession ? 0 : insets.top, paddingBottom: 180 }}>
+            <View
+              style={{
+                paddingTop: activeSession ? 0 : insets.top,
+                paddingBottom: 180,
+              }}
+            >
               <View style={styles.topBar}>
                 <Pressable
                   onPress={() => router.back()}
@@ -202,9 +207,25 @@ export default function WorkoutScreen() {
 
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionLabel}>{sectionLabel}</Text>
-                <View style={[styles.streakPill, workedOutToday && { backgroundColor: "#4169E1" }]}>
-                  <Ionicons name="flame" size={16} color={workedOutToday ? "#FFFFFF" : "#4169E1"} />
-                  <Text style={[styles.streakText, workedOutToday && { color: "#FFFFFF" }]}>{streak}</Text>
+                <View
+                  style={[
+                    styles.streakPill,
+                    workedOutToday && { backgroundColor: "#4169E1" },
+                  ]}
+                >
+                  <Ionicons
+                    name="flame"
+                    size={16}
+                    color={workedOutToday ? "#FFFFFF" : "#4169E1"}
+                  />
+                  <Text
+                    style={[
+                      styles.streakText,
+                      workedOutToday && { color: "#FFFFFF" },
+                    ]}
+                  >
+                    {streak}
+                  </Text>
                 </View>
               </View>
 
@@ -277,43 +298,64 @@ export default function WorkoutScreen() {
                     );
                     return;
                   }
-                  
-                  const selectedDateString = selectedDate.toISOString().split("T")[0];
-                  
+
+                  const selectedDateString = selectedDate
+                    .toISOString()
+                    .split("T")[0];
+
                   let rId = routine?.id;
                   let wId = startWorkout?.id;
-                  
+
                   if (!rId || !wId) {
                     rId = "ADHOC_ROUTINE";
                     wId = "ADHOC_WORKOUT";
                     // Ensure the freestyle routine is fresh and empty every time
                     const store = useRoutineStore.getState();
-                    const existing = store.routines.find(r => r.id === rId);
+                    const existing = store.routines.find((r) => r.id === rId);
                     if (existing) {
                       useRoutineStore.setState({
-                        routines: store.routines.map(r => r.id === rId ? { ...r, workouts: [{ id: wId, name: "Freestyle Workout", days: [], exercises: [] }] } : r)
+                        routines: store.routines.map((r) =>
+                          r.id === rId
+                            ? {
+                                ...r,
+                                workouts: [
+                                  {
+                                    id: wId,
+                                    name: "Freestyle Workout",
+                                    days: [],
+                                    exercises: [],
+                                  },
+                                ],
+                              }
+                            : r,
+                        ),
                       });
                     } else {
                       store.addRoutine({
                         id: rId,
                         name: "Freestyle",
-                        workouts: [{ id: wId, name: "Freestyle Workout", days: [], exercises: [] }]
+                        workouts: [
+                          {
+                            id: wId,
+                            name: "Freestyle Workout",
+                            days: [],
+                            exercises: [],
+                          },
+                        ],
                       });
                     }
                   }
-                  
+
                   router.push(
                     `/workoutPage/workout-list/workout-thumbnail/${wId}?routineID=${rId}&selectedDateString=${selectedDateString}` as any,
                   );
                 }}
               >
-                <Ionicons
-                  name="play" 
-                  size={32}
-                  color={COLORS.bg}
-                />
+                <Ionicons name="play" size={32} color={COLORS.bg} />
               </DockButton>
-              <Text style={styles.dockLabel}>{activeSession ? "Resume" : "Play"}</Text>
+              <Text style={styles.dockLabel}>
+                {activeSession ? "Resume" : "Play"}
+              </Text>
             </View>
             <View style={styles.dockItem}>
               <DockButton

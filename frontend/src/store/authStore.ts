@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import { supabase } from "@/api/supabase";
+import { create } from "zustand";
 
 export type SafeUser = {
   id: string; // uuid
@@ -11,6 +11,7 @@ export type SafeUser = {
   weight_lbs: number | null;
   sex: string | null;
   image_url: string | null;
+  primary_goal?: string | null;
 };
 
 type AuthState = {

@@ -1,4 +1,5 @@
 import { supabase } from "@/api/supabase";
+import AiChatModal from "@/app/components/ai-chat-modal";
 import ExerciseProgressionChart from "@/app/components/exercise-progression-chart";
 import { MeshGradientBackground } from "@/app/components/MeshGradientBackground";
 import { YearlyHeatmap } from "@/app/components/YearlyHeatmap";
@@ -12,12 +13,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import dayjs, { type Dayjs } from "dayjs";
 import { BlurView } from "expo-blur";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   Pressable,
   ScrollView,
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -683,6 +684,7 @@ export default function MuscleMapScreen() {
   const stepsScrollRef = useRef<ScrollView>(null);
   const calsScrollRef = useRef<ScrollView>(null);
   const [mapSide, setMapSide] = useState<MuscleSide>("front");
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const {
     data,
     stats,
@@ -994,7 +996,10 @@ export default function MuscleMapScreen() {
 
           {/* Yearly Consistency Chart */}
           <View
-            style={[styles.servicesSection, { marginTop: 40, paddingTop: 0, paddingBottom: 0 }]}
+            style={[
+              styles.servicesSection,
+              { marginTop: 40, paddingTop: 0, paddingBottom: 0 },
+            ]}
           >
             <View style={[styles.chartContainer, { paddingHorizontal: 0 }]}>
               <YearlyHeatmap />
@@ -1003,7 +1008,6 @@ export default function MuscleMapScreen() {
           <View style={{ marginTop: 16 }}>
             <ExerciseProgressionChart />
           </View>
-
 
           {/* HealthKit Integration */}
           {!hasPermissions ? (
@@ -1096,78 +1100,79 @@ export default function MuscleMapScreen() {
                       snapToInterval={dayWidth * 7}
                       decelerationRate="fast"
                       ref={stepsScrollRef}
-                      onContentSizeChange={() => stepsScrollRef.current?.scrollToEnd({ animated: false })}
+                      onContentSizeChange={() =>
+                        stepsScrollRef.current?.scrollToEnd({ animated: false })
+                      }
                       style={{ height: 160 }}
                       contentContainerStyle={{
                         alignItems: "flex-end",
                         paddingBottom: 20,
-                      
-                    }}
-                  >
-                    {dailyData.map((day, i) => {
-                      const maxSteps = Math.max(
-                        ...dailyData.map((d) => d.steps),
-                        5000,
-                      );
-                      const heightPercent = (day.steps / maxSteps) * 100;
-                      const dateObj = new Date(day.date + "T12:00:00Z");
-                      const dayName = dateObj.toLocaleDateString("en-US", {
-                        weekday: "short",
-                      });
-                      const isToday = i === dailyData.length - 1;
+                      }}
+                    >
+                      {dailyData.map((day, i) => {
+                        const maxSteps = Math.max(
+                          ...dailyData.map((d) => d.steps),
+                          5000,
+                        );
+                        const heightPercent = (day.steps / maxSteps) * 100;
+                        const dateObj = new Date(day.date + "T12:00:00Z");
+                        const dayName = dateObj.toLocaleDateString("en-US", {
+                          weekday: "short",
+                        });
+                        const isToday = i === dailyData.length - 1;
 
-                      return (
-                        <View
-                          key={day.date}
-                          style={{ alignItems: "center", width: dayWidth }}
-                        >
-                          <Text
-                            style={{
-                              color: colors.text,
-                              fontSize: 10,
-                              fontWeight: "700",
-                              marginBottom: 6,
-                            }}
-                          >
-                            {day.steps > 0
-                              ? day.steps > 999
-                                ? (day.steps / 1000).toFixed(1) + "k"
-                                : day.steps
-                              : ""}
-                          </Text>
+                        return (
                           <View
-                            style={{
-                              width: 24,
-                              height: 100,
-                              justifyContent: "flex-end",
-                            }}
+                            key={day.date}
+                            style={{ alignItems: "center", width: dayWidth }}
                           >
+                            <Text
+                              style={{
+                                color: colors.text,
+                                fontSize: 10,
+                                fontWeight: "700",
+                                marginBottom: 6,
+                              }}
+                            >
+                              {day.steps > 0
+                                ? day.steps > 999
+                                  ? (day.steps / 1000).toFixed(1) + "k"
+                                  : day.steps
+                                : ""}
+                            </Text>
                             <View
                               style={{
-                                width: "100%",
-                                height: `${heightPercent}%`,
-                                backgroundColor: isToday
-                                  ? "#FF9500"
-                                  : "rgba(255, 149, 0, 0.2)",
-                                borderRadius: 6,
-                                minHeight: 4,
+                                width: 24,
+                                height: 100,
+                                justifyContent: "flex-end",
                               }}
-                            />
+                            >
+                              <View
+                                style={{
+                                  width: "100%",
+                                  height: `${heightPercent}%`,
+                                  backgroundColor: isToday
+                                    ? "#FF9500"
+                                    : "rgba(255, 149, 0, 0.2)",
+                                  borderRadius: 6,
+                                  minHeight: 4,
+                                }}
+                              />
+                            </View>
+                            <Text
+                              style={{
+                                color: isToday ? colors.text : colors.textMuted,
+                                fontSize: 11,
+                                marginTop: 8,
+                                fontWeight: isToday ? "700" : "500",
+                              }}
+                            >
+                              {dayName}
+                            </Text>
                           </View>
-                          <Text
-                            style={{
-                              color: isToday ? colors.text : colors.textMuted,
-                              fontSize: 11,
-                              marginTop: 8,
-                              fontWeight: isToday ? "700" : "500",
-                            }}
-                          >
-                            {dayName}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
+                        );
+                      })}
+                    </ScrollView>
                   </View>
                 )}
               </View>
@@ -1205,77 +1210,78 @@ export default function MuscleMapScreen() {
                       snapToInterval={dayWidth * 7}
                       decelerationRate="fast"
                       ref={calsScrollRef}
-                      onContentSizeChange={() => calsScrollRef.current?.scrollToEnd({ animated: false })}
+                      onContentSizeChange={() =>
+                        calsScrollRef.current?.scrollToEnd({ animated: false })
+                      }
                       style={{ height: 160 }}
                       contentContainerStyle={{
                         alignItems: "flex-end",
                         paddingBottom: 20,
-                      
-                    }}
-                  >
-                    {dailyData.map((day, i) => {
-                      const maxCals = Math.max(
-                        ...dailyData.map((d) => d.activeEnergyBurned),
-                        500,
-                      );
-                      const heightPercent =
-                        (day.activeEnergyBurned / maxCals) * 100;
-                      const dateObj = new Date(day.date + "T12:00:00Z");
-                      const dayName = dateObj.toLocaleDateString("en-US", {
-                        weekday: "short",
-                      });
-                      const isToday = i === dailyData.length - 1;
+                      }}
+                    >
+                      {dailyData.map((day, i) => {
+                        const maxCals = Math.max(
+                          ...dailyData.map((d) => d.activeEnergyBurned),
+                          500,
+                        );
+                        const heightPercent =
+                          (day.activeEnergyBurned / maxCals) * 100;
+                        const dateObj = new Date(day.date + "T12:00:00Z");
+                        const dayName = dateObj.toLocaleDateString("en-US", {
+                          weekday: "short",
+                        });
+                        const isToday = i === dailyData.length - 1;
 
-                      return (
-                        <View
-                          key={day.date}
-                          style={{ alignItems: "center", width: dayWidth }}
-                        >
-                          <Text
-                            style={{
-                              color: colors.text,
-                              fontSize: 10,
-                              fontWeight: "700",
-                              marginBottom: 6,
-                            }}
-                          >
-                            {day.activeEnergyBurned > 0
-                              ? Math.round(day.activeEnergyBurned)
-                              : ""}
-                          </Text>
+                        return (
                           <View
-                            style={{
-                              width: 24,
-                              height: 100,
-                              justifyContent: "flex-end",
-                            }}
+                            key={day.date}
+                            style={{ alignItems: "center", width: dayWidth }}
                           >
+                            <Text
+                              style={{
+                                color: colors.text,
+                                fontSize: 10,
+                                fontWeight: "700",
+                                marginBottom: 6,
+                              }}
+                            >
+                              {day.activeEnergyBurned > 0
+                                ? Math.round(day.activeEnergyBurned)
+                                : ""}
+                            </Text>
                             <View
                               style={{
-                                width: "100%",
-                                height: `${heightPercent}%`,
-                                backgroundColor: isToday
-                                  ? "#FF3B30"
-                                  : "rgba(255, 59, 48, 0.2)",
-                                borderRadius: 6,
-                                minHeight: 4,
+                                width: 24,
+                                height: 100,
+                                justifyContent: "flex-end",
                               }}
-                            />
+                            >
+                              <View
+                                style={{
+                                  width: "100%",
+                                  height: `${heightPercent}%`,
+                                  backgroundColor: isToday
+                                    ? "#FF3B30"
+                                    : "rgba(255, 59, 48, 0.2)",
+                                  borderRadius: 6,
+                                  minHeight: 4,
+                                }}
+                              />
+                            </View>
+                            <Text
+                              style={{
+                                color: isToday ? colors.text : colors.textMuted,
+                                fontSize: 11,
+                                marginTop: 8,
+                                fontWeight: isToday ? "700" : "500",
+                              }}
+                            >
+                              {dayName}
+                            </Text>
                           </View>
-                          <Text
-                            style={{
-                              color: isToday ? colors.text : colors.textMuted,
-                              fontSize: 11,
-                              marginTop: 8,
-                              fontWeight: isToday ? "700" : "500",
-                            }}
-                          >
-                            {dayName}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
+                        );
+                      })}
+                    </ScrollView>
                   </View>
                 )}
               </View>
@@ -1443,6 +1449,25 @@ export default function MuscleMapScreen() {
 
           <View style={{ height: 24 }} />
         </ScrollView>
+
+        {/* Floating AI Button (Bottom Right above tabs bar) */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.aiButton,
+            pressed && styles.aiButtonPressed,
+          ]}
+          onPress={() => setIsChatOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="AI"
+        >
+          <Text style={styles.aiButtonText}>AI</Text>
+        </Pressable>
+
+        {/* AI Chat Modal */}
+        <AiChatModal
+          visible={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
       </View>
     </>
   );
@@ -1716,5 +1741,34 @@ const getStyles = (colors: ThemeColors, isLight: boolean) =>
       fontSize: 13,
       fontWeight: "800",
       marginTop: 4,
+    },
+    aiButton: {
+      position: "absolute",
+      right: 20,
+      bottom: 104,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: "#4169E1",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 999,
+      elevation: 10,
+      shadowColor: "#4169E1",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
+      borderWidth: 1.5,
+      borderColor: "rgba(255, 255, 255, 0.25)",
+    },
+    aiButtonPressed: {
+      opacity: 0.85,
+      transform: [{ scale: 0.94 }],
+    },
+    aiButtonText: {
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "800",
+      letterSpacing: 0.5,
     },
   });
