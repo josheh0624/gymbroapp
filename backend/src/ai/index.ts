@@ -7,7 +7,11 @@ import {
 import cors from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
-import { authenticateAiRequest } from "./middleware/auth";
+import {
+  authenticateAiRequest,
+  AuthenticatedRequest,
+  getAuthenticatedSupabaseClient,
+} from "./middleware/auth";
 import { crisisGuardrail } from "./middleware/crisisGuardrail";
 import { dailyQuotaLimiter } from "./middleware/quotaManager";
 import { chatRateLimiter } from "./middleware/rateLimiter";
@@ -15,6 +19,7 @@ import { securityFirewall } from "./middleware/securityFirewall";
 import { SYSTEM_INSTRUCTION } from "./prompts/persona";
 import { filterOutgoingAiReply } from "./utils/egressFilter";
 import { getVerifiedUserContext } from "./utils/profileBinder";
+import { saveRoutineForUser } from "./utils/routineSaver";
 import {
   validateAndSanitizeChatInput,
   validateAndSanitizeRoutine,
@@ -130,6 +135,10 @@ app.use(express.json());
 
 app.get("/", (req: Request, res: Response) => {
   res.json({ message: "hello from ai backend" });
+});
+
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
 app.post(
@@ -273,7 +282,117 @@ app.post(
       // 4. Wrap user prompt in boundary tags to isolate from system instructions
       const userPrompt = `<user_message>\n${message}\n</user_message>`;
 
-      // 5. Create chat session with Bro and tools
+      // Check if client requested streaming (SSE)
+      const shouldStream =
+        Boolean(req.body?.stream) ||
+        req.headers.accept?.includes("text/event-stream");
+
+      if (shouldStream) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders?.();
+
+        const chat = ai.chats.create({
+          model: modelName,
+          config: {
+            systemInstruction: personalizedInstruction,
+            temperature: 0.7,
+            tools: [{ functionDeclarations: [createWorkoutRoutineTool] }],
+            safetySettings: geminiSafetySettings,
+          },
+          history: formattedHistory,
+        });
+
+        try {
+          const streamResponse = await chat.sendMessageStream({
+            message: userPrompt,
+          });
+
+          let accumulatedText = "";
+          const collectedFunctionCalls: any[] = [];
+
+          for await (const chunk of streamResponse) {
+            if (chunk.candidates?.[0]?.finishReason === "SAFETY") {
+              logSecurityEvent({
+                eventType: "SAFETY_FILTER_TRIGGERED",
+                userId: authenticatedUser?.id,
+                ip: req.ip,
+                details: { finishReason: "SAFETY" },
+              });
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "text",
+                  delta:
+                    "Yo bro, safety first! I can't generate a response for that because it tripped safety guardrails. Keep it clean and gym-focused!",
+                })}\n\n`,
+              );
+              res.write("data: [DONE]\n\n");
+              return res.end();
+            }
+
+            if (chunk.text) {
+              accumulatedText += chunk.text;
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "text",
+                  delta: chunk.text,
+                })}\n\n`,
+              );
+            }
+
+            if (chunk.functionCalls && chunk.functionCalls.length > 0) {
+              collectedFunctionCalls.push(...chunk.functionCalls);
+            }
+          }
+
+          // Check for routine generation
+          let routine = null;
+          if (collectedFunctionCalls.length > 0) {
+            const routineCall = collectedFunctionCalls.find(
+              (call) => call.name === "createWorkoutRoutine",
+            );
+            if (routineCall && routineCall.args) {
+              routine = validateAndSanitizeRoutine(
+                routineCall.args,
+                verifiedContext,
+              );
+            }
+          }
+
+          if (routine) {
+            res.write(
+              `data: ${JSON.stringify({ type: "routine", routine })}\n\n`,
+            );
+          }
+
+          // Egress check on accumulated response
+          const egressCheck = filterOutgoingAiReply(accumulatedText);
+          if (egressCheck.leaksDetected.length > 0) {
+            logSecurityEvent({
+              eventType: "EGRESS_SECRET_BLOCKED",
+              userId: authenticatedUser?.id,
+              ip: req.ip,
+              details: { leaks: egressCheck.leaksDetected },
+            });
+          }
+
+          res.write("data: [DONE]\n\n");
+          return res.end();
+        } catch (streamErr: any) {
+          console.error("Stream Error:", streamErr);
+          res.write(
+            `data: ${JSON.stringify({
+              type: "error",
+              error: "Stream interrupted bro, please try again!",
+            })}\n\n`,
+          );
+          res.write("data: [DONE]\n\n");
+          return res.end();
+        }
+      }
+
+      // 5. Create non-streaming batch chat session with Bro and tools
       let response;
       try {
         const chat = ai.chats.create({
@@ -368,6 +487,69 @@ app.post(
       // Avoid leaking internal stack traces or API keys to the client
       res.status(500).json({
         error: "Failed to generate reply from Bro. Please try asking again!",
+      });
+    }
+  },
+);
+
+/**
+ * 1-Trip Atomic Routine Persistence Endpoint:
+ * Saves an AI-generated workout routine in a single server-side operation,
+ * enforcing RLS with the user's Supabase session and eliminating 10-20 client network roundtrips.
+ */
+app.post(
+  "/save-routine",
+  authenticateAiRequest,
+  async (req: Request, res: Response) => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const userId = authReq.user?.id;
+      const token = authReq.token;
+
+      if (!userId || userId === "dev-user") {
+        return res
+          .status(401)
+          .json({ error: "User authentication required. Please sign in to save custom routines." });
+      }
+
+      const rawRoutine = req.body?.routine;
+      if (!rawRoutine) {
+        return res.status(400).json({ error: "No routine data provided." });
+      }
+
+      // 1. Sanitize & enforce exercise safety guardrails
+      const sanitizedRoutine = validateAndSanitizeRoutine(rawRoutine);
+      if (!sanitizedRoutine) {
+        return res
+          .status(400)
+          .json({ error: "Invalid workout routine payload." });
+      }
+
+      // 2. Obtain Supabase client honoring the user's RLS session
+      const userSupabase = getAuthenticatedSupabaseClient(token);
+
+      // 3. Persist routine atomically server-side
+      const result = await saveRoutineForUser(
+        userSupabase,
+        userId,
+        sanitizedRoutine,
+      );
+
+      if (!result.success) {
+        return res
+          .status(400)
+          .json({ error: result.error || "Failed to save workout routine." });
+      }
+
+      res.json({
+        success: true,
+        routineId: result.routineId,
+        routineName: sanitizedRoutine.routineName,
+      });
+    } catch (err: any) {
+      console.error("[Save Routine Endpoint Error]:", err);
+      res.status(500).json({
+        error: "Server error occurred while saving the routine.",
       });
     }
   },

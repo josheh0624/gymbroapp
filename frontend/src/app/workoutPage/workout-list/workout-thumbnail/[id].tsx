@@ -151,7 +151,10 @@ export default function WorkoutTodo() {
           <View style={styles.headerColumn}>
             <Text style={styles.title}>{workout.name}</Text>
             <Pressable 
-              style={styles.addAdhocBtn}
+              style={({ pressed }) => [
+                styles.addAdhocBtn,
+                pressed && { opacity: 0.7 },
+              ]}
               onPress={() => router.push(`/workoutPage/workout-list/workout-thumbnail/add-adhoc-exercise?routineId=${routineID}&workoutId=${workout.id}` as any)}
             >
               <Ionicons name="add" size={20} color={colors.text} />
@@ -410,12 +413,14 @@ const getStyles = (colors: ThemeColors, isLight: boolean) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.glassStrong,
+    backgroundColor: isLight
+      ? "rgba(65, 105, 225, 0.06)"
+      : "rgba(65, 105, 225, 0.08)",
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 100,
-    borderWidth: 1,
-    borderColor: colors.glassStrongBorder,
+    borderWidth: 1.5,
+    borderColor: "#4169E1",
     gap: 8,
     width: "100%",
   },

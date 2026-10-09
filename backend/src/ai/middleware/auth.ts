@@ -16,6 +16,24 @@ export const supabaseServer = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
+  token?: string;
+}
+
+export function getAuthenticatedSupabaseClient(token?: string) {
+  if (!token || token === "dev-token") {
+    return supabaseServer;
+  }
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
 }
 
 /**
@@ -37,6 +55,7 @@ export async function authenticateAiRequest(
         "[AI Auth] No Bearer token provided. Allowing unauthenticated request in development mode.",
       );
       req.user = { id: "dev-user", username: "DevLifter" };
+      req.token = "dev-token";
       return next();
     }
     return res.status(401).json({
@@ -59,6 +78,7 @@ export async function authenticateAiRequest(
     }
 
     req.user = user;
+    req.token = token;
     next();
   } catch (err: any) {
     console.error("[AI Auth Error]:", err.message);

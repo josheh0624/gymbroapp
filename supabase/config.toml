@@ -1,0 +1,14 @@
+# Supabase Configuration
+project_id = "gymbroapp"
+
+[api]
+port = 54321
+
+[db]
+port = 54322
+
+[functions.chat]
+verify_jwt = false # Handled internally with granular Bearer header parsing
+
+[functions.save-routine]
+verify_jwt = true

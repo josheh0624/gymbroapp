@@ -98,91 +98,14 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
     }
   }, [user?.username]);
 
-  const getUserContext = async () => {
-    let benchPR: number | null = null;
-    let squatPR: number | null = null;
-    let deadliftPR: number | null = null;
-    let experienceLevel: string | null = null;
-    let primaryGoals: string[] | string | null = null;
-    let birthday: string | null = null;
-    let age: number | null = user?.age ?? null;
-    let heightFt: number | null = user?.height_ft ?? null;
-    let weightLbs: number | null = user?.weight_lbs ?? null;
-    let sex: string | null = user?.sex ?? null;
-    let username: string | null = user?.username ?? null;
-    let email: string | null = user?.email ?? null;
-
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      const authUser = authData?.user;
-      const metadata = authUser?.user_metadata;
-      if (metadata) {
-        if (metadata.bench_pr) benchPR = Number(metadata.bench_pr);
-        if (metadata.squat_pr) squatPR = Number(metadata.squat_pr);
-        if (metadata.deadlift_pr) deadliftPR = Number(metadata.deadlift_pr);
-        if (metadata.experience_level)
-          experienceLevel = metadata.experience_level;
-        if (metadata.primary_goal) primaryGoals = metadata.primary_goal;
-        if (metadata.birthday) birthday = metadata.birthday;
-        if (metadata.username && !username) username = metadata.username;
-      }
-      if (authUser?.email && !email) email = authUser.email;
-
-      // Fallback query to public.users if any registration fields aren't hydrated in store
-      if (
-        authUser?.id &&
-        (!age || !heightFt || !weightLbs || !sex || !primaryGoals)
-      ) {
-        const { data: dbUser } = await supabase
-          .from("users")
-          .select("age, height_ft, weight_lbs, sex, primary_goal, username")
-          .eq("id", authUser.id)
-          .maybeSingle();
-
-        if (dbUser) {
-          if (!age && dbUser.age) age = dbUser.age;
-          if (!heightFt && dbUser.height_ft) heightFt = dbUser.height_ft;
-          if (!weightLbs && dbUser.weight_lbs) weightLbs = dbUser.weight_lbs;
-          if (!sex && dbUser.sex) sex = dbUser.sex;
-          if (!primaryGoals && dbUser.primary_goal)
-            primaryGoals = dbUser.primary_goal;
-          if (!username && dbUser.username) username = dbUser.username;
-        }
-      }
-    } catch (e) {
-      console.warn("Could not fetch user metadata for AI context", e);
-    }
-
-    // Format height nicely for the AI (feet/inches + cm)
-    let heightFormatted: string | null = null;
-    if (heightFt) {
-      const totalInches = Math.round(heightFt * 12);
-      const ft = Math.floor(totalInches / 12);
-      const inches = totalInches % 12;
-      const cm = Math.round(heightFt * 30.48);
-      heightFormatted = `${ft}'${inches}" (${cm} cm)`;
-    }
-
-    return {
-      username: username || "Lifter",
-      email: email || null,
-      age,
-      birthday,
-      sex,
-      heightFt,
-      heightFormatted,
-      weightLbs,
-      preferredUnit: weightUnit,
-      experienceLevel,
-      primaryGoals: primaryGoals || user?.primary_goal || null,
-      benchPR,
-      squatPR,
-      deadliftPR,
-      activeRoutine: activeRoutine || null,
-      streak: streak ?? 0,
-      workedOutToday: !!workedOutToday,
-    };
-  };
+  // Streamlined client context: only passes dynamic in-memory store values.
+  // The backend server-side identity binder automatically verifies user profile data.
+  const getClientContext = () => ({
+    preferredUnit: weightUnit,
+    activeRoutine: activeRoutine || null,
+    streak: streak ?? 0,
+    workedOutToday: !!workedOutToday,
+  });
 
   const sendMessage = async () => {
     const text = inputText.trim();
@@ -209,8 +132,8 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
     setLoading(true);
 
     try {
-      // Gather user context and history
-      const userContext = await getUserContext();
+      // Gather lightweight in-memory client state instantly
+      const userContext = getClientContext();
       const history = updatedMessages.map((m) => ({
         role: m.role,
         content: m.content,
@@ -227,32 +150,125 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
         headers["Authorization"] = `Bearer ${accessToken}`;
       }
 
+      const assistantId = (Date.now() + 1).toString();
+      let assistantContent = "";
+      let generatedRoutine: GeneratedRoutine | undefined;
+
+      // Add initial assistant bubble for streaming
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantId,
+          role: "assistant",
+          content: "",
+          isSaved: false,
+        },
+      ]);
+
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
-        headers,
+        headers: {
+          ...headers,
+          Accept: "text/event-stream, application/json",
+        },
         body: JSON.stringify({
           message: text,
           history: history.slice(-10), // Limit history to last 10 messages
           userContext,
+          stream: true,
         }),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
 
-      if (!res.ok || !data.reply) {
-        throw new Error(data.error || `Server returned status ${res.status}`);
+      if (
+        contentType.includes("text/event-stream") &&
+        res.body &&
+        typeof (res.body as any).getReader === "function"
+      ) {
+        // Real-Time Streaming: Read chunks as they arrive from Gemini
+        const reader = (res.body as any).getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data:")) continue;
+
+            const payloadStr = trimmed.slice(5).trim();
+            if (payloadStr === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(payloadStr);
+              if (parsed.type === "text" && parsed.delta) {
+                assistantContent += parsed.delta;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, content: assistantContent }
+                      : m,
+                  ),
+                );
+              } else if (parsed.type === "routine" && parsed.routine) {
+                generatedRoutine = parsed.routine;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, routine: generatedRoutine }
+                      : m,
+                  ),
+                );
+              } else if (parsed.type === "error" && parsed.error) {
+                throw new Error(parsed.error);
+              }
+            } catch {
+              // Ignore partial JSON chunks
+            }
+          }
+        }
+
+        // If stream ended with no content, fallback to default
+        if (!assistantContent) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content:
+                      "I'm on it bro! Let's get right back to the workout. What are we lifting next?",
+                  }
+                : m,
+            ),
+          );
+        }
+      } else {
+        // Standard JSON fallback
+        const data = await res.json();
+
+        if (!res.ok || !data.reply) {
+          throw new Error(data.error || `Server returned status ${res.status}`);
+        }
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  content: data.reply,
+                  routine: data.routine || undefined,
+                }
+              : m,
+          ),
+        );
       }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: data.reply,
-          routine: data.routine || undefined,
-          isSaved: false,
-        },
-      ]);
     } catch (err: any) {
       console.error("AI Chat error:", err);
       const isNetworkError =
@@ -281,178 +297,35 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
     setSavingId(messageId);
 
     try {
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-      if (userError || !userData?.user) {
-        Alert.alert(
-          "Sign In Required",
-          "You must be signed in to save routines to your account.",
-        );
-        return;
-      }
-      const userId = userData.user.id;
+      // 1. Retrieve authenticated Supabase access token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-      // 1. Fetch existing exercises to match
-      const { data: existingExercises } = await supabase
-        .from("exercises")
-        .select("id, name");
-
-      const exerciseMap: Record<string, string> = {};
-      if (existingExercises) {
-        for (const ex of existingExercises) {
-          exerciseMap[ex.name.toLowerCase().trim()] = ex.id;
-        }
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
       }
 
-      // Default fallback muscle group ID (Chest / General)
-      const fallbackMuscleGroupId = 1;
-      const resolvedExerciseIds: Record<string, string> = {};
+      // 2. 1-Trip Atomic Server Routine Persistence (replaces 10-20 client DB calls)
+      const res = await fetch(`${API_URL}/save-routine`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ routine }),
+      });
 
-      for (const workout of routine.workouts) {
-        for (const ex of workout.exercises) {
-          const cleanName = ex.name.trim();
-          const key = cleanName.toLowerCase();
-
-          if (exerciseMap[key]) {
-            resolvedExerciseIds[cleanName] = exerciseMap[key];
-            continue;
-          }
-
-          // Fuzzy search
-          const matched = existingExercises?.find(
-            (e) =>
-              e.name.toLowerCase().includes(key) ||
-              key.includes(e.name.toLowerCase()),
-          );
-          if (matched) {
-            resolvedExerciseIds[cleanName] = matched.id;
-            continue;
-          }
-
-          // Try inserting custom exercise
-          try {
-            const { data: newEx, error: insertExErr } = await supabase
-              .from("exercises")
-              .insert({
-                name: cleanName,
-                muscle_group_id: fallbackMuscleGroupId,
-                user_id: userId,
-              })
-              .select("id")
-              .single();
-
-            if (!insertExErr && newEx) {
-              resolvedExerciseIds[cleanName] = newEx.id;
-              exerciseMap[key] = newEx.id;
-              continue;
-            }
-          } catch {
-            // Ignore insert restriction if present
-          }
-
-          // Fallback to first available exercise if RLS blocks custom exercise creation
-          if (existingExercises && existingExercises.length > 0) {
-            resolvedExerciseIds[cleanName] = existingExercises[0].id;
-          }
-        }
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to save routine.");
       }
 
-      // 2. Create the workout_routines entry
-      const { data: routineRecord, error: rError } = await supabase
-        .from("workout_routines")
-        .insert({
-          name: routine.routineName,
-          user_id: userId,
-          is_prebuilt: false,
-        })
-        .select("id")
-        .single();
+      const routineId = data.routineId;
 
-      if (rError || !routineRecord) {
-        throw new Error(rError?.message || "Failed to create routine");
-      }
-
-      const createdWorkoutIds: string[] = [];
-
-      // 3. Create each workout & workout_exercises
-      for (const workout of routine.workouts) {
-        const { data: workoutRecord, error: wError } = await supabase
-          .from("workouts")
-          .insert({
-            name: workout.name,
-            days: workout.days && workout.days.length > 0 ? workout.days : [1],
-            user_id: userId,
-          })
-          .select("id")
-          .single();
-
-        if (wError || !workoutRecord) {
-          throw new Error(
-            wError?.message || `Failed to create workout: ${workout.name}`,
-          );
-        }
-
-        createdWorkoutIds.push(workoutRecord.id);
-
-        if (workout.exercises && workout.exercises.length > 0) {
-          const exercisesToInsert: {
-            workout_id: string;
-            exercise_id: string;
-            sets: number;
-            reps: number;
-            weight: number;
-            order_index: number;
-          }[] = [];
-
-          workout.exercises.forEach((ex, idx) => {
-            const exerciseId = resolvedExerciseIds[ex.name.trim()];
-            if (exerciseId) {
-              exercisesToInsert.push({
-                workout_id: workoutRecord.id,
-                exercise_id: exerciseId,
-                sets: ex.sets || 3,
-                reps: ex.reps || 10,
-                weight: ex.weight || 0,
-                order_index: idx,
-              });
-            }
-          });
-
-          if (exercisesToInsert.length > 0) {
-            const { error: weError } = await supabase
-              .from("workout_exercises")
-              .insert(exercisesToInsert);
-            if (weError) {
-              console.warn(
-                "Error inserting workout exercises:",
-                weError.message,
-              );
-            }
-          }
-        }
-      }
-
-      // 4. Link workouts in workout_routine_days
-      if (createdWorkoutIds.length > 0) {
-        const daysPayload = createdWorkoutIds.map((workoutId, idx) => ({
-          routine_id: routineRecord.id,
-          workout_id: workoutId,
-          order_index: idx,
-        }));
-
-        const { error: dError } = await supabase
-          .from("workout_routine_days")
-          .insert(daysPayload);
-
-        if (dError) {
-          console.warn("Error linking routine days:", dError.message);
-        }
-      }
-
-      // 5. Refresh store so it appears in the Workouts tab immediately!
+      // 3. Refresh store so it appears in the Workouts tab immediately!
       await useRoutineStore.getState().fetchRoutineList();
 
-      // 6. Update message UI state
+      // 4. Update message UI state
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, isSaved: true } : m)),
       );
@@ -465,10 +338,12 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
           {
             text: "Set Active",
             onPress: async () => {
-              await useRoutineStore
-                .getState()
-                .fetchRoutineById(routineRecord.id);
-              useRoutineStore.getState().setActiveRoutine(routineRecord.id);
+              if (routineId) {
+                await useRoutineStore
+                  .getState()
+                  .fetchRoutineById(routineId);
+                useRoutineStore.getState().setActiveRoutine(routineId);
+              }
             },
           },
         ],
