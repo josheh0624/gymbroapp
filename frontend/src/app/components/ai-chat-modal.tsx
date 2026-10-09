@@ -1,4 +1,4 @@
-import { supabase } from "@/api/supabase";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/api/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { useRoutineStore } from "@/store/routineStore";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -57,9 +57,9 @@ function formatWorkoutDays(days?: number[]): string {
   return days.map((d) => DAY_NAMES[d] || `Day ${d}`).join(", ");
 }
 
-// On iOS Simulator, 'localhost' works. On Android emulator use '10.0.2.2'.
-const API_URL =
-  Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000";
+// Direct serverless connection to Supabase Edge Functions
+const AI_EDGE_FUNCTIONS_URL =
+  process.env.EXPO_PUBLIC_AI_API_URL || `${SUPABASE_URL}/functions/v1`;
 
 export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
   const colors = useThemeColors();
@@ -145,6 +145,7 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
       };
       if (accessToken) {
         headers["Authorization"] = `Bearer ${accessToken}`;
@@ -165,7 +166,7 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
         },
       ]);
 
-      const res = await fetch(`${API_URL}/chat`, {
+      const res = await fetch(`${AI_EDGE_FUNCTIONS_URL}/chat`, {
         method: "POST",
         headers: {
           ...headers,
@@ -210,10 +211,14 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
               const parsed = JSON.parse(payloadStr);
               if (parsed.type === "text" && parsed.delta) {
                 assistantContent += parsed.delta;
+                // Keep live streamed text clean of raw code fences
+                const displayContent = assistantContent
+                  .replace(/```routine-json[\s\S]*?```/g, "")
+                  .trim();
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantId
-                      ? { ...m, content: assistantContent }
+                      ? { ...m, content: displayContent || assistantContent }
                       : m,
                   ),
                 );
@@ -235,8 +240,13 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
           }
         }
 
+        // Clean final output if routine fence was streamed
+        const cleanContent = assistantContent
+          .replace(/```routine-json[\s\S]*?```/g, "")
+          .trim();
+
         // If stream ended with no content, fallback to default
-        if (!assistantContent) {
+        if (!cleanContent) {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
@@ -248,12 +258,19 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
                 : m,
             ),
           );
+        } else if (cleanContent !== assistantContent) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: cleanContent } : m,
+            ),
+          );
         }
       } else {
         // Standard JSON fallback
         const data = await res.json();
+        const replyText = data.reply || data.response;
 
-        if (!res.ok || !data.reply) {
+        if (!res.ok || (!replyText && !data.routine)) {
           throw new Error(data.error || `Server returned status ${res.status}`);
         }
 
@@ -262,7 +279,8 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
             m.id === assistantId
               ? {
                   ...m,
-                  content: data.reply,
+                  content:
+                    replyText || "Here is your custom workout routine bro!",
                   routine: data.routine || undefined,
                 }
               : m,
@@ -280,7 +298,7 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
           id: (Date.now() + 1).toString(),
           role: "assistant",
           content: isNetworkError
-            ? "Sorry bro, my connection dropped! Make sure the backend server is running."
+            ? "Sorry bro, my connection dropped! Please check your internet connection."
             : `Sorry bro! ${err.message || "Failed to generate reply"}. Try asking again!`,
         },
       ]);
@@ -303,13 +321,14 @@ export default function AiChatModal({ visible, onClose }: AiChatModalProps) {
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
       };
       if (accessToken) {
         headers["Authorization"] = `Bearer ${accessToken}`;
       }
 
-      // 2. 1-Trip Atomic Server Routine Persistence (replaces 10-20 client DB calls)
-      const res = await fetch(`${API_URL}/save-routine`, {
+      // 2. 1-Trip Atomic Server Routine Persistence to Supabase Edge Function
+      const res = await fetch(`${AI_EDGE_FUNCTIONS_URL}/save-routine`, {
         method: "POST",
         headers,
         body: JSON.stringify({ routine }),

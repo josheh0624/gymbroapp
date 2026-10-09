@@ -47,107 +47,199 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { routine } = await req.json();
-    if (!routine || !routine.name || !Array.isArray(routine.days)) {
+    const body = await req.json();
+    const routine = body.routine;
+
+    if (!routine) {
       return new Response(
-        JSON.stringify({ error: "Invalid routine format provided." }),
+        JSON.stringify({ error: "Routine payload is required." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Try executing stored procedure if configured
-    const { data: rpcResult, error: rpcError } = await supabase.rpc(
-      "save_routine_atomic",
-      {
-        p_user_id: user.id,
-        p_routine_data: routine,
-      }
-    );
+    const routineName = (routine.routineName || routine.name || "Custom Workout Routine").trim();
+    const rawWorkouts = Array.isArray(routine.workouts)
+      ? routine.workouts
+      : Array.isArray(routine.days)
+      ? routine.days
+      : [];
 
-    if (!rpcError && rpcResult?.routine_id) {
+    if (rawWorkouts.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, routineId: rpcResult.routine_id }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Routine contains no workout days." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Fallback: Multi-step insertion with User JWT context
-    const { data: routineRecord, error: routineInsertErr } = await supabase
-      .from("routines")
+    // Normalize workouts structure
+    const normalizedWorkouts = rawWorkouts.map((w: any, idx: number) => {
+      const name = (w.name || w.dayName || `Day ${idx + 1}`).trim();
+      const days = Array.isArray(w.days)
+        ? w.days
+        : typeof w.dayOrder === "number"
+        ? [w.dayOrder]
+        : [(idx % 7) + 1];
+
+      const rawExercises = Array.isArray(w.exercises) ? w.exercises : [];
+      const exercises = rawExercises.map((ex: any) => ({
+        name: (ex.name || "Exercise").trim(),
+        muscleGroup: ex.muscleGroup || "General",
+        sets: Number(ex.sets || ex.targetSets || 3),
+        reps: Number(ex.reps || ex.targetReps || 10),
+        weight: Number(ex.weight || 0),
+      }));
+
+      return { name, days, exercises };
+    });
+
+    // 1. Try atomic stored procedure if available in Postgres
+    try {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc(
+        "save_workout_routine_atomic",
+        {
+          p_routine_name: routineName,
+          p_workouts: normalizedWorkouts,
+        }
+      );
+
+      if (!rpcError && rpcResult?.routine_id) {
+        return new Response(
+          JSON.stringify({ success: true, routineId: rpcResult.routine_id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch {
+      // Proceed to direct table fallback
+    }
+
+    // 2. Fallback: Multi-step relational persistence matching app schema
+    // Fetch available exercises for ID resolution
+    const { data: existingExercises } = await supabase
+      .from("exercises")
+      .select("id, name");
+
+    const exerciseMap: Record<string, string> = {};
+    if (existingExercises) {
+      for (const ex of existingExercises) {
+        if (ex.name) {
+          exerciseMap[ex.name.toLowerCase().trim()] = ex.id;
+        }
+      }
+    }
+
+    const resolvedExerciseIds: Record<string, string> = {};
+
+    for (const workout of normalizedWorkouts) {
+      for (const ex of workout.exercises) {
+        const cleanName = ex.name.trim();
+        const key = cleanName.toLowerCase();
+
+        if (exerciseMap[key]) {
+          resolvedExerciseIds[cleanName] = exerciseMap[key];
+          continue;
+        }
+
+        const matched = existingExercises?.find(
+          (e: any) =>
+            e.name.toLowerCase().includes(key) ||
+            key.includes(e.name.toLowerCase())
+        );
+
+        if (matched) {
+          resolvedExerciseIds[cleanName] = matched.id;
+          continue;
+        }
+
+        try {
+          const { data: newEx } = await supabase
+            .from("exercises")
+            .insert({
+              name: cleanName,
+              muscle_group_id: 1,
+              user_id: user.id,
+            })
+            .select("id")
+            .single();
+
+          if (newEx?.id) {
+            resolvedExerciseIds[cleanName] = newEx.id;
+            exerciseMap[key] = newEx.id;
+            continue;
+          }
+        } catch {
+          // Fall back to first available exercise if RLS constrains custom insert
+        }
+
+        if (existingExercises && existingExercises.length > 0) {
+          resolvedExerciseIds[cleanName] = existingExercises[0].id;
+        }
+      }
+    }
+
+    // Create routine record in workout_routines
+    const { data: routineRecord, error: rError } = await supabase
+      .from("workout_routines")
       .insert({
+        name: routineName,
         user_id: user.id,
-        name: routine.name.trim(),
-        description: "Generated by GymBro AI Coach",
-        is_active: false,
+        is_prebuilt: false,
       })
       .select("id")
       .single();
 
-    if (routineInsertErr || !routineRecord) {
-      throw routineInsertErr || new Error("Failed to create routine record.");
+    if (rError || !routineRecord) {
+      throw rError || new Error("Failed to create workout routine record.");
     }
 
     const routineId = routineRecord.id;
+    const createdWorkoutIds: string[] = [];
 
-    for (const [dayIdx, day] of routine.days.entries()) {
-      const workoutName = day.dayName || `Day ${dayIdx + 1}`;
-      const { data: workoutRecord, error: workoutErr } = await supabase
+    // Create each workout and link exercises
+    for (const workout of normalizedWorkouts) {
+      const { data: workoutRecord, error: wError } = await supabase
         .from("workouts")
         .insert({
+          name: workout.name,
+          days: workout.days,
           user_id: user.id,
-          name: workoutName,
-          notes: `Day ${dayIdx + 1} of ${routine.name}`,
         })
         .select("id")
         .single();
 
-      if (workoutErr || !workoutRecord) continue;
+      if (wError || !workoutRecord) continue;
+      createdWorkoutIds.push(workoutRecord.id);
 
-      await supabase.from("routine_days").insert({
-        routine_id: routineId,
-        day_of_week: (day.dayOrder ?? dayIdx + 1) % 7,
-        workout_id: workoutRecord.id,
-      });
-
-      if (Array.isArray(day.exercises)) {
-        for (const [exIdx, ex] of day.exercises.entries()) {
-          let exerciseId: string | null = null;
-          const { data: matched } = await supabase
-            .from("exercises")
-            .select("id")
-            .ilike("name", ex.name.trim())
-            .limit(1)
-            .maybeSingle();
-
-          if (matched?.id) {
-            exerciseId = matched.id;
-          } else {
-            const { data: created } = await supabase
-              .from("exercises")
-              .insert({
-                name: ex.name.trim(),
-                target_muscle_group: "Full Body",
-                equipment: "General",
-                user_id: user.id,
-              })
-              .select("id")
-              .single();
-            exerciseId = created?.id ?? null;
-          }
-
-          if (exerciseId) {
-            await supabase.from("workout_exercises").insert({
+      if (workout.exercises.length > 0) {
+        const exercisesToInsert = workout.exercises
+          .map((ex, idx) => {
+            const exerciseId = resolvedExerciseIds[ex.name.trim()];
+            if (!exerciseId) return null;
+            return {
               workout_id: workoutRecord.id,
               exercise_id: exerciseId,
-              order_in_workout: exIdx + 1,
-              target_sets: ex.targetSets || 3,
-              target_reps: ex.targetReps || 10,
-              rest_seconds: ex.restSeconds || 90,
-              notes: ex.notes || null,
-            });
-          }
+              sets: ex.sets || 3,
+              reps: ex.reps || 10,
+              weight: ex.weight || 0,
+              order_index: idx,
+            };
+          })
+          .filter(Boolean);
+
+        if (exercisesToInsert.length > 0) {
+          await supabase.from("workout_exercises").insert(exercisesToInsert);
         }
       }
+    }
+
+    // Link workouts to routine
+    if (createdWorkoutIds.length > 0) {
+      const daysPayload = createdWorkoutIds.map((workoutId, idx) => ({
+        routine_id: routineId,
+        workout_id: workoutId,
+        order_index: idx,
+      }));
+
+      await supabase.from("workout_routine_days").insert(daysPayload);
     }
 
     return new Response(

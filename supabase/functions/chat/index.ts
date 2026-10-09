@@ -18,34 +18,72 @@ const CRISIS_TRIGGERS = [
   "kill myself",
 ];
 
-const SYSTEM_INSTRUCTION = `You are "GymBro", an elite strength and conditioning coach and biomechanics specialist.
+const SYSTEM_INSTRUCTION = `You are "Bro", an elite strength and conditioning coach, biomechanics specialist, and motivating older-brother fitness mentor for the Gym Bro mobile app.
 Your mission is to guide users through hyper-personalized, injury-free, progressive overload training.
-Tone: Motivating, scientifically sound, concise, energetic ("Let's get after it!").
+Tone: Motivating, scientifically sound, concise, energetic ("Let's get after it bro!").
 
 Rules:
 1. Emphasize proper exercise execution, recovery, and hydration.
-2. If asked to generate a routine or split, formulate a comprehensive day-by-day workout schedule.
-3. If providing a structured routine that the user can import, append a valid JSON routine block at the end of your response marked with \`\`\`routine-json ... \`\`\`.
-Structure:
+2. If asked to generate a routine or split (e.g. "make me a 3-day split", "create a push pull legs routine"), formulate a comprehensive day-by-day workout schedule.
+3. If providing a structured routine that the user can import into their app, append a valid JSON routine block at the end of your response enclosed in \`\`\`routine-json ... \`\`\`.
+Required Schema:
+\`\`\`routine-json
 {
-  "name": "Routine Title",
-  "days": [
+  "routineName": "Bro's 3-Day Push Pull Legs",
+  "workouts": [
     {
-      "dayName": "Push Day",
-      "dayOrder": 1,
+      "name": "Push Day",
+      "days": [1, 4],
       "exercises": [
         {
           "name": "Barbell Bench Press",
-          "targetSets": 4,
-          "targetReps": 8,
-          "restSeconds": 90,
-          "notes": "Controlled eccentric"
+          "muscleGroup": "Chest",
+          "sets": 4,
+          "reps": 8,
+          "weight": 185
         }
       ]
     }
   ]
 }
-4. Never give dangerous medical advice. Recommend a physical therapist or medical doctor for severe pain.`;
+\`\`\`
+Note: days array represents scheduled days (1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun).
+4. Never give dangerous medical advice or advice on illegal anabolic steroids/PEDs. Recommend a medical doctor or physical therapist for sharp joint/spine pain.`;
+
+function normalizeRoutine(raw: any) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const routineName = (raw.routineName || raw.name || "Custom Workout Routine").trim();
+  const rawWorkouts = Array.isArray(raw.workouts)
+    ? raw.workouts
+    : Array.isArray(raw.days)
+    ? raw.days
+    : [];
+
+  if (rawWorkouts.length === 0) return null;
+
+  const workouts = rawWorkouts.map((w: any, idx: number) => {
+    const name = (w.name || w.dayName || `Day ${idx + 1}`).trim();
+    const days = Array.isArray(w.days)
+      ? w.days
+      : typeof w.dayOrder === "number"
+      ? [w.dayOrder]
+      : [(idx % 7) + 1];
+
+    const rawExercises = Array.isArray(w.exercises) ? w.exercises : [];
+    const exercises = rawExercises.map((ex: any) => ({
+      name: (ex.name || "Exercise").trim(),
+      muscleGroup: ex.muscleGroup || ex.target_muscle_group || "General",
+      sets: Number(ex.sets || ex.targetSets || 3),
+      reps: Number(ex.reps || ex.targetReps || 10),
+      weight: Number(ex.weight || 0),
+    }));
+
+    return { name, days, exercises };
+  });
+
+  return { routineName, workouts };
+}
 
 Deno.serve(async (req: Request) => {
   // 1. Handle CORS preflight
@@ -107,6 +145,8 @@ Deno.serve(async (req: Request) => {
     if (hitCrisis) {
       return new Response(
         JSON.stringify({
+          reply:
+            "CRISIS ALERT: Your safety is our absolute priority. If you are experiencing sudden severe pain, neurological symptoms, or a medical crisis, please stop training immediately and consult an emergency medical specialist.",
           response:
             "CRISIS ALERT: Your safety is our absolute priority. If you are experiencing sudden severe pain, neurological symptoms, or a medical crisis, please stop training immediately and consult an emergency medical specialist.",
           routine: null,
@@ -115,7 +155,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 5. Initialize Gemini
+    // 5. Initialize Gemini SDK
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
     // Format previous turns for Gemini SDK
@@ -140,8 +180,9 @@ Deno.serve(async (req: Request) => {
 
     // 6. Handle SSE Streaming Response
     if (isStreamRequested) {
+      const modelName = Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash";
       const chat = ai.chats.create({
-        model: "gemini-2.5-flash",
+        model: modelName,
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           temperature: 0.7,
@@ -175,14 +216,17 @@ Deno.serve(async (req: Request) => {
             if (jsonMatch && jsonMatch[1]) {
               try {
                 const parsedRoutine = JSON.parse(jsonMatch[1]);
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({
-                      type: "routine",
-                      routine: parsedRoutine,
-                    })}\n\n`
-                  )
-                );
+                const normalizedRoutine = normalizeRoutine(parsedRoutine);
+                if (normalizedRoutine) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "routine",
+                        routine: normalizedRoutine,
+                      })}\n\n`
+                    )
+                  );
+                }
               } catch {
                 // Ignore parse errors on generated json
               }
@@ -215,8 +259,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. Non-Streaming JSON Fallback
+    const modelName = Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash";
     const chat = ai.chats.create({
-      model: "gemini-2.5-flash",
+      model: modelName,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         temperature: 0.7,
@@ -234,7 +279,8 @@ Deno.serve(async (req: Request) => {
     const jsonMatch = fullResponse.match(/```routine-json\s*([\s\S]*?)\s*```/);
     if (jsonMatch && jsonMatch[1]) {
       try {
-        extractedRoutine = JSON.parse(jsonMatch[1]);
+        const parsed = JSON.parse(jsonMatch[1]);
+        extractedRoutine = normalizeRoutine(parsed);
         cleanResponse = fullResponse.replace(jsonMatch[0], "").trim();
       } catch {
         // Fallback to text
@@ -243,6 +289,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({
+        reply: cleanResponse,
         response: cleanResponse,
         routine: extractedRoutine,
       }),

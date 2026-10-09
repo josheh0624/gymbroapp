@@ -14,9 +14,8 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
-// TODO: Need actual SUPABASE_URL from user
-const SUPABASE_URL = "https://anpszskuryudqegtdsmo.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_khNqjRm8zcD27-8c4ZFWrA_-UqEMMx-";
+export const SUPABASE_URL = "https://anpszskuryudqegtdsmo.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_khNqjRm8zcD27-8c4ZFWrA_-UqEMMx-";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
